@@ -105,23 +105,12 @@ export default {
       skippedFrames: 0
     })
 
-    // Load graphics path mapping
-    const graphicsPathMap = ref({})
-
-    // Load the graphics path mapping on mount
-    onMounted(async () => {
-      try {
-        const response = await fetch(withBase('/data/graphics-path-map.json'))
-        if (response.ok) {
-          graphicsPathMap.value = await response.json()
-        }
-      } catch (error) {
-        console.warn('Failed to load graphics path mapping:', error)
-      }
-    })
-
     // Create animation engine instance
     const animationEngine = ref(null)
+
+    onMounted(() => {
+      createEngine()
+    })
 
     // Create the animation engine when graphics path mapping is loaded
     const createEngine = () => {
@@ -129,29 +118,17 @@ export default {
         loadImage: filename => {
           const img = new Image()
           // Convert Factorio path to public path using the mapping
-          const publicPath = (graphicsPathMap.value[filename] || filename).replace('.png', '.webp')
-          img.src = withBase(`/data/${publicPath}`)
+          const publicPath = `https://factorio.whyissandwich.workers.dev/${filename.replace('.png', '.webp')}`
+          img.src = publicPath
           return img
         },
         applyDOMChanges: _mutation => {
           // Handle DOM mutations for style changes
         },
         canvas: null, // Will be set when canvas is available
-        devicePixelRatio: window.devicePixelRatio || 2,
-        graphicsPathMap: graphicsPathMap.value
+        devicePixelRatio: window.devicePixelRatio || 2
       })
     }
-
-    // Watch for graphics path mapping changes and recreate engine
-    watch(
-      graphicsPathMap,
-      () => {
-        if (Object.keys(graphicsPathMap.value).length > 0) {
-          createEngine()
-        }
-      },
-      { deep: true }
-    )
 
     // Set canvas reference when available
     watch(spriteCanvas, canvas => {

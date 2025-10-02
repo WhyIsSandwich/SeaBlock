@@ -266,8 +266,19 @@ class ModGraphicsCopier {
       // Extract zip file
       await this.extractZip(zipPath, tempDir)
 
+      // Check if there's an extra folder level (common in mod ZIPs)
+      const extractedItems = fs.readdirSync(tempDir, { withFileTypes: true })
+      let sourceDir = tempDir
+
+      if (extractedItems.length === 1 && extractedItems[0].isDirectory()) {
+        // There's only one directory, likely the mod folder
+        const subDir = path.join(tempDir, extractedItems[0].name)
+        console.log(`    📁 Flattening directory structure: ${extractedItems[0].name}`)
+        sourceDir = subDir
+      }
+
       // Copy PNG files from extracted content
-      await this.copyPngFiles(tempDir, targetPath)
+      this.copyPngFiles(sourceDir, targetPath)
 
       // Clean up temp directory
       fs.rmSync(tempDir, { recursive: true })
@@ -357,7 +368,7 @@ class ModGraphicsCopier {
           const infoPath = findinfo(fullTempDir)
           if (infoPath) {
             console.log(`    ✅ Found info.json at: ${path.relative(fullTempDir, infoPath)}`)
-            const modName = this.parseinfo(infoPath)
+            const modName = this.parseInfo(infoPath)
             fs.rmSync(fullTempDir, { recursive: true })
             fs.rmSync(tempDir, { recursive: true })
             return modName
@@ -377,7 +388,7 @@ class ModGraphicsCopier {
 
       const infoPath = path.join(tempDir, 'info.json')
       if (fs.existsSync(infoPath)) {
-        const modName = this.parseinfo(infoPath)
+        const modName = this.parseInfo(infoPath)
         fs.rmSync(tempDir, { recursive: true })
         return modName
       }
@@ -396,7 +407,7 @@ class ModGraphicsCopier {
   extractModNameFromFolder(folderPath) {
     const infoPath = path.join(folderPath, 'info.json')
     if (fs.existsSync(infoPath)) {
-      return this.parseinfo(infoPath)
+      return this.parseInfo(infoPath)
     }
     return null
   }
@@ -404,7 +415,7 @@ class ModGraphicsCopier {
   /**
    * Parse info.json to extract mod name
    */
-  parseinfo(infoPath) {
+  parseInfo(infoPath) {
     try {
       const content = fs.readFileSync(infoPath, 'utf8')
       const info = JSON.parse(content)
