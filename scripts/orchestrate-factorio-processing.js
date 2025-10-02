@@ -28,12 +28,88 @@ class FactorioProcessingOrchestrator {
       dataDumpsPath: './data-dumps',
       outputPath: './docs/public/data'
     }
+    this.selectedSteps = []
+    this.cliArgs = this.parseCommandLineArgs()
+  }
+
+  /**
+   * Parse command line arguments
+   */
+  parseCommandLineArgs() {
+    const args = process.argv.slice(2)
+    const parsed = {
+      gameFolder: null,
+      userFolder: null,
+      steps: null,
+      help: false
+    }
+
+    for (let i = 0; i < args.length; i++) {
+      const arg = args[i]
+      switch (arg) {
+        case '-g':
+        case '--game-folder':
+          parsed.gameFolder = args[++i]
+          break
+        case '-u':
+        case '--user-folder':
+          parsed.userFolder = args[++i]
+          break
+        case '-s':
+        case '--steps':
+          parsed.steps = args[++i].split(',')
+          break
+        case '-h':
+        case '--help':
+          parsed.help = true
+          break
+      }
+    }
+
+    return parsed
+  }
+
+  /**
+   * Show help information
+   */
+  showHelp() {
+    console.log('🎮 Factorio Data Processing Orchestrator')
+    console.log('==========================================')
+    console.log('')
+    console.log('Usage: node scripts/orchestrate-factorio-processing.js [options]')
+    console.log('')
+    console.log('Options:')
+    console.log('  -g, --game-folder PATH    Path to Factorio game folder')
+    console.log('  -u, --user-folder PATH    Path to Factorio user folder (optional)')
+    console.log('  -s, --steps STEPS         Comma-separated list of steps to run')
+    console.log('  -h, --help               Show this help message')
+    console.log('')
+    console.log('Available steps:')
+    console.log('  extract    - Extract data from Factorio')
+    console.log('  process    - Process raw data to JSON')
+    console.log('  convert    - Convert PNG to WebP')
+    console.log('  graphics   - Copy mod graphics')
+    console.log('  all        - Run all steps (default)')
+    console.log('')
+    console.log('Examples:')
+    console.log('  node scripts/orchestrate-factorio-processing.js')
+    console.log('  node scripts/orchestrate-factorio-processing.js -g /path/to/factorio')
+    console.log('  node scripts/orchestrate-factorio-processing.js -s extract,process')
+    console.log('  node scripts/orchestrate-factorio-processing.js -g /factorio -s graphics')
+    console.log('')
   }
 
   /**
    * Main orchestration function
    */
   async run() {
+    // Show help if requested
+    if (this.cliArgs.help) {
+      this.showHelp()
+      this.rl.close()
+      return
+    }
+
     console.log('🎮 Factorio Data Processing Orchestrator')
     console.log('==========================================')
     console.log('')
@@ -43,6 +119,8 @@ class FactorioProcessingOrchestrator {
     console.log(
       '💡 Tip: You can always provide manual paths even if auto-detection finds your installation.'
     )
+    console.log('')
+    console.log('💡 Tip: Use --help to see command-line options to skip interactive prompts.')
     console.log('')
 
     try {
@@ -71,6 +149,24 @@ class FactorioProcessingOrchestrator {
   async detectFactorioInstallation() {
     console.log('🔍 Detecting Factorio Installation...')
     console.log('')
+
+    // Use CLI args if provided
+    if (this.cliArgs.gameFolder) {
+      this.config.gameFolder = this.cliArgs.gameFolder
+      console.log(`✅ Using game folder from CLI: ${this.config.gameFolder}`)
+    }
+    if (this.cliArgs.userFolder) {
+      this.config.userFolder = this.cliArgs.userFolder
+      console.log(`✅ Using user folder from CLI: ${this.config.userFolder}`)
+    }
+
+    // If we have both paths from CLI, skip detection
+    if (this.cliArgs.gameFolder && (this.cliArgs.userFolder || this.cliArgs.gameFolder)) {
+      if (!this.cliArgs.userFolder) {
+        this.config.userFolder = this.config.gameFolder
+      }
+      return
+    }
 
     // Check if we're running in a container
     const isContainer = this.detectContainerEnvironment()
@@ -514,6 +610,16 @@ class FactorioProcessingOrchestrator {
    * Select which processing steps to run
    */
   async selectProcessingSteps() {
+    // Use CLI args if provided
+    if (this.cliArgs.steps) {
+      this.selectedSteps = this.cliArgs.steps
+      console.log('🛠️  Using steps from CLI arguments:')
+      console.log('')
+      console.log(`✅ Selected steps: ${this.selectedSteps.join(', ')}`)
+      console.log('')
+      return
+    }
+
     console.log('🛠️  Available Processing Steps:')
     console.log('')
     console.log(
@@ -521,11 +627,12 @@ class FactorioProcessingOrchestrator {
     )
     console.log('2. Process Raw Data (convert to JSON, generate spritemap, etc.)')
     console.log('3. Convert PNG to WebP (optimize animations)')
-    console.log('4. All Steps (recommended for first run)')
-    console.log('5. Custom selection')
+    console.log('4. Copy Mod Graphics (copy PNG files from mods)')
+    console.log('5. All Steps (recommended for first run)')
+    console.log('6. Custom selection')
     console.log('')
 
-    const choice = await this.askQuestion('Select processing option (1-5): ')
+    const choice = await this.askQuestion('Select processing option (1-6): ')
 
     switch (choice) {
       case '1':
@@ -538,9 +645,12 @@ class FactorioProcessingOrchestrator {
         this.selectedSteps = ['convert']
         break
       case '4':
-        this.selectedSteps = ['extract', 'process', 'convert']
+        this.selectedSteps = ['graphics']
         break
       case '5':
+        this.selectedSteps = ['extract', 'process', 'convert', 'graphics']
+        break
+      case '6':
         this.selectedSteps = await this.selectCustomSteps()
         break
       default:
@@ -573,6 +683,11 @@ class FactorioProcessingOrchestrator {
       steps.push('convert')
     }
 
+    const graphics = await this.askQuestion('Copy mod graphics? (y/n): ')
+    if (graphics.toLowerCase() === 'y' || graphics.toLowerCase() === 'yes') {
+      steps.push('graphics')
+    }
+
     if (steps.length === 0) {
       throw new Error('No processing steps selected')
     }
@@ -601,6 +716,10 @@ class FactorioProcessingOrchestrator {
         case 'convert':
           // eslint-disable-next-line no-await-in-loop
           await this.convertPNGToWebP()
+          break
+        case 'graphics':
+          // eslint-disable-next-line no-await-in-loop
+          await this.copyModGraphics()
           break
         default:
           console.log(`⚠️  Unknown step: ${step}`)
@@ -733,6 +852,58 @@ class FactorioProcessingOrchestrator {
       } else {
         fs.copyFileSync(sourcePath, destPath)
       }
+    }
+  }
+
+  /**
+   * Copy mod graphics using the graphics copier script
+   */
+  async copyModGraphics() {
+    console.log('🎨 Copying mod graphics...')
+    console.log('')
+
+    const graphicsScript = path.join(__dirname, 'copy-mod-graphics.js')
+
+    if (!fs.existsSync(graphicsScript)) {
+      throw new Error('Graphics copier script not found')
+    }
+
+    try {
+      // Run the graphics copier script with the same config
+      const args = []
+      if (this.config.gameFolder) {
+        args.push('-g', this.config.gameFolder)
+      }
+      if (this.config.userFolder && this.config.userFolder !== this.config.gameFolder) {
+        args.push('-u', this.config.userFolder)
+      }
+
+      console.log(`Running: node ${graphicsScript} ${args.join(' ')}`)
+
+      // Use spawn directly to avoid issues with readline
+      const { spawn } = await import('child_process')
+      const child = spawn('node', [graphicsScript, ...args], {
+        stdio: 'inherit',
+        shell: process.platform === 'win32'
+      })
+
+      await new Promise((resolve, reject) => {
+        child.on('close', code => {
+          if (code === 0) {
+            resolve()
+          } else {
+            reject(new Error(`Graphics copier failed with exit code ${code}`))
+          }
+        })
+        child.on('error', error => {
+          reject(error)
+        })
+      })
+
+      console.log('✅ Mod graphics copied successfully!')
+    } catch (error) {
+      console.error('❌ Failed to copy mod graphics:', error.message)
+      throw error
     }
   }
 

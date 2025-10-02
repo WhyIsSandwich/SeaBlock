@@ -24,6 +24,7 @@ This script will:
 - **`orchestrate-factorio-processing.js`** - Interactive orchestration script (recommended)
 - **`process-factorio-data.js`** - Core data processing engine
 - **`convert-png-to-webp.js`** - PNG to WebP conversion for animations
+- **`copy-mod-graphics.js`** - Copy PNG files from mods to data-dumps/graphics
 
 ### Data Extraction Scripts
 
@@ -52,16 +53,89 @@ node scripts/orchestrate-factorio-processing.js
 - Handles both standard and Steam installations
 - Maps user vs game directories automatically
 - Interactive step selection
+- Command-line parameter support
 - Comprehensive error handling
+
+**Command-line Options:**
+
+- `-g, --game-folder PATH` - Path to Factorio game folder
+- `-u, --user-folder PATH` - Path to Factorio user folder (optional)
+- `-s, --steps STEPS` - Comma-separated list of steps to run
+- `-h, --help` - Show help message
+
+**Examples:**
+
+```bash
+# Interactive mode (recommended)
+node scripts/orchestrate-factorio-processing.js
+
+# Skip interactive prompts
+node scripts/orchestrate-factorio-processing.js -g /path/to/factorio -s extract,process
+
+# Run only graphics copying
+node scripts/orchestrate-factorio-processing.js -g /factorio -s graphics
+
+# Show help
+node scripts/orchestrate-factorio-processing.js --help
+```
 
 **Processing Steps:**
 
 1. **Extract Factorio Data** - Runs Factorio data extraction commands
 2. **Process Raw Data** - Converts raw data to structured JSON
 3. **Convert PNG to WebP** - Optimizes animation files
-4. **All Steps** - Runs complete pipeline (recommended)
+4. **Copy Mod Graphics** - Copies PNG files from mods to data-dumps/graphics
+5. **All Steps** - Runs complete pipeline (recommended)
 
 ### Individual Scripts
+
+#### Mod Graphics Copier
+
+**`copy-mod-graphics.js`** - Interactive script that copies all PNG files from Factorio mods to data-dumps/graphics following the **modname** naming pattern.
+
+```bash
+node scripts/copy-mod-graphics.js
+```
+
+**Features:**
+
+- Auto-detects Factorio installation paths
+- Handles core game data (data/core → **core**, data/base → **base**)
+- Processes specific mods (space-age, quality, elevated-rails)
+- Extracts user mods from zip files or folders
+- Parses modinfo.json to get proper mod names
+- Creates organized graphics directory structure
+- Command-line parameter support
+
+**Command-line Options:**
+
+- `-g, --game-folder PATH` - Path to Factorio game folder
+- `-u, --user-folder PATH` - Path to Factorio user folder (optional)
+- `-h, --help` - Show help message
+
+**Examples:**
+
+```bash
+# Interactive mode
+node scripts/copy-mod-graphics.js
+
+# Skip interactive prompts
+node scripts/copy-mod-graphics.js -g /path/to/factorio
+
+# With separate user folder
+node scripts/copy-mod-graphics.js -g /factorio -u /userdata
+
+# Show help
+node scripts/copy-mod-graphics.js --help
+```
+
+**What it does:**
+
+1. **Core Graphics** - Copies PNG files from data/core and data/base
+2. **Specific Mods** - Handles space-age, quality, and elevated-rails mods
+3. **User Mods** - Extracts and processes mods from userdata or game folder
+4. **Mod Name Extraction** - Reads modinfo.json to get proper mod names
+5. **Directory Organization** - Creates **modname** folders in data-dumps/graphics
 
 #### Data Extraction Scripts
 
@@ -140,6 +214,16 @@ The script automatically detects your setup and maps directories accordingly.
 3. **Interactive step selection** - Choose which processing steps to run
 4. **Execute processing pipeline** - Runs selected steps automatically
 
+### Mod Graphics Copier
+
+1. **Auto-detect Factorio installation** - Searches common installation paths
+2. **Setup graphics directory** - Creates data-dumps/graphics folder structure
+3. **Copy core graphics** - Copies PNG files from data/core and data/base
+4. **Process specific mods** - Handles space-age, quality, and elevated-rails
+5. **Extract user mods** - Processes mods from userdata or game folder
+6. **Parse mod names** - Reads modinfo.json to get proper mod names
+7. **Organize output** - Creates **modname** folders with all PNG files
+
 ### Data Extraction Scripts
 
 1. **Auto-detect Factorio installation** - Searches common installation paths
@@ -162,13 +246,32 @@ data-dumps/
 │   ├── en.cfg
 │   ├── de.cfg
 │   └── ...
-└── icon-sprites/
-    ├── item/
-    ├── entity/
-    └── ...
+├── icon-sprites/
+│   ├── item/
+│   ├── entity/
+│   └── ...
+└── graphics/
+    ├── __core__/
+    │   ├── graphics/
+    │   └── ...
+    ├── __base__/
+    │   ├── graphics/
+    │   └── ...
+    ├── __space-age__/
+    │   ├── graphics/
+    │   └── ...
+    ├── __quality__/
+    │   ├── graphics/
+    │   └── ...
+    ├── __elevated-rails__/
+    │   ├── graphics/
+    │   └── ...
+    └── __modname__/
+        ├── graphics/
+        └── ...
 ```
 
-**Note:** Factorio outputs to its default `script-output` folder, then the scripts copy the files to the `data-dumps/` directory for better file management.
+**Note:** Factorio outputs to its default `script-output` folder, then the scripts copy the files to the `data-dumps/` directory for better file management. The graphics copier creates organized **modname** folders containing all PNG files from each mod.
 
 ## Language Codes
 
