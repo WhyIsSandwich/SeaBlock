@@ -129,7 +129,7 @@ export default {
         loadImage: filename => {
           const img = new Image()
           // Convert Factorio path to public path using the mapping
-          const publicPath = graphicsPathMap.value[filename] || filename
+          const publicPath = (graphicsPathMap.value[filename] || filename).replace('.png', '.webp')
           img.src = withBase(`/data/${publicPath}`)
           return img
         },

@@ -1,4 +1,4 @@
-import { useFactorioRenderingMapping } from '../composables/useFactorioRenderingMapping'
+import { useFactorioRenderingMapping } from '../composables/useFactorioRenderingMapping.js'
 /**
  * Factorio Animation Engine
  *

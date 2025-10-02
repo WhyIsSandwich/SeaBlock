@@ -11,17 +11,19 @@ import fs from 'fs'
 import path from 'path'
 import GIFEncoder from 'gifencoder'
 import { createCanvas, loadImage } from 'canvas'
+import sharp from 'sharp'
 
 import { createFactorioAnimationEngine } from './FactorioAnimationEngine.js'
 
-console.log('🎬 Building Real GIF Generator')
-console.log('================================')
+console.log('🎬 Building Real Animation Generator')
+console.log('====================================')
 console.log('Usage: node building-real-sprite-generator.js [options]')
 console.log('')
 console.log('Options:')
 console.log('  --building <name>     Specific building name (processes all if not specified)')
 console.log('  --duration <seconds>  Animation duration in seconds (default: 3)')
 console.log('  --fps <number>        Frames per second (default: 60)')
+console.log('  --format <format>     Output format: webp (default), gif, both')
 console.log('  --help               Show this help message')
 console.log('')
 console.log('Examples:')
@@ -30,7 +32,8 @@ console.log('  node building-real-sprite-generator.js --building assembling-mach
 console.log(
   '  node building-real-sprite-generator.js --building assembling-machine-1 --duration 5 --fps 30'
 )
-console.log('  node building-real-sprite-generator.js --duration 2 --fps 120')
+console.log('  node building-real-sprite-generator.js --duration 2 --fps 120 --format webp')
+console.log('  node building-real-sprite-generator.js --format both')
 console.log('  node building-real-sprite-generator.js --help')
 console.log('')
 
@@ -152,12 +155,8 @@ class RealSpriteFrameGenerator {
     this.frames = []
 
     try {
-      // Detect animation type
-      const animationType = this.engine.detectAnimationType(graphicsData)
-      console.log(`   Animation Type: ${animationType}`)
       // Store for later re-rendering
       this.processedData = graphicsData
-      this.animationType = animationType
 
       // Generate frames for the specified duration and FPS
       const totalFrames = duration * fps
@@ -236,7 +235,117 @@ class RealSpriteFrameGenerator {
 
   // Save all frames as individual PNG files
 
-  // Create animated GIF from frames
+  // Create film strip style WebP (90% smaller than GIF)
+  async createWebP(buildingName, duration = 3, fps = 60) {
+    console.log(`   🎬 Creating film strip WebP for ${buildingName}...`)
+
+    const outputDir = `/workspaces/SeaBlock/docs/public/generated-gifs`
+    const webpPath = path.join(outputDir, `${buildingName}.webp`)
+
+    // Calculate frame delay from FPS
+    const frameDelay = Math.round(1000 / fps) // Convert FPS to milliseconds per frame
+
+    // Collect all frame buffers
+    const frameBuffers = []
+
+    // Generate all frames
+    for (let i = 0; i < this.frames.length; i++) {
+      const frame = this.frames[i]
+
+      // Re-render the frame
+      this.canvas.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height)
+      this.canvas.ctx.fillStyle = '#f8f9fa'
+      this.canvas.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height)
+
+      // Re-render the sprites for this frame using the engine
+      if (this.processedData) {
+        await this.renderFrame(
+          this.canvas.ctx,
+          this.processedData,
+          this.animationType,
+          frame.time,
+          i
+        )
+      } else {
+        // Fallback to test rectangle
+        this.canvas.ctx.fillStyle = '#ff6b6b'
+        this.canvas.ctx.fillRect(200, 200, 100, 100) // Original size, centered
+      }
+
+      // Add frame info
+      this.canvas.ctx.fillStyle = 'rgba(0, 0, 0, 0.7)'
+      this.canvas.ctx.fillRect(0, this.canvas.height - 30, this.canvas.width, 30)
+      this.canvas.ctx.fillStyle = '#ffffff'
+      this.canvas.ctx.font = '14px Arial'
+      this.canvas.ctx.fillText(
+        `${buildingName} - Frame ${i} (${frame.time.toFixed(1)}s)`,
+        10,
+        this.canvas.height - 10
+      )
+
+      // Capture frame as PNG buffer
+      const frameBuffer = this.canvas.canvas.toBuffer('image/png')
+      frameBuffers.push(frameBuffer)
+
+      if (i % 15 === 0) {
+        console.log(`     🎬 WebP progress: ${i}/${this.frames.length} frames`)
+      }
+    }
+
+    // Create a "film strip" style WebP - all frames in a single image
+    const framesPerRow = Math.ceil(Math.sqrt(frameBuffers.length))
+    const frameSize = Math.floor(this.canvas.width / framesPerRow)
+    const totalWidth = framesPerRow * frameSize
+    const totalHeight = Math.ceil(frameBuffers.length / framesPerRow) * frameSize
+
+    // Create a large canvas for the film strip
+    const filmCanvas = createCanvas(totalWidth, totalHeight)
+    const filmCtx = filmCanvas.getContext('2d')
+
+    // Fill background
+    filmCtx.fillStyle = '#000000'
+    filmCtx.fillRect(0, 0, totalWidth, totalHeight)
+
+    // Place each frame in the film strip
+    for (let i = 0; i < frameBuffers.length; i++) {
+      const row = Math.floor(i / framesPerRow)
+      const col = i % framesPerRow
+      const x = col * frameSize
+      const y = row * frameSize
+
+      // Load and draw the frame
+      const image = await loadImage(frameBuffers[i])
+      filmCtx.drawImage(image, x, y, frameSize, frameSize)
+
+      // Add frame number overlay
+      filmCtx.fillStyle = 'rgba(0, 0, 0, 0.7)'
+      filmCtx.fillRect(x, y + frameSize - 20, frameSize, 20)
+      filmCtx.fillStyle = '#ffffff'
+      filmCtx.font = '12px Arial'
+      filmCtx.textAlign = 'center'
+      filmCtx.fillText(`${i}`, x + frameSize / 2, y + frameSize - 5)
+
+      if (i % 15 === 0) {
+        console.log(`     🎬 Film strip progress: ${i}/${frameBuffers.length} frames`)
+      }
+    }
+
+    // Convert to WebP
+    const webpBuffer = await sharp(filmCanvas.toBuffer('image/png'))
+      .webp({
+        quality: 90,
+        lossless: false
+      })
+      .toBuffer()
+
+    // Save the WebP
+    fs.writeFileSync(webpPath, webpBuffer)
+
+    console.log(`   ✅ Created film strip WebP: ${webpPath} (${webpBuffer.length} bytes)`)
+    return webpPath
+  }
+
+  // Create animated GIF from frames (fallback for older browsers)
   async createGIF(buildingName, duration = 3, fps = 60) {
     console.log(`   🎬 Creating animated GIF for ${buildingName}...`)
 
@@ -376,9 +485,14 @@ class RealSpriteFrameGenerator {
   }
 }
 
-// Main GIF generation function
-async function generateRealBuildingGIFs(targetBuilding = null, duration = 3, fps = 60) {
-  console.log('🔧 Setting up real GIF generation environment...')
+// Main animation generation function
+async function generateRealBuildingAnimations(
+  targetBuilding = null,
+  duration = 3,
+  fps = 60,
+  format = 'webp'
+) {
+  console.log('🔧 Setting up real animation generation environment...')
 
   // Load buildings data and graphics path mapping first
   console.log('📖 Loading buildings data...')
@@ -417,7 +531,7 @@ async function generateRealBuildingGIFs(targetBuilding = null, duration = 3, fps
   console.log('✅ Real sprite generation environment ready\n')
 
   // Create output directory
-  const outputDir = '/workspaces/SeaBlock/docs/public/generated-gifs'
+  const outputDir = '/workspaces/SeaBlock/docs/public/generated-animations'
   if (!fs.existsSync(outputDir)) {
     fs.mkdirSync(outputDir, { recursive: true })
     console.log(`📁 Created output directory: ${outputDir}`)
@@ -457,8 +571,16 @@ async function generateRealBuildingGIFs(targetBuilding = null, duration = 3, fps
       const frames = await frameGenerator.generateFrames(buildingName, buildingData, duration, fps)
 
       if (frames.length > 0) {
-        // Create animated GIF
-        const gifPath = await frameGenerator.createGIF(buildingName, duration, fps)
+        // Create animations based on format
+        const animationPaths = {}
+
+        if (format === 'webp' || format === 'both') {
+          animationPaths.webp = await frameGenerator.createWebP(buildingName, duration, fps)
+        }
+
+        if (format === 'gif' || format === 'both') {
+          animationPaths.gif = await frameGenerator.createGIF(buildingName, duration, fps)
+        }
 
         // Generate building summary
         const summary = frameGenerator.generateBuildingSummary(
@@ -480,14 +602,14 @@ async function generateRealBuildingGIFs(targetBuilding = null, duration = 3, fps
           console.log(`      ✨ Features: ${summary.features.join(', ')}`)
         }
         console.log(`      🌞 Shadows: Factorio shift values (tiles→pixels: ×32)`)
-        console.log(`      🎞️  Frames: ${summary.frameCount} (3s @ 10fps)`)
-        console.log(`      📁 Output: ${gifPath}`)
+        console.log(`      🎞️  Frames: ${summary.frameCount} (${duration}s @ ${fps}fps)`)
+        console.log(`      📁 Output: ${Object.values(animationPaths).join(', ')}`)
 
         results.push({
           buildingName,
           success: true,
           frameCount: frames.length,
-          gifPath: gifPath,
+          animationPaths: animationPaths,
           summary
         })
       } else {
@@ -509,8 +631,8 @@ async function generateRealBuildingGIFs(targetBuilding = null, duration = 3, fps
   }
 
   // Generate summary report
-  console.log('\n📊 Real Sprite Generation Summary')
-  console.log('==================================')
+  console.log('\n📊 Real Animation Generation Summary')
+  console.log('====================================')
 
   const successful = results.filter(r => r.success)
   const failed = results.filter(r => !r.success)
@@ -521,9 +643,12 @@ async function generateRealBuildingGIFs(targetBuilding = null, duration = 3, fps
   console.log(`Success Rate: ${((successful.length / results.length) * 100).toFixed(1)}%`)
 
   if (successful.length > 0) {
-    console.log('\n✅ Successfully Generated GIFs:')
+    console.log('\n✅ Successfully Generated Animations:')
     successful.forEach(result => {
-      console.log(`  - ${result.buildingName}: ${result.frameCount} frames → ${result.gifPath}`)
+      const paths = Object.entries(result.animationPaths)
+        .map(([format, path]) => `${format.toUpperCase()}: ${path}`)
+        .join(', ')
+      console.log(`  - ${result.buildingName}: ${result.frameCount} frames → ${paths}`)
     })
   }
 
@@ -535,7 +660,7 @@ async function generateRealBuildingGIFs(targetBuilding = null, duration = 3, fps
   }
 
   console.log(`\n📁 Output directory: ${outputDir}`)
-  console.log('\n🎉 Real building GIF generation completed!')
+  console.log('\n🎉 Real building animation generation completed!')
 
   return results
 }
@@ -547,6 +672,7 @@ function parseArguments() {
     building: null,
     duration: 3,
     fps: 60,
+    format: 'webp',
     help: false
   }
 
@@ -578,6 +704,15 @@ function parseArguments() {
           process.exit(1)
         }
         break
+      case '--format': {
+        const format = args[++i]
+        if (!['webp', 'gif', 'both'].includes(format)) {
+          console.error('❌ Invalid format. Must be: webp, gif, or both')
+          process.exit(1)
+        }
+        options.format = format
+        break
+      }
       default:
         if (arg.startsWith('--')) {
           console.error(`❌ Unknown option: ${arg}`)
@@ -611,7 +746,13 @@ if (options.building) {
 
 console.log(`⏱️  Duration: ${options.duration}s`)
 console.log(`🎬 FPS: ${options.fps}`)
+console.log(`📁 Format: ${options.format.toUpperCase()}`)
 console.log('')
 
-// Run the real GIF generation
-generateRealBuildingGIFs(options.building, options.duration, options.fps).catch(console.error)
+// Run the real animation generation
+generateRealBuildingAnimations(
+  options.building,
+  options.duration,
+  options.fps,
+  options.format
+).catch(console.error)

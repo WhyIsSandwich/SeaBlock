@@ -1042,8 +1042,8 @@ class FactorioDataProcessor {
       )
     }
 
-    // Collect graphics paths for this building
-    this.collectGraphicsPaths(processedBuilding)
+    // Collect graphics paths for this building no longer needed
+    //this.collectGraphicsPaths(processedBuilding)
 
     return processedBuilding
   }
@@ -1076,10 +1076,11 @@ class FactorioDataProcessor {
     console.log(`✓ Written tooltips to ${tooltipsFile}`)
 
     // Write graphics path mapping
+    /*
     const graphicsPathFile = path.join(this.outputPath, 'graphics-path-map.json')
     fs.writeFileSync(graphicsPathFile, JSON.stringify(this.graphicsPathMap, null, 2))
     console.log(`✓ Written graphics path mapping to ${graphicsPathFile}`)
-
+*/
     // Add utility icons to spritemap
     this.addUtilityIcons()
 
@@ -1088,7 +1089,8 @@ class FactorioDataProcessor {
     console.log(`✓ Generated spritemap with ${Object.keys(this.spritemap).length} icons`)
 
     // Copy all entity graphics
-    await this.copyAllEntityGraphics()
+    // not needed anymore
+    ///await this.copyAllEntityGraphics()
     console.log(`✓ Copied all entity graphics`)
   }
 
