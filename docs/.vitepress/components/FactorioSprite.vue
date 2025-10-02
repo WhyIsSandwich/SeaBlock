@@ -11,7 +11,9 @@
     <div class="animation-controls">
       <button
         class="pause-play-button"
-        :class="{ paused: isPaused }"
+        :class="{
+          paused: isPaused
+        }"
         :title="isPaused ? 'Play animation' : 'Pause animation'"
         @click="togglePause"
       >
@@ -24,7 +26,6 @@
 
 <script>
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
-import { withBase } from 'vitepress/client'
 
 import { createFactorioAnimationEngine } from '../../../src/index.js'
 
@@ -158,7 +159,7 @@ export default {
       let minWidth = 16
       let minHeight = 16
 
-      const selection_box = animationData.value.selection_box
+      const { selection_box } = animationData.value
       if (selection_box) {
         const entityWidth = (1 + selection_box[1][0] - selection_box[0][0]) * 32
         const entityHeight = (1 + selection_box[1][1] - selection_box[0][1]) * 32
@@ -181,29 +182,35 @@ export default {
       margin: '0'
     }))
 
-    // Canvas dimensions - fit container width with configurable pixel size
+    // Canvas dimensions - scale based on entity size with 2.6 aspect ratio
     const canvasWidth = computed(() => {
-      if (!spriteCanvas.value?.parentElement) {
+      if (!animationData.value) {
         return props.size * 2 // Fallback
       }
 
-      const parentWidth = spriteCanvas.value.parentElement.clientWidth
-      const pixelScale = 2 // Scale factor: 1 = native, 2 = 2x smaller pixels, 0.5 = 2x larger pixels
-      return Math.round(parentWidth * pixelScale)
+      const entityDimensions = _canvasDimensions.value
+      const entityHeight = entityDimensions.height
+
+      // Add 1 tile gap (32px) below the entity
+      const totalHeight = entityHeight + 32
+
+      // Calculate width to maintain 2.6 aspect ratio
+      const aspectRatio = 2.6
+      return Math.round(totalHeight * aspectRatio)
     })
 
     const canvasHeight = computed(() => {
-      if (!spriteCanvas.value?.parentElement) {
+      if (!animationData.value) {
         return props.size * 2 // Fallback
       }
 
-      const parentWidth = spriteCanvas.value.parentElement.clientWidth
-      const parentHeight = spriteCanvas.value.parentElement.clientHeight
-      const pixelScale = 2 // Scale factor: 1 = native, 2 = 2x smaller pixels, 0.5 = 2x larger pixels
+      const entityDimensions = _canvasDimensions.value
+      const entityHeight = entityDimensions.height
 
-      // Calculate height to maintain the container's aspect ratio
-      const containerAspectRatio = parentWidth / parentHeight
-      return Math.round((parentWidth / containerAspectRatio) * pixelScale)
+      // Add 1 tile gap (32px) below the entity
+      const totalHeight = entityHeight + 32
+
+      return Math.round(totalHeight)
     })
 
     // Sprite classes
@@ -467,6 +474,8 @@ export default {
   margin: 0;
   border: none;
   outline: none;
+  max-width: 100%;
+  max-height: 100%;
 }
 
 .sprite-error {
