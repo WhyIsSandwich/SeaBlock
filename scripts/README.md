@@ -1,23 +1,71 @@
-# Factorio Data Extraction Scripts
+# Factorio Data Processing Scripts
 
-This directory contains cross-platform scripts to extract Factorio data dumps for mod development and analysis.
+This directory contains cross-platform scripts to extract, process, and optimize Factorio data for the SeaBlock project.
+
+## 🎯 Quick Start (Recommended)
+
+**`orchestrate-factorio-processing.js`** - Interactive orchestration script that guides you through the entire process:
+
+```bash
+node scripts/orchestrate-factorio-processing.js
+```
+
+This script will:
+
+- Auto-detect your Factorio installation
+- Guide you through directory mapping
+- Let you select which processing steps to run
+- Execute everything automatically
 
 ## Available Scripts
 
-### Linux/macOS/Git Bash
+### Main Processing Scripts
+
+- **`orchestrate-factorio-processing.js`** - Interactive orchestration script (recommended)
+- **`process-factorio-data.js`** - Core data processing engine
+- **`convert-png-to-webp.js`** - PNG to WebP conversion for animations
+
+### Data Extraction Scripts
+
+#### Linux/macOS/Git Bash
 
 - **`extract-factorio-data.sh`** - Bash script for Unix-like systems
 
-### Windows
+#### Windows
 
 - **`extract-factorio-data.cmd`** - Batch script for Windows Command Prompt
 - **`extract-factorio-data.ps1`** - PowerShell script for Windows (recommended)
 
 ## Usage
 
-### Command Line Options
+### Orchestration Script (Recommended)
 
-All scripts support the same command line options:
+The orchestration script provides an interactive experience:
+
+```bash
+node scripts/orchestrate-factorio-processing.js
+```
+
+**Features:**
+
+- Auto-detects Factorio installation paths
+- Handles both standard and Steam installations
+- Maps user vs game directories automatically
+- Interactive step selection
+- Comprehensive error handling
+
+**Processing Steps:**
+
+1. **Extract Factorio Data** - Runs Factorio data extraction commands
+2. **Process Raw Data** - Converts raw data to structured JSON
+3. **Convert PNG to WebP** - Optimizes animation files
+4. **All Steps** - Runs complete pipeline (recommended)
+
+### Individual Scripts
+
+#### Data Extraction Scripts
+
+All extraction scripts support the same command line options:
 
 - `-p, --path PATH` - Path to Factorio executable
 - `-l, --languages CODES` - Comma-separated language codes (default: en)
@@ -51,7 +99,48 @@ extract-factorio-data.cmd -p "C:\Program Files\Factorio\bin\x64\factorio.exe" -l
 .\extract-factorio-data.ps1 -Path "C:\Program Files\Factorio\bin\x64\factorio.exe" -Languages "en,de,fr"
 ```
 
+## Directory Structure Mapping
+
+The orchestration script automatically handles different Factorio installation types:
+
+### Standard Installation (Game Folder Only)
+
+```
+/path/to/factorio/
+├── bin/x64/factorio.exe          # Executable
+├── data/                         # Core game data
+│   ├── base/                     # Base game mod
+│   └── core/                     # Core game files
+├── mods/                         # User mods
+└── script-output/                # Factorio output
+```
+
+### Steam Installation (Separate User and Game Folders)
+
+```
+# Game folder
+/steam/steamapps/common/Factorio/
+├── bin/x64/factorio.exe
+└── data/                         # Core game data
+
+# User folder
+/steam/userdata/[USER_ID]/427520/remote/
+├── mods/                         # User mods
+└── script-output/                # Factorio output
+```
+
+The script automatically detects your setup and maps directories accordingly.
+
 ## What the Scripts Do
+
+### Orchestration Script
+
+1. **Auto-detect Factorio installation** - Searches common installation paths
+2. **Map directory structure** - Handles user vs game folder separation
+3. **Interactive step selection** - Choose which processing steps to run
+4. **Execute processing pipeline** - Runs selected steps automatically
+
+### Data Extraction Scripts
 
 1. **Auto-detect Factorio installation** - Searches common installation paths
 2. **Prompt for missing information** - Asks for Factorio path and language codes if not provided

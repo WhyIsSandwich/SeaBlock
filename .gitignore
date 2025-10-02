@@ -143,8 +143,6 @@ docs/.vitepress/temp/
 *.sublime-*
 *.code-workspace
 
-# Factorio data dumps
+# Factorio data processing area
 data-dumps/
-
-# Factorio data ignored for now (now it's not)
-#docs/public/data/
+factorio/

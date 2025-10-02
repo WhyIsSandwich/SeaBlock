@@ -35,8 +35,8 @@ const __dirname = path.dirname(__filename)
  */
 
 class FactorioDataProcessor {
-  constructor(dataDumpsPath = './data-dumps') {
-    this.dataDumpsPath = dataDumpsPath
+  constructor(scriptOutputPath) {
+    this.scriptOutputPath = scriptOutputPath
     this.outputPath = './docs/public/data'
     this.rawData = null
     this.localeData = {}
@@ -50,7 +50,9 @@ class FactorioDataProcessor {
    */
   async loadRawData() {
     console.log('Loading raw data dump...')
-    const rawDataPath = path.join(this.dataDumpsPath, 'data-raw-dump.json')
+
+    const rawDataPath = path.join(this.scriptOutputPath, 'data-raw-dump.json')
+    console.log(`✓ Looking for raw data in: ${rawDataPath}`)
 
     try {
       const rawDataContent = fs.readFileSync(rawDataPath, 'utf8')
@@ -81,7 +83,7 @@ class FactorioDataProcessor {
     ]
 
     for (const localeFile of localeFiles) {
-      const localePath = path.join(this.dataDumpsPath, localeFile)
+      const localePath = path.join(this.scriptOutputPath, localeFile)
       const localeType = localeFile.replace('-locale.json', '')
 
       try {
@@ -127,7 +129,7 @@ class FactorioDataProcessor {
     if (!entityType || !entityName) return null
 
     // Simply look for a file with the same name as the entity in the appropriate directory
-    const sourcePath = path.join(this.dataDumpsPath, entityType, `${entityName}.png`)
+    const sourcePath = path.join(this.scriptOutputPath, entityType, `${entityName}.png`)
 
     // Check if source file exists
     if (!fs.existsSync(sourcePath)) {
@@ -176,14 +178,14 @@ class FactorioDataProcessor {
     // Convert Factorio internal paths to source paths
     if (graphicsPath.startsWith('__base__/graphics/')) {
       sourcePath = path.join(
-        this.dataDumpsPath,
+        this.scriptOutputPath,
         'raw-graphics',
         graphicsPath.replace('__base__/graphics/', '')
       )
       publicPath = `animations/${graphicsPath.replace('__base__/graphics/', '')}`
     } else if (graphicsPath.startsWith('__core__/graphics/')) {
       sourcePath = path.join(
-        this.dataDumpsPath,
+        this.scriptOutputPath,
         'raw-graphics/core',
         graphicsPath.replace('__core__/graphics/', '')
       )
@@ -196,7 +198,7 @@ class FactorioDataProcessor {
         const modGraphicsPath = match[2]
 
         // Try to find the actual mod directory (handle versioned mod names)
-        const rawGraphicsDir = path.join(this.dataDumpsPath, 'raw-graphics')
+        const rawGraphicsDir = path.join(this.scriptOutputPath, 'raw-graphics')
         let actualModDir = modName
 
         // Check if the exact mod name directory exists
@@ -215,7 +217,7 @@ class FactorioDataProcessor {
           }
         }
 
-        sourcePath = path.join(this.dataDumpsPath, 'raw-graphics', actualModDir, modGraphicsPath)
+        sourcePath = path.join(this.scriptOutputPath, 'raw-graphics', actualModDir, modGraphicsPath)
         publicPath = `animations/${modName}/${modGraphicsPath}`
       }
     }
@@ -224,7 +226,7 @@ class FactorioDataProcessor {
       // Fallback: try to construct path from entity name
       if (entityName) {
         sourcePath = path.join(
-          this.dataDumpsPath,
+          this.scriptOutputPath,
           'raw-graphics/entity',
           entityName,
           `${entityName}.png`
@@ -1065,14 +1067,14 @@ class FactorioDataProcessor {
 
     for (const [dataType, data] of Object.entries(dataTypes)) {
       const outputFile = path.join(this.outputPath, `en-${dataType}.json`)
-      fs.writeFileSync(outputFile, JSON.stringify(data, null, 2))
+      fs.writeFileSync(outputFile, JSON.stringify(data))
       console.log(`✓ Written ${Object.keys(data).length} ${dataType} to ${outputFile}`)
     }
 
     // Generate tooltips file
     const tooltips = this.generateTooltipsFile(dataTypes)
     const tooltipsFile = path.join(this.outputPath, 'en-tooltips.json')
-    fs.writeFileSync(tooltipsFile, JSON.stringify(tooltips, null, 2))
+    fs.writeFileSync(tooltipsFile, JSON.stringify(tooltips))
     console.log(`✓ Written tooltips to ${tooltipsFile}`)
 
     // Write graphics path mapping
@@ -1342,7 +1344,7 @@ class FactorioDataProcessor {
           y: 0,
           width: 64,
           height: 64,
-          source: path.join(this.dataDumpsPath, 'virtual-signal', `${icon.signal}.png`),
+          source: path.join(this.scriptOutputPath, 'virtual-signal', `${icon.signal}.png`),
           description: icon.description
         }
         this.spritemapIndex++
@@ -1479,13 +1481,13 @@ class FactorioDataProcessor {
         iconSize,
         sprites: updatedSpritemap
       }
-      fs.writeFileSync(spritemapFile, JSON.stringify(spritemapData, null, 2))
+      fs.writeFileSync(spritemapFile, JSON.stringify(spritemapData))
       console.log(`✓ Written spritemap data: ${spritemapFile}`)
     } catch (error) {
       console.error('Failed to generate spritemap image:', error.message)
       // Fallback: just create the JSON file
       const spritemapFile = path.join(this.outputPath, 'spritemap.json')
-      fs.writeFileSync(spritemapFile, JSON.stringify(this.spritemap, null, 2))
+      fs.writeFileSync(spritemapFile, JSON.stringify(this.spritemap))
       console.log(`✓ Written spritemap JSON (fallback): ${spritemapFile}`)
     }
   }
@@ -1494,7 +1496,7 @@ class FactorioDataProcessor {
    * Copy all entity graphics from raw-graphics to public directory
    */
   async copyAllEntityGraphics() {
-    const sourceDir = path.join(this.dataDumpsPath, 'raw-graphics')
+    const sourceDir = path.join(this.scriptOutputPath, 'raw-graphics')
     const destDir = path.join(this.outputPath, 'animations')
 
     // Copy base game entity graphics
@@ -1746,7 +1748,24 @@ class FactorioDataProcessor {
 
 // Run the processor if this script is executed directly
 if (import.meta.url === `file://${process.argv[1]}`) {
-  const processor = new FactorioDataProcessor()
+  console.log(process.argv)
+  // Parse command line arguments
+  const args = process.argv.slice(2)
+  let scriptOutputPath = null
+
+  for (let i = 0; i < args.length; i++) {
+    if (args[i] === '--script-output' && i + 1 < args.length) {
+      scriptOutputPath = args[i + 1]
+      i++ // Skip the next argument
+    }
+  }
+
+  if (!scriptOutputPath) {
+    console.error('✗ Script output path is required. Use --script-output PATH')
+    process.exit(1)
+  }
+
+  const processor = new FactorioDataProcessor(scriptOutputPath)
   processor.process()
 }
 
