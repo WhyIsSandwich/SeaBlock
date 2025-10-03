@@ -231,6 +231,8 @@ onUnmounted(() => {
   /* Ensure inline styles override any conflicting CSS */
   width: auto !important;
   height: auto !important;
+  /* Add drop shadow to sprites */
+  filter: drop-shadow(0.1em 0.1em 0.1em rgba(0, 0, 0, 0.5));
 }
 
 .sprite-icon-fallback {
@@ -239,9 +241,6 @@ onUnmounted(() => {
   justify-content: center;
   width: 100%;
   height: 100%;
-  background: var(--vp-c-bg-soft);
-  border: 1px solid var(--vp-c-border);
-  border-radius: 2px;
   font-size: 12px;
   font-weight: bold;
   color: var(--vp-c-text-3);
@@ -252,9 +251,6 @@ onUnmounted(() => {
   content: '';
   width: 12px;
   height: 12px;
-  border: 2px solid var(--vp-c-border);
-  border-top: 2px solid var(--vp-c-brand-1);
-  border-radius: 50%;
   animation: spin 1s linear infinite;
 }
 

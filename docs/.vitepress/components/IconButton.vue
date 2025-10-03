@@ -153,7 +153,7 @@ function handleClick() {
   position: relative;
   flex-shrink: 0;
   /* Add padding around the sprite content */
-  padding: 2px;
+  padding: 6px;
 }
 
 .icon-button.clickable {
@@ -161,28 +161,23 @@ function handleClick() {
 }
 
 .icon-button.clickable:hover {
-  background: linear-gradient(to bottom, #5a5a5a, #4a4a4a);
-  border-color: #6a6a6a;
+  background: #b35900;
+  border-color: #b35900;
   box-shadow:
-    0 0 8px rgba(255, 255, 255, 0.3),
+    0 0 8px rgba(255, 200, 100, 0.4),
     0 2px 4px rgba(0, 0, 0, 0.4);
 }
 
 .icon-button.selected {
-  background: linear-gradient(to bottom, #6a6a6a, #5a5a5a);
-  border-color: #ffa500;
-  box-shadow:
-    0 0 0 2px #ffa500,
-    0 1px 3px rgba(0, 0, 0, 0.3);
+  background: #b35900;
+  border-color: #b35900;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 
 .icon-button.selected.clickable:hover {
-  background: linear-gradient(to bottom, #7a7a7a, #6a6a6a);
-  border-color: #ffa500;
-  box-shadow:
-    0 0 0 2px #ffa500,
-    0 0 8px rgba(255, 165, 0, 0.4),
-    0 2px 4px rgba(0, 0, 0, 0.4);
+  background: #b35900;
+  border-color: #b35900;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 
 .icon-button.empty-cell {
@@ -212,7 +207,7 @@ function handleClick() {
 }
 
 .icon-button.selected .icon-label {
-  color: #ffa500;
+  color: #cc6600;
   font-weight: 500;
 }
 </style>
