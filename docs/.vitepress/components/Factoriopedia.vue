@@ -122,6 +122,11 @@ const buttonSize = computed(() => {
   return Math.floor(buttonWidth) // Round down to ensure buttons fit
 })
 
+// Calculate grid cell size (button + gap) for background alignment
+const gridCellSize = computed(() => {
+  return buttonSize.value + 4 // Button size + gap
+})
+
 // Computed property for filtered and grouped recipes
 const groupedRecipes = computed(() => {
   if (!categoryStructure.value || Object.keys(categoryStructure.value).length === 0) {
@@ -443,11 +448,10 @@ onUnmounted(() => {
 }
 
 .item-grid {
-  flex: 1;
+  display: grid;
   padding: 8px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+  gap: 4px;
+  grid-template-columns: repeat(v-bind(gridColumns), v-bind(buttonSize + 'px'));
   overflow-y: auto;
   background: #2a2a2a;
   background-image:
@@ -461,8 +465,8 @@ onUnmounted(() => {
     linear-gradient(315deg, rgba(0, 0, 0, 0.15) 0%, rgba(0, 0, 0, 0.05) 2px, transparent 2px),
     /* Grid lines */ linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
     linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
-  background-size: 40px 40px;
-  background-position: 1px 1px;
+  background-size: v-bind(gridCellSize + 'px') v-bind(buttonSize + 'px');
+  background-position: 8px 8px;
   border: 1px solid #4a4a4a;
   border-radius: 2px;
   box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.3);
@@ -470,10 +474,10 @@ onUnmounted(() => {
 
 .subgroup-grid {
   display: grid;
-  grid-template-columns: repeat(v-bind(gridColumns), v-bind(buttonSize + 'px'));
-  grid-auto-rows: v-bind(buttonSize + 'px');
-  gap: 4px;
-  width: 100%;
+  grid-template-columns: subgrid;
+  grid-column: 1 / -1;
+  column-gap: inherit;
+  row-gap: inherit;
 }
 
 .item-slot {
@@ -795,12 +799,6 @@ onUnmounted(() => {
     min-height: 50vh;
   }
 
-  /* Adjust grid for mobile */
-  .item-grid {
-    grid-auto-rows: 36px;
-    gap: 1px;
-  }
-
   /* Smaller filter buttons on mobile */
   .filter-button {
     width: 32px;
@@ -850,12 +848,6 @@ onUnmounted(() => {
     min-height: 55vh;
   }
 
-  /* Even smaller grid for very small screens */
-  .item-grid {
-    grid-auto-rows: 32px;
-    gap: 1px;
-  }
-
   /* Smaller filter buttons */
   .filter-button {
     width: 32px;
@@ -886,10 +878,6 @@ onUnmounted(() => {
 
   .search-container {
     padding: 6px;
-  }
-
-  .item-grid {
-    padding: 0 6px;
   }
 }
 
