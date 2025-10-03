@@ -201,7 +201,9 @@ export function useFactorioRenderingMapping() {
         animations[0] = entity.graphics_set.animation
       }
       if (entity.graphics_set.working_visualisations) {
-        animations.push(entity.graphics_set.working_visualisations)
+        convertEffectLayer(entity.graphics_set.working_visualisations).forEach(a =>
+          animations.push(a)
+        )
       }
       return animations
     },
@@ -226,7 +228,9 @@ export function useFactorioRenderingMapping() {
       const animations = [entity.graphics_set.animation]
       if (entity.graphics_set.working_visualisations) {
         // todo handle working visualisations
-        animations.push(...entity.graphics_set.working_visualisations)
+        convertEffectLayer(entity.graphics_set.working_visualisations).forEach(a =>
+          animations.push(a)
+        )
       }
       return animations
     },
@@ -657,9 +661,128 @@ export function useFactorioRenderingMapping() {
     }
   }
 
+  function convertEffectLayer(layers, animation_key) {
+    return []
+    //todo fix this
+    layers = layers.map(layer => {
+      let { animation } = layer
+      if (!animation) {
+        animation = layer
+      }
+      if (animation_key) {
+        animation = animation[animation_key]
+      }
+      if (animation.north_animation || animation.north_position) {
+        console.log('effect layer has postitional animation')
+        return null
+      }
+      const newAnimation = {
+        ...animation,
+        effect: layer.effect,
+        fadeout: layer.fadeout
+      }
+      return newAnimation
+    })
+    return layers.filter(Boolean)
+  }
+
+  function unWrapLayer(layer) {
+    //sheets are for varations either rotated or not
+    let sheet = null
+    if (layer.sheets) {
+      sheet = layer.sheets[0]
+    } else if (layer.sheet) {
+      sheet = layer.sheet
+    } else if (layer.north) {
+      return layer.north
+    } else {
+      if (layer.filenames) {
+        return { ...layer, filename: layer.filenames[0] }
+      }
+      return layer
+    }
+
+    if (sheet.variation_count && sheet.filenames) {
+      return { ...sheet, filename: sheet.filenames[0] }
+    } else {
+      return {
+        ...sheet,
+        height: sheet.height / sheet.variation_count,
+        width: sheet.width / sheet.frame_count,
+        frame_count: 0,
+        line_length: 0
+      }
+    }
+  }
+
+  async function getProcessedLayers(layers, animation_speed, imageLoader) {
+    // Apply animation speed to all layers recursively
+    const globalAnimationSpeed = animation_speed || 1
+
+    // Recursively flatten layers in depth-first order
+    // This processes nested layer structures recursively by going deep into each branch before moving to the next
+    const flattenLayers = layers => {
+      const result = []
+
+      const processLayer = (layer, animation_speed) => {
+        const unwrappedLayer = { ...unWrapLayer(layer) }
+        if (!unwrappedLayer.animation_speed) {
+          unwrappedLayer.animation_speed = animation_speed
+        }
+        if (unwrappedLayer?.layers) {
+          // If this layer has nested layers, recursively process them
+          unwrappedLayer.layers.forEach(a => processLayer(a, animation_speed))
+        } else if (Array.isArray(unwrappedLayer) || unwrappedLayer[0]) {
+          Object.values(unwrappedLayer).forEach(a => processLayer(a, animation_speed))
+        } else {
+          // If this is a leaf layer, add it to the result
+          result.push(unwrappedLayer)
+        }
+      }
+
+      layers.forEach(processLayer)
+      return result
+    }
+    const sortedLayers = flattenLayers(layers, animation_speed)
+
+    const layersWithFiles = await Promise.all(
+      sortedLayers.map(async layer => {
+        return {
+          ...layer,
+          file: await imageLoader(layer.filename)
+        }
+      })
+    )
+
+    const shadow = []
+    const base = []
+    const glow = []
+    const light = []
+
+    layersWithFiles.forEach(promise => {
+      if (promise.draw_as_shadow) {
+        shadow.push(promise)
+      } else if (promise.draw_as_glow) {
+        glow.push(promise)
+      } else if (promise.draw_as_light) {
+        light.push(promise)
+      } else {
+        base.push(promise)
+      }
+    })
+
+    return {
+      shadow,
+      base,
+      glow,
+      light
+    }
+  }
+
   return {
     getRenderingMethod: animationData => {
       return entityPrototypes[animationData.type]?.(animationData) || null
-    }
+    },
+    getProcessedLayers
   }
 }

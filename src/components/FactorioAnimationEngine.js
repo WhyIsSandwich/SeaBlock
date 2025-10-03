@@ -5,35 +5,6 @@ import { useFactorioRenderingMapping } from '../composables/useFactorioRendering
  * A testable, framework-agnostic animation engine for Factorio-style sprites.
  * Can be used in both browser and Node.js environments with appropriate mocks.
  */
-
-function unWrapLayer(layer) {
-  //sheets are for varations either rotated or not
-  let sheet = null
-  if (layer.sheets) {
-    sheet = layer.sheets[0]
-  } else if (layer.sheet) {
-    sheet = layer.sheet
-  } else if (layer.north) {
-    return layer.north
-  } else {
-    if (layer.filenames) {
-      return { ...layer, filename: layer.filenames[0] }
-    }
-    return layer
-  }
-
-  if (sheet.variation_count && sheet.filenames) {
-    return { ...sheet, filename: sheet.filenames[0] }
-  } else {
-    return {
-      ...sheet,
-      height: sheet.height / sheet.variation_count,
-      width: sheet.width / sheet.frame_count,
-      frame_count: 0,
-      line_length: 0
-    }
-  }
-}
 // Animation run modes
 const RUN_MODES = {
   FORWARD: 'forward',
@@ -322,34 +293,6 @@ function applyMultiplicativeWithAlpha(ctx, layer, backgroundCanvas, activeCanvas
   ctx.drawImage(tempCanvas, 0, 0)
 }
 
-// Apply animation speed to all layers recursively
-function applyAnimationSpeedToLayers(layers, globalAnimationSpeed = 1) {
-  if (!Array.isArray(layers)) return layers
-
-  return layers.map(layer => {
-    const unwrappedLayer = unWrapLayer(layer)
-
-    // If this layer has nested layers, apply speed to them first
-    if (unwrappedLayer?.layers) {
-      const processedNestedLayers = applyAnimationSpeedToLayers(
-        unwrappedLayer.layers,
-        globalAnimationSpeed
-      )
-      return {
-        ...unwrappedLayer,
-        layers: processedNestedLayers
-      }
-    }
-
-    // Apply animation speed to this layer
-    const layerAnimationSpeed = unwrappedLayer.animation_speed || globalAnimationSpeed
-    return {
-      ...unwrappedLayer,
-      animation_speed: layerAnimationSpeed
-    }
-  })
-}
-
 // Stripes support for multi-atlas animations
 function loadImageSource(layer) {
   if (layer.stripes && Array.isArray(layer.stripes)) {
@@ -568,51 +511,23 @@ export function createFactorioAnimationEngine({
     resetBlendMode,
     applyFactorioBlendMode,
     FACTORIO_BLEND_MODES,
-    applyAnimationSpeedToLayers,
 
-    async renderLayeredSprite(ctx, layers, props = {}) {
-      // Draw checkerboard background to show transparency
-      drawCheckerboardBackground(ctx, ctx.canvas.width, ctx.canvas.height)
-
-      // Apply animation speed to all layers recursively
-      const globalAnimationSpeed = props.animation_speed || 1
-      const processedLayers = applyAnimationSpeedToLayers(layers, globalAnimationSpeed)
-
-      // Recursively flatten layers in depth-first order
-      // This processes nested layer structures recursively by going deep into each branch before moving to the next
-      const flattenLayers = layers => {
-        const result = []
-
-        const processLayer = layer => {
-          const unwrappedLayer = unWrapLayer(layer)
-          if (unwrappedLayer?.layers) {
-            // If this layer has nested layers, recursively process them
-            unwrappedLayer.layers.forEach(processLayer)
-          } else {
-            // If this is a leaf layer, add it to the result
-            result.push(unwrappedLayer)
-          }
-        }
-
-        layers.forEach(processLayer)
-        return result
-      }
-      const sortedLayers = flattenLayers(processedLayers)
+    renderLayeredSprite(ctx, layers, props = {}) {
+      if (!layers) return
       //console.log(sortedLayers)
-      for (let i = 0; i < sortedLayers.length; i++) {
-        const layer = sortedLayers[i]
+      for (let i = 0; i < layers.length; i++) {
+        const layer = layers[i]
 
         // Save current context state
         ctx.save()
         ctx.imageSmoothingEnabled = true
         // Apply layer-specific transformations
-        if (layer.filename) {
-          const imageData = await this.imageLoader(layer.filename)
+        if (layer.file) {
+          const imageData = layer.file
 
           // Set opacity for shadow layers
           if (layer.draw_as_shadow) {
             ctx.globalAlpha = layer.opacity || 0.5
-
             // Shadows in Factorio data already have their shift values built-in
             // No additional transformation needed
           } else if (layer.type === 'glow' || layer.draw_as_glow) {
@@ -689,15 +604,37 @@ export function createFactorioAnimationEngine({
     getSafeDimensions,
     validateAnimationData,
 
+    promiseCache: new Map(),
+
     // Unified render method
     async render(ctx, animationData, props = {}) {
       if (!animationData) {
         console.warn('No animation data provided to render')
         return
       }
-      const { getRenderingMethod } = useFactorioRenderingMapping()
+      const { getRenderingMethod, getProcessedLayers } = useFactorioRenderingMapping()
 
-      const renderingMethod = getRenderingMethod(animationData)
+      let processedLayersPromise = null
+      if (this.promiseCache.has(animationData.name)) {
+        processedLayersPromise = this.promiseCache.get(animationData.name)
+      } else {
+        const renderingMethod = getRenderingMethod(animationData)
+        processedLayersPromise = getProcessedLayers(
+          renderingMethod,
+          props.animation_speed,
+          this.imageLoader
+        )
+        this.promiseCache.set(animationData.name, processedLayersPromise)
+      }
+
+      const processedLayers = await processedLayersPromise
+
+      // Draw checkerboard background to show transparency
+      drawCheckerboardBackground(ctx, ctx.canvas.width, ctx.canvas.height)
+      await this.renderLayeredSprite(ctx, processedLayers.shadow, props)
+      await this.renderLayeredSprite(ctx, processedLayers.base, props)
+      await this.renderLayeredSprite(ctx, processedLayers.glow, props)
+      await this.renderLayeredSprite(ctx, processedLayers.light, props)
 
       if (renderingMethod) {
         await this.renderLayeredSprite(ctx, renderingMethod, props)
