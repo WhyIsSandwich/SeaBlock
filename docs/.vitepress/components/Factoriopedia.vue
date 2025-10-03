@@ -1,19 +1,19 @@
 <template>
-  <div class="factoripedia">
-    <div class="factoripedia-container">
+  <div :class="$style.factoripedia">
+    <div :class="$style.factoripediaContainer">
       <!-- Left Panel: Item Browser -->
-      <div class="factoripedia-left-panel">
-        <div class="factoripedia-header">
+      <div :class="$style.factoripediaLeftPanel">
+        <div :class="$style.factoripediaHeader">
           <h2>Factoriopedia</h2>
         </div>
 
         <!-- Category Filters -->
-        <div class="category-filters">
-          <div class="filter-row">
+        <div :class="$style.categoryFilters">
+          <div :class="$style.filterRow">
             <button
               v-for="category in primaryCategories"
               :key="category.key"
-              :class="{ 'filter-button': true, active: selectedCategory === category.key }"
+              :class="[$style.filterButton, { [$style.active]: selectedCategory === category.key }]"
               @click="selectCategory(category.key)"
             >
               <SpriteIcon v-if="category.icon" :sprite-key="category.icon" :title="category.name" />
@@ -22,20 +22,20 @@
         </div>
 
         <!-- Search -->
-        <div class="search-container">
+        <div :class="$style.searchContainer">
           <input
             v-model="searchQuery"
             type="text"
             placeholder="Search recipes..."
-            class="search-input"
+            :class="$style.searchInput"
           />
         </div>
 
         <!-- Recipe Grid -->
-        <div ref="gridContainer" class="item-grid">
+        <div ref="gridContainer" :class="$style.itemGrid">
           <template v-for="subgroup in groupedRecipes" :key="subgroup.subgroup">
             <!-- Subgroup wrapper -->
-            <div v-if="subgroup.recipes.length > 0" class="subgroup-grid">
+            <div v-if="subgroup.recipes.length > 0" :class="$style.subgroupGrid">
               <IconButton
                 v-for="item in subgroup.recipes"
                 :key="item.name"
@@ -51,7 +51,7 @@
       </div>
 
       <!-- Right Panel: Details -->
-      <div class="factoripedia-right-panel">
+      <div :class="$style.factoripediaRightPanel">
         <DetailsPane
           :name="selectedItem?.name"
           :type="selectedItem ? getPrimaryType(selectedItem) : null"
@@ -401,7 +401,7 @@ const filterBase64Svg = computed(() => {
 })
 </script>
 
-<style scoped>
+<style module>
 .factoripedia {
   width: 100%;
   height: 80vh;
@@ -413,13 +413,13 @@ const filterBase64Svg = computed(() => {
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
 }
 
-.factoripedia-container {
+.factoripediaContainer {
   display: flex;
   height: 100%;
 }
 
 /* Left Panel */
-.factoripedia-left-panel {
+.factoripediaLeftPanel {
   width: 50%;
   background: #2d2d2d;
   border-right: 2px solid #4a4a4a;
@@ -428,21 +428,21 @@ const filterBase64Svg = computed(() => {
   position: relative;
 }
 
-.factoripedia-header {
+.factoripediaHeader {
   padding: 12px 16px;
   background: linear-gradient(to bottom, #3a3a3a, #2d2d2d);
   border-bottom: 1px solid #4a4a4a;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 
-.factoripedia-header h2 {
+.factoripediaHeader h2 {
   margin: 0;
   color: #ffffff;
   font-size: 18px;
   font-weight: 600;
 }
 
-.category-filters {
+.categoryFilters {
   display: grid;
   padding: 8px;
   grid-template-columns: repeat(v-bind(filterColumns), v-bind(filterButtonSize + 'px'));
@@ -452,7 +452,7 @@ const filterBase64Svg = computed(() => {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 
-.filter-row {
+.filterRow {
   display: grid;
   grid-template-columns: subgrid;
   grid-column: 1 / -1;
@@ -464,7 +464,7 @@ const filterBase64Svg = computed(() => {
   background-attachment: local;
 }
 
-.filter-button {
+.filterButton {
   width: v-bind(filterButtonSize + 'px');
   height: v-bind(filterButtonSize + 'px');
   min-width: v-bind(filterButtonSize + 'px');
@@ -484,14 +484,14 @@ const filterBase64Svg = computed(() => {
 }
 
 /* Override SpriteIcon styling for filter buttons */
-.filter-button :deep(.sprite-icon) {
+.filterButton :global(.sprite-icon) {
   background: transparent !important;
   border: none !important;
   box-shadow: none !important;
   border-radius: 0 !important;
 }
 
-.filter-button:hover {
+.filterButton:hover {
   background: #ffa207;
   border-color: #ffa207;
   box-shadow:
@@ -499,20 +499,20 @@ const filterBase64Svg = computed(() => {
     0 2px 4px rgba(0, 0, 0, 0.4);
 }
 
-.filter-button.active {
+.filterButton.active {
   background: #ffa207;
   border-color: #ffa207;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 
-.search-container {
+.searchContainer {
   padding: 8px;
   background: linear-gradient(to bottom, #3a3a3a, #2d2d2d);
   border-bottom: 1px solid #4a4a4a;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 
-.search-input {
+.searchInput {
   width: 100%;
   padding: 6px 8px;
   background: linear-gradient(to bottom, #4a4a4a, #3a3a3a);
@@ -523,11 +523,11 @@ const filterBase64Svg = computed(() => {
   box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 
-.search-input::placeholder {
+.searchInput::placeholder {
   color: #888888;
 }
 
-.search-input:focus {
+.searchInput:focus {
   outline: none;
   border-color: #7a7a7a;
   box-shadow:
@@ -535,7 +535,7 @@ const filterBase64Svg = computed(() => {
     0 0 0 2px rgba(255, 165, 0, 0.3);
 }
 
-.item-grid {
+.itemGrid {
   display: grid;
   padding: 8px;
   gap: 4px;
@@ -547,7 +547,7 @@ const filterBase64Svg = computed(() => {
   box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 
-.subgroup-grid {
+.subgroupGrid {
   display: grid;
   grid-template-columns: subgrid;
   grid-column: 1 / -1;
@@ -559,7 +559,7 @@ const filterBase64Svg = computed(() => {
   background-attachment: local;
 }
 
-.item-slot {
+.itemSlot {
   width: 40px;
   height: 40px;
   background: linear-gradient(to bottom, #4a4a4a, #3a3a3a);
@@ -574,13 +574,13 @@ const filterBase64Svg = computed(() => {
   position: relative;
 }
 
-.item-slot:hover {
+.itemSlot:hover {
   background: linear-gradient(to bottom, #5a5a5a, #4a4a4a);
   border-color: #6a6a6a;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
 }
 
-.item-slot.selected {
+.itemSlot.selected {
   background: linear-gradient(to bottom, #6a6a6a, #5a5a5a);
   border-color: #ffa500;
   box-shadow:
@@ -588,7 +588,7 @@ const filterBase64Svg = computed(() => {
     0 2px 4px rgba(0, 0, 0, 0.4);
 }
 
-.item-slot.empty-cell {
+.itemSlot.emptyCell {
   background: transparent;
   border: 1px solid #3a3a3a;
   cursor: default;
@@ -597,7 +597,7 @@ const filterBase64Svg = computed(() => {
 }
 
 /* Right Panel */
-.factoripedia-right-panel {
+.factoripediaRightPanel {
   width: 50%;
   background: #2d2d2d;
   display: flex;
@@ -606,14 +606,14 @@ const filterBase64Svg = computed(() => {
   box-shadow: inset 1px 0 3px rgba(0, 0, 0, 0.3);
 }
 
-.item-details,
-.recipe-details {
+.itemDetails,
+.recipeDetails {
   padding: 16px;
   color: #ffffff;
 }
 
-.item-header,
-.recipe-header {
+.itemHeader,
+.recipeHeader {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -623,20 +623,20 @@ const filterBase64Svg = computed(() => {
   border-radius: 2px;
 }
 
-.item-header h3,
-.recipe-header h3 {
+.itemHeader h3,
+.recipeHeader h3 {
   margin: 0;
   color: #000000;
   font-size: 16px;
   font-weight: bold;
 }
 
-.header-controls {
+.headerControls {
   display: flex;
   gap: 4px;
 }
 
-.control-button {
+.controlButton {
   width: 24px;
   height: 24px;
   background: none;
@@ -650,15 +650,15 @@ const filterBase64Svg = computed(() => {
   transition: background 0.2s ease;
 }
 
-.control-button:hover {
+.controlButton:hover {
   background: rgba(0, 0, 0, 0.1);
 }
 
-.usage-description {
+.usageDescription {
   margin-bottom: 16px;
 }
 
-.usage-description p {
+.usageDescription p {
   margin: 0 0 4px 0;
   color: #ffffff;
   font-size: 14px;
@@ -671,69 +671,69 @@ const filterBase64Svg = computed(() => {
   border-radius: 2px;
 }
 
-.stat-item {
+.statItem {
   color: #ffffff;
   font-size: 14px;
   margin-bottom: 8px;
 }
 
-.stat-item:last-child {
+.statItem:last-child {
   margin-bottom: 0;
 }
 
-.stat-item strong {
+.statItem strong {
   color: #ffffff;
 }
 
-.stat-item ul {
+.statItem ul {
   margin: 4px 0 0 16px;
   padding: 0;
 }
 
-.stat-item li {
+.statItem li {
   color: #ffffff;
   font-size: 14px;
 }
 
-.mod-info {
+.modInfo {
   color: #87ceeb;
   font-size: 12px;
   margin-bottom: 12px;
 }
 
-.item-properties {
+.itemProperties {
   margin-bottom: 16px;
 }
 
-.property-item {
+.propertyItem {
   color: #ffffff;
   font-size: 14px;
   margin-bottom: 4px;
 }
 
-.item-sections {
+.itemSections {
   border-top: 1px solid #4a4a4a;
   padding-top: 12px;
 }
 
-.item-section {
+.itemSection {
   margin-bottom: 16px;
 }
 
-.item-section h4 {
+.itemSection h4 {
   color: #ffffff;
   font-size: 14px;
   font-weight: bold;
   margin: 0 0 8px 0;
 }
 
-.item-list {
+.itemList {
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
 }
 
-.item-reference {
+.itemReference {
   width: 32px;
   height: 32px;
   background: #4a4a4a;
@@ -746,37 +746,37 @@ const filterBase64Svg = computed(() => {
   transition: all 0.2s ease;
 }
 
-.item-reference:hover {
+.itemReference:hover {
   background: #5a5a5a;
   border-color: #6a6a6a;
 }
 
 /* Recipe Details */
-.recipe-content {
+.recipeContent {
   border-top: 1px solid #4a4a4a;
   padding-top: 12px;
 }
 
-.recipe-section {
+.recipeSection {
   margin-bottom: 16px;
 }
 
-.recipe-section h4 {
+.recipeSection h4 {
   color: #ffffff;
   font-size: 14px;
   font-weight: bold;
   margin: 0 0 8px 0;
 }
 
-.ingredient-list,
-.product-list {
+.ingredientList,
+.productList {
   display: flex;
   flex-direction: column;
   gap: 4px;
 }
 
-.ingredient-item,
-.product-item {
+.ingredientItem,
+.productItem {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -787,12 +787,12 @@ const filterBase64Svg = computed(() => {
   transition: background 0.2s ease;
 }
 
-.ingredient-item:hover,
-.product-item:hover {
+.ingredientItem:hover,
+.productItem:hover {
   background: #5a5a5a;
 }
 
-.crafting-time {
+.craftingTime {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -800,13 +800,13 @@ const filterBase64Svg = computed(() => {
   font-size: 14px;
 }
 
-.building-list {
+.buildingList {
   display: flex;
   flex-direction: column;
   gap: 4px;
 }
 
-.building-item {
+.buildingItem {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -817,7 +817,7 @@ const filterBase64Svg = computed(() => {
   border-radius: 2px;
 }
 
-.research-item {
+.researchItem {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -829,7 +829,7 @@ const filterBase64Svg = computed(() => {
 }
 
 /* No Selection State */
-.no-selection {
+.noSelection {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -837,16 +837,16 @@ const filterBase64Svg = computed(() => {
   color: #888888;
 }
 
-.no-selection-content {
+.noSelectionContent {
   text-align: center;
 }
 
-.no-selection-content h3 {
+.noSelectionContent h3 {
   margin: 0 0 8px 0;
   color: #ffffff;
 }
 
-.no-selection-content p {
+.noSelectionContent p {
   margin: 0;
   font-size: 14px;
 }
@@ -858,28 +858,28 @@ const filterBase64Svg = computed(() => {
     min-height: 100vh;
   }
 
-  .factoripedia-container {
+  .factoripediaContainer {
     flex-direction: column;
     height: auto;
   }
 
   /* Left Panel - Mobile */
-  .factoripedia-left-panel {
+  .factoripediaLeftPanel {
     width: 100%;
     border-right: none;
     border-bottom: 2px solid #4a4a4a;
-    max-height: 50vh;
-    min-height: 300px;
+    max-height: 90vh;
+    min-height: 40vh;
   }
 
   /* Right Panel - Mobile */
-  .factoripedia-right-panel {
+  .factoripediaRightPanel {
     width: 100%;
-    min-height: 50vh;
+    min-height: 10vh;
   }
 
   /* Smaller filter buttons on mobile - maintain size relative to grid */
-  .filter-button {
+  .filterButton {
     width: 48px;
     height: 48px;
     min-width: 48px;
@@ -892,7 +892,7 @@ const filterBase64Svg = computed(() => {
   }
 
   /* Adjust header font size */
-  .factoripedia-header h2 {
+  .factoripediaHeader h2 {
     font-size: 16px;
   }
 }
@@ -904,25 +904,25 @@ const filterBase64Svg = computed(() => {
     min-height: 100vh;
   }
 
-  .factoripedia-container {
+  .factoripediaContainer {
     flex-direction: column;
   }
 
-  .factoripedia-left-panel {
+  .factoripediaLeftPanel {
     width: 100%;
     border-right: none;
     border-bottom: 2px solid #4a4a4a;
-    max-height: 45vh;
-    min-height: 250px;
+    max-height: 90vh;
+    min-height: 40vh;
   }
 
-  .factoripedia-right-panel {
+  .factoripediaRightPanel {
     width: 100%;
-    min-height: 55vh;
+    min-height: 10vh;
   }
 
   /* Smaller filter buttons - maintain minimum size */
-  .filter-button {
+  .filterButton {
     width: 40px;
     height: 40px;
     min-width: 40px;
@@ -935,18 +935,18 @@ const filterBase64Svg = computed(() => {
   }
 
   /* Adjust padding for mobile */
-  .factoripedia-header {
+  .factoripediaHeader {
     padding: 8px 12px;
   }
 
-  .search-container {
+  .searchContainer {
     padding: 6px;
   }
 }
 
 /* Very small screens - maintain minimum usable size */
 @media (max-width: 360px) {
-  .filter-button {
+  .filterButton {
     width: 36px;
     height: 36px;
     min-width: 36px;
@@ -960,24 +960,24 @@ const filterBase64Svg = computed(() => {
 }
 
 /* Scrollbar styling */
-.item-grid::-webkit-scrollbar,
-.factoripedia-right-panel::-webkit-scrollbar {
+.itemGrid::-webkit-scrollbar,
+.factoripediaRightPanel::-webkit-scrollbar {
   width: 8px;
 }
 
-.item-grid::-webkit-scrollbar-track,
-.factoripedia-right-panel::-webkit-scrollbar-track {
+.itemGrid::-webkit-scrollbar-track,
+.factoripediaRightPanel::-webkit-scrollbar-track {
   background: #3a3a3a;
 }
 
-.item-grid::-webkit-scrollbar-thumb,
-.factoripedia-right-panel::-webkit-scrollbar-thumb {
+.itemGrid::-webkit-scrollbar-thumb,
+.factoripediaRightPanel::-webkit-scrollbar-thumb {
   background: #5a5a5a;
   border-radius: 4px;
 }
 
-.item-grid::-webkit-scrollbar-thumb:hover,
-.factoripedia-right-panel::-webkit-scrollbar-thumb:hover {
+.itemGrid::-webkit-scrollbar-thumb:hover,
+.factoripediaRightPanel::-webkit-scrollbar-thumb:hover {
   background: #6a6a6a;
 }
 </style>
