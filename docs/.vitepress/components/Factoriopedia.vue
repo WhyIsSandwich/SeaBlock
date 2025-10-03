@@ -33,7 +33,7 @@
         </div>
 
         <!-- Recipe Grid -->
-        <div ref="itemGrid" class="item-grid">
+        <div ref="gridContainer" class="item-grid">
           <template v-for="subgroup in groupedRecipes" :key="subgroup.subgroup">
             <!-- Subgroup wrapper -->
             <div v-if="subgroup.recipes.length > 0" class="subgroup-grid">
@@ -42,7 +42,7 @@
                 :key="item.name"
                 :type="getPrimaryType(item)"
                 :name="item.name"
-                :size="36"
+                :size="buttonSize"
                 :is-selected="selectedItem?.name === item.name"
                 @click="selectItem(getPrimaryType(item), item.name, item)"
               />
@@ -83,13 +83,44 @@ const { loadAllData, precomputeCategoryStructure, createUnifiedSelectionObject }
 const selectedItem = ref(null)
 const selectedCategory = ref('all')
 const searchQuery = ref('')
-const itemGrid = ref(null)
 const isAnimationPaused = ref(false)
+
+// Grid container width tracking
+const gridContainerWidth = ref(0)
+const gridContainer = ref(null)
 
 // Pre-computed category structure
 const categoryStructure = ref({})
 const primaryCategories = ref([])
 const secondaryCategories = ref([])
+
+// Dynamic grid columns and button size based on actual grid container width
+const gridColumns = computed(() => {
+  if (gridContainerWidth.value === 0) return 10 // Default fallback
+
+  const gap = 4 // Fixed gap between buttons
+  const availableWidth = gridContainerWidth.value - 16 // Account for padding
+  const minButtonSize = 44 // Minimum touch target size per accessibility guidelines (Apple, Google, WCAG)
+
+  // Calculate maximum columns that still maintain minimum button size
+  const maxColumnsWithMinSize = Math.floor((availableWidth + gap) / (minButtonSize + gap))
+
+  // Use the maximum columns that maintain minimum button size, capped at 10
+  const optimalColumns = Math.min(maxColumnsWithMinSize, 10)
+  return Math.max(optimalColumns, 1) // At least 1 column
+})
+
+// Calculate button size to fit exactly in the available width
+const buttonSize = computed(() => {
+  if (gridContainerWidth.value === 0) return 64 // Default fallback
+
+  const gap = 4
+  const availableWidth = gridContainerWidth.value - 16 // Account for padding
+  const columns = gridColumns.value
+  const totalGapWidth = (columns - 1) * gap
+  const buttonWidth = (availableWidth - totalGapWidth) / columns
+  return Math.floor(buttonWidth) // Round down to ensure buttons fit
+})
 
 // Computed property for filtered and grouped recipes
 const groupedRecipes = computed(() => {
@@ -252,10 +283,34 @@ function handleKeydown(event) {
 
 onMounted(() => {
   window.addEventListener('keydown', handleKeydown)
+
+  // Set up ResizeObserver to track grid container width
+  if (gridContainer.value && typeof ResizeObserver !== 'undefined') {
+    const resizeObserver = new ResizeObserver(entries => {
+      for (const entry of entries) {
+        gridContainerWidth.value = entry.contentRect.width
+      }
+    })
+    resizeObserver.observe(gridContainer.value)
+
+    // Store the observer for cleanup
+    window._factoriopediaResizeObserver = resizeObserver
+  }
+
+  // Fallback: Set initial width after a short delay
+  setTimeout(() => {
+    if (gridContainer.value && gridContainerWidth.value === 0) {
+      const width = gridContainer.value.offsetWidth
+      gridContainerWidth.value = width
+    }
+  }, 100)
 })
 
 onUnmounted(() => {
   window.removeEventListener('keydown', handleKeydown)
+  if (window._factoriopediaResizeObserver) {
+    window._factoriopediaResizeObserver.disconnect()
+  }
 })
 </script>
 
@@ -395,6 +450,19 @@ onUnmounted(() => {
   gap: 8px;
   overflow-y: auto;
   background: #2a2a2a;
+  background-image:
+    /* Debossed square pattern */
+    linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.08) 0%,
+      rgba(255, 255, 255, 0.02) 2px,
+      transparent 2px
+    ),
+    linear-gradient(315deg, rgba(0, 0, 0, 0.15) 0%, rgba(0, 0, 0, 0.05) 2px, transparent 2px),
+    /* Grid lines */ linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+  background-size: 40px 40px;
+  background-position: 1px 1px;
   border: 1px solid #4a4a4a;
   border-radius: 2px;
   box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.3);
@@ -402,18 +470,10 @@ onUnmounted(() => {
 
 .subgroup-grid {
   display: grid;
-  grid-template-columns: repeat(10, 1fr);
-  grid-auto-rows: 40px;
-  gap: 2px;
+  grid-template-columns: repeat(v-bind(gridColumns), v-bind(buttonSize + 'px'));
+  grid-auto-rows: v-bind(buttonSize + 'px');
+  gap: 4px;
   width: 100%;
-  background: #2a2a2a;
-  background-image:
-    linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
-  background-size: 40px 40px;
-  background-position: 1px 1px;
-  padding: 1px;
-  border-radius: 2px;
 }
 
 .item-slot {

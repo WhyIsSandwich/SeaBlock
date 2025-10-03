@@ -1,11 +1,13 @@
 <template>
   <div
-    class="icon-button"
-    :class="{
-      selected: isSelected,
-      clickable: clickable,
-      'empty-cell': isEmpty
-    }"
+    :class="[
+      $style.iconButton,
+      {
+        [$style.selected]: isSelected,
+        [$style.clickable]: clickable,
+        [$style.emptyCell]: isEmpty
+      }
+    ]"
     :title="resolvedTitle"
     @click="handleClick"
   >
@@ -15,25 +17,20 @@
       :size="size"
       :title="resolvedTitle"
     />
-    <span v-if="label" class="icon-label">{{ label }}</span>
+    <span v-if="label" :class="$style.iconLabel">{{ label }}</span>
   </div>
 </template>
 
 <script setup>
 import { computed } from 'vue'
 
-import SpriteIcon from './SpriteIcon.vue'
 import { useFactorioData } from '../../../src/index.js'
 
+import SpriteIcon from './SpriteIcon.vue'
+
 // Use the data composable
-const {
-  getObjectIcon,
-  getItemData,
-  getRecipeData,
-  getTechnologyData,
-  getFluidData,
-  getBuildingData
-} = useFactorioData()
+const { getItemData, getRecipeData, getTechnologyData, getFluidData, getBuildingData } =
+  useFactorioData()
 
 // Props
 const props = defineProps({
@@ -132,8 +129,8 @@ function handleClick() {
 }
 </script>
 
-<style scoped>
-.icon-button {
+<style module>
+.iconButton {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -149,52 +146,50 @@ function handleClick() {
   border: 1px solid #5a5a5a;
   border-radius: 2px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
-  transition: all 0.2s ease;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
   position: relative;
   flex-shrink: 0;
-  /* Add padding around the sprite content */
-  padding: 6px;
+  /* Padding calculation based on actual size prop to match grid */
+  padding: v-bind('Math.max(2, Math.floor(size * 0.125)) + "px"');
+  box-sizing: border-box;
 }
 
-.icon-button.clickable {
+.clickable {
   cursor: pointer;
 }
 
-.icon-button.clickable:hover {
-  background: #b35900;
-  border-color: #b35900;
+.clickable:hover {
+  background: #ffa207;
+  border-color: #ffa207;
   box-shadow:
     0 0 8px rgba(255, 200, 100, 0.4),
     0 2px 4px rgba(0, 0, 0, 0.4);
 }
 
-.icon-button.selected {
-  background: #b35900;
-  border-color: #b35900;
+.selected {
+  background: #ffa207;
+  border-color: #ffa207;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 
-.icon-button.selected.clickable:hover {
-  background: #b35900;
-  border-color: #b35900;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
-}
-
-.icon-button.empty-cell {
+.emptyCell {
   background: transparent;
   border: 1px solid #3a3a3a;
   cursor: default;
   box-shadow: none;
 }
 
-.icon-button.empty-cell:hover {
+.emptyCell:hover {
   background: transparent;
   border: 1px solid #3a3a3a;
   transform: none;
   box-shadow: none;
 }
 
-.icon-label {
+.iconLabel {
   font-size: 0.75rem;
   color: var(--vp-c-text-3);
   margin-top: 4px;
@@ -206,7 +201,7 @@ function handleClick() {
   white-space: nowrap;
 }
 
-.icon-button.selected .icon-label {
+.selected .iconLabel {
   color: #cc6600;
   font-weight: 500;
 }
