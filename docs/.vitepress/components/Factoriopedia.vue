@@ -17,12 +17,7 @@
               :class="{ active: selectedCategory === category.key }"
               @click="selectCategory(category.key)"
             >
-              <SpriteIcon
-                v-if="category.icon"
-                :sprite-key="category.icon"
-                :size="64"
-                :title="category.name"
-              />
+              <SpriteIcon v-if="category.icon" :sprite-key="category.icon" :title="category.name" />
             </button>
           </div>
         </div>
@@ -40,24 +35,18 @@
         <!-- Recipe Grid -->
         <div ref="itemGrid" class="item-grid">
           <template v-for="subgroup in groupedRecipes" :key="subgroup.subgroup">
-            <!-- Recipes in this subgroup -->
-            <IconButton
-              v-for="item in subgroup.recipes"
-              :key="item.name"
-              :type="getPrimaryType(item)"
-              :name="item.name"
-              :size="36"
-              :is-selected="selectedItem?.name === item.name"
-              @click="selectItem(getPrimaryType(item), item.name, item)"
-            />
-
-            <!-- Pad with empty cells to fill the row -->
-            <IconButton
-              v-for="n in (10 - (subgroup.recipes.length % 10)) % 10"
-              :key="`empty-${subgroup.subgroup}-${n}`"
-              :is-empty="true"
-              :clickable="false"
-            />
+            <!-- Subgroup wrapper -->
+            <div class="subgroup-grid" v-if="subgroup.recipes.length > 0">
+              <IconButton
+                v-for="item in subgroup.recipes"
+                :key="item.name"
+                :type="getPrimaryType(item)"
+                :name="item.name"
+                :size="36"
+                :is-selected="selectedItem?.name === item.name"
+                @click="selectItem(getPrimaryType(item), item.name, item)"
+              />
+            </div>
           </template>
         </div>
       </div>
@@ -134,6 +123,11 @@ const groupedRecipes = computed(() => {
   }
 
   return categoryData.subgroups
+})
+
+// Flattened list of all recipes for the grid
+const allRecipes = computed(() => {
+  return groupedRecipes.value.flatMap(subgroup => subgroup.recipes)
 })
 
 // Function to set up category structure using composable
@@ -274,6 +268,7 @@ onUnmounted(() => {
   border: 2px solid #4a4a4a;
   border-radius: 4px;
   overflow: hidden;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
 }
 
 .factoripedia-container {
@@ -288,12 +283,14 @@ onUnmounted(() => {
   border-right: 2px solid #4a4a4a;
   display: flex;
   flex-direction: column;
+  position: relative;
 }
 
 .factoripedia-header {
   padding: 12px 16px;
-  background: #3a3a3a;
+  background: linear-gradient(to bottom, #3a3a3a, #2d2d2d);
   border-bottom: 1px solid #4a4a4a;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 
 .factoripedia-header h2 {
@@ -305,15 +302,16 @@ onUnmounted(() => {
 
 .category-filters {
   padding: 8px;
-  background: #3a3a3a;
+  background: linear-gradient(to bottom, #3a3a3a, #2d2d2d);
   border-bottom: 1px solid #4a4a4a;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 
 .filter-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
   gap: 4px;
   margin-bottom: 4px;
-  flex-wrap: wrap;
 }
 
 .filter-row:last-child {
@@ -327,7 +325,7 @@ onUnmounted(() => {
   min-height: 64px;
   max-width: 64px;
   max-height: 64px;
-  background: #4a4a4a;
+  background: linear-gradient(to bottom, #4a4a4a, #3a3a3a);
   border: 1px solid #5a5a5a;
   border-radius: 2px;
   cursor: pointer;
@@ -336,32 +334,37 @@ onUnmounted(() => {
   justify-content: center;
   transition: all 0.2s ease;
   flex-shrink: 0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 
 .filter-button:hover {
-  background: #5a5a5a;
+  background: linear-gradient(to bottom, #5a5a5a, #4a4a4a);
   border-color: #6a6a6a;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
 }
 
 .filter-button.active {
-  background: #6a6a6a;
+  background: linear-gradient(to bottom, #6a6a6a, #5a5a5a);
   border-color: #7a7a7a;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
 }
 
 .search-container {
   padding: 8px;
-  background: #3a3a3a;
+  background: linear-gradient(to bottom, #3a3a3a, #2d2d2d);
   border-bottom: 1px solid #4a4a4a;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 
 .search-input {
   width: 100%;
   padding: 6px 8px;
-  background: #4a4a4a;
+  background: linear-gradient(to bottom, #4a4a4a, #3a3a3a);
   border: 1px solid #5a5a5a;
   border-radius: 2px;
   color: #ffffff;
   font-size: 14px;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 
 .search-input::placeholder {
@@ -371,22 +374,40 @@ onUnmounted(() => {
 .search-input:focus {
   outline: none;
   border-color: #7a7a7a;
+  box-shadow:
+    inset 0 1px 3px rgba(0, 0, 0, 0.3),
+    0 0 0 2px rgba(255, 165, 0, 0.3);
 }
 
 .item-grid {
   flex: 1;
-  padding: 0 8px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow-y: auto;
+  background: #2a2a2a;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+  background-size: 42px 42px;
+  border: 1px solid #4a4a4a;
+  border-radius: 2px;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.subgroup-grid {
   display: grid;
   grid-template-columns: repeat(10, 1fr);
   grid-auto-rows: 40px;
-  gap: 1px;
-  overflow-y: auto;
+  gap: 2px;
+  width: 100%;
 }
 
 .item-slot {
   width: 40px;
   height: 40px;
-  background: #4a4a4a;
+  background: linear-gradient(to bottom, #4a4a4a, #3a3a3a);
   border: 1px solid #5a5a5a;
   border-radius: 2px;
   cursor: pointer;
@@ -394,24 +415,30 @@ onUnmounted(() => {
   align-items: center;
   justify-content: center;
   transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  position: relative;
 }
 
 .item-slot:hover {
-  background: #5a5a5a;
+  background: linear-gradient(to bottom, #5a5a5a, #4a4a4a);
   border-color: #6a6a6a;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
 }
 
 .item-slot.selected {
-  background: #6a6a6a;
-  border-color: #7a7a7a;
-  box-shadow: 0 0 0 1px #8a8a8a;
+  background: linear-gradient(to bottom, #6a6a6a, #5a5a5a);
+  border-color: #ffa500;
+  box-shadow:
+    0 0 0 2px #ffa500,
+    0 2px 4px rgba(0, 0, 0, 0.4);
 }
 
 .item-slot.empty-cell {
   background: transparent;
-  border: none;
+  border: 1px solid #3a3a3a;
   cursor: default;
   pointer-events: none;
+  box-shadow: none;
 }
 
 /* Right Panel */
@@ -421,6 +448,7 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   overflow-y: auto;
+  box-shadow: inset 1px 0 3px rgba(0, 0, 0, 0.3);
 }
 
 .item-details,
@@ -666,6 +694,150 @@ onUnmounted(() => {
 .no-selection-content p {
   margin: 0;
   font-size: 14px;
+}
+
+/* Mobile Responsive Layout */
+@media (max-width: 768px) {
+  .factoripedia {
+    height: auto;
+    min-height: 100vh;
+  }
+
+  .factoripedia-container {
+    flex-direction: column;
+    height: auto;
+  }
+
+  /* Left Panel - Mobile */
+  .factoripedia-left-panel {
+    width: 100%;
+    border-right: none;
+    border-bottom: 2px solid #4a4a4a;
+    max-height: 50vh;
+    min-height: 300px;
+  }
+
+  /* Right Panel - Mobile */
+  .factoripedia-right-panel {
+    width: 100%;
+    min-height: 50vh;
+  }
+
+  /* Adjust grid for mobile */
+  .item-grid {
+    grid-auto-rows: 36px;
+    gap: 1px;
+  }
+
+  /* Smaller filter buttons on mobile */
+  .filter-button {
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    min-height: 32px;
+    max-width: 32px;
+    max-height: 32px;
+    flex-shrink: 1;
+    flex-basis: auto;
+    background: linear-gradient(to bottom, #4a4a4a, #3a3a3a);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  }
+
+  .filter-row {
+    gap: 4px;
+    padding-bottom: 4px;
+  }
+
+  /* Adjust header font size */
+  .factoripedia-header h2 {
+    font-size: 16px;
+  }
+}
+
+/* iPhone 12 Pro and similar devices */
+@media (max-width: 428px) {
+  .factoripedia {
+    height: auto;
+    min-height: 100vh;
+  }
+
+  .factoripedia-container {
+    flex-direction: column;
+  }
+
+  .factoripedia-left-panel {
+    width: 100%;
+    border-right: none;
+    border-bottom: 2px solid #4a4a4a;
+    max-height: 45vh;
+    min-height: 250px;
+  }
+
+  .factoripedia-right-panel {
+    width: 100%;
+    min-height: 55vh;
+  }
+
+  /* Even smaller grid for very small screens */
+  .item-grid {
+    grid-auto-rows: 32px;
+    gap: 1px;
+  }
+
+  /* Smaller filter buttons */
+  .filter-button {
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    min-height: 32px;
+    max-width: 32px;
+    max-height: 32px;
+    flex-shrink: 1;
+    flex-basis: auto;
+    background: linear-gradient(to bottom, #4a4a4a, #3a3a3a);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  }
+
+  .filter-row {
+    gap: 2px;
+    padding-bottom: 4px;
+  }
+
+  /* Adjust padding for mobile */
+  .factoripedia-header {
+    padding: 8px 12px;
+  }
+
+  .category-filters {
+    padding: 6px;
+  }
+
+  .search-container {
+    padding: 6px;
+  }
+
+  .item-grid {
+    padding: 0 6px;
+  }
+}
+
+/* Very small screens - extra aggressive shrinking */
+@media (max-width: 360px) {
+  .filter-button {
+    width: 28px;
+    height: 28px;
+    min-width: 28px;
+    min-height: 28px;
+    max-width: 28px;
+    max-height: 28px;
+    flex-shrink: 1;
+    background: linear-gradient(to bottom, #4a4a4a, #3a3a3a);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  }
+
+  .filter-row {
+    gap: 1px;
+  }
 }
 
 /* Scrollbar styling */

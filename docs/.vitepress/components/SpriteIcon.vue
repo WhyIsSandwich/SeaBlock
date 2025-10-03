@@ -1,5 +1,6 @@
 <template>
   <span
+    ref="iconElement"
     class="sprite-icon"
     :class="iconClasses"
     :style="iconStyle"
@@ -13,7 +14,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { withBase } from 'vitepress'
 
 import { loadSpritemapData } from '../../../src/index.js'
@@ -26,7 +27,7 @@ const props = defineProps({
   },
   size: {
     type: [String, Number],
-    default: 32
+    default: null
   },
   title: {
     type: String,
@@ -50,11 +51,20 @@ const props = defineProps({
 const spritemapData = ref(null)
 const isLoading = ref(true)
 const hasError = ref(false)
+const iconElement = ref(null)
+const containerSize = ref(32) // Default fallback size
+const resizeObserver = ref(null)
 
 // Computed properties
 const iconSize = computed(() => {
-  const size = typeof props.size === 'string' ? parseInt(props.size) : props.size
-  return Math.max(16, Math.min(128, size)) // Clamp between 16 and 128
+  // If size prop is provided, use it
+  if (props.size !== null) {
+    const size = typeof props.size === 'string' ? parseInt(props.size) : props.size
+    return Math.max(16, Math.min(128, size)) // Clamp between 16 and 128
+  }
+
+  // Otherwise, use the measured container size
+  return Math.max(16, Math.min(128, containerSize.value))
 })
 
 const iconClasses = computed(() => ({
@@ -118,6 +128,64 @@ const iconStyle = computed(() => {
   return style
 })
 
+// Function to measure container size
+const measureContainer = () => {
+  if (!iconElement.value) return
+
+  const rect = iconElement.value.getBoundingClientRect()
+  const parentRect = iconElement.value.parentElement?.getBoundingClientRect()
+
+  if (parentRect) {
+    // Use the smaller dimension to ensure the icon fits
+    const size = Math.min(parentRect.width, parentRect.height)
+    if (size > 0 && size !== containerSize.value) {
+      containerSize.value = size
+    }
+  }
+}
+
+// Set up resize observer
+const setupResizeObserver = () => {
+  if (!iconElement.value || props.size !== null) return
+
+  // Clean up existing observer
+  if (resizeObserver.value) {
+    resizeObserver.value.disconnect()
+  }
+
+  // Create new observer
+  resizeObserver.value = new ResizeObserver(() => {
+    nextTick(() => {
+      measureContainer()
+    })
+  })
+
+  // Observe the parent element (the container)
+  if (iconElement.value.parentElement) {
+    resizeObserver.value.observe(iconElement.value.parentElement)
+  }
+}
+
+// Watch for size prop changes
+watch(
+  () => props.size,
+  newSize => {
+    if (newSize === null) {
+      // Size prop removed, start auto-sizing
+      nextTick(() => {
+        measureContainer()
+        setupResizeObserver()
+      })
+    } else {
+      // Size prop provided, stop auto-sizing
+      if (resizeObserver.value) {
+        resizeObserver.value.disconnect()
+        resizeObserver.value = null
+      }
+    }
+  }
+)
+
 // Load spritemap data on mount
 onMounted(async () => {
   try {
@@ -129,12 +197,27 @@ onMounted(async () => {
       hasError.value = true
       console.error('Failed to load spritemap data')
     } else {
+      // Set up auto-sizing if no size prop is provided
+      if (props.size === null) {
+        nextTick(() => {
+          measureContainer()
+          setupResizeObserver()
+        })
+      }
     }
   } catch (error) {
     console.error('Error loading spritemap data:', error)
     hasError.value = true
   } finally {
     isLoading.value = false
+  }
+})
+
+// Cleanup on unmount
+onUnmounted(() => {
+  if (resizeObserver.value) {
+    resizeObserver.value.disconnect()
+    resizeObserver.value = null
   }
 })
 </script>

@@ -2168,4 +2168,195 @@ function getEffectTooltip(effect) {
   overflow-y: auto;
   margin: 0;
 }
+
+/* Mobile Responsive Styles */
+@media (max-width: 768px) {
+  .detailsPane {
+    border-left: none;
+    border-top: 1px solid var(--vp-c-border);
+  }
+
+  .itemDetails {
+    padding: 8px;
+  }
+
+  .itemHeader {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    margin-bottom: 8px;
+    padding: 8px;
+  }
+
+  .headerTitle {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .headerTitle h3 {
+    font-size: 14px;
+    flex: 1;
+    word-break: break-word;
+  }
+
+  .headerTabs {
+    width: 100%;
+    display: flex;
+    gap: 4px;
+  }
+
+  .headerTabs button {
+    flex: 1;
+    padding: 6px 8px;
+    font-size: 12px;
+  }
+
+  .itemImageContainer {
+    margin: 8px 0;
+    display: flex;
+    justify-content: center;
+  }
+
+  /* Adjust grid layouts for mobile */
+  .ingredientGrid,
+  .productGrid,
+  .canCraftGrid {
+    grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+    gap: 4px;
+  }
+
+  .ingredientItem,
+  .productItem {
+    flex-direction: column;
+    text-align: center;
+    padding: 4px;
+    gap: 2px;
+  }
+
+  .ingredientItem .ingredientIcon,
+  .productItem .productIcon {
+    width: 24px;
+    height: 24px;
+  }
+
+  .ingredientItem .ingredientName,
+  .productItem .productName {
+    font-size: 10px;
+    line-height: 1.2;
+  }
+
+  /* Adjust recipe sections for mobile */
+  .recipeSection {
+    margin-bottom: 12px;
+  }
+
+  .recipeSection h4 {
+    font-size: 13px;
+    margin-bottom: 6px;
+  }
+
+  /* Adjust technology sections for mobile */
+  .technologySection h4 {
+    font-size: 13px;
+    margin-bottom: 6px;
+  }
+
+  .researchTrigger,
+  .researchCost {
+    margin-bottom: 8px;
+  }
+
+  .researchTrigger h5,
+  .researchCost h5 {
+    font-size: 12px;
+    margin-bottom: 4px;
+  }
+
+  .triggerItem,
+  .costItem {
+    font-size: 11px;
+    padding: 2px 4px;
+    margin-bottom: 2px;
+  }
+
+  /* Adjust raws content for mobile */
+  .rawsData {
+    font-size: 0.75rem;
+    padding: 0.5rem;
+    max-height: 30vh;
+  }
+
+  .rawSectionHeader {
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+}
+
+/* iPhone 12 Pro and similar devices */
+@media (max-width: 428px) {
+  .itemDetails {
+    padding: 6px;
+  }
+
+  .itemHeader {
+    padding: 6px;
+    margin-bottom: 6px;
+  }
+
+  .headerTitle h3 {
+    font-size: 13px;
+  }
+
+  .headerTabs button {
+    padding: 4px 6px;
+    font-size: 11px;
+  }
+
+  /* Even smaller grids for very small screens */
+  .ingredientGrid,
+  .productGrid,
+  .canCraftGrid {
+    grid-template-columns: repeat(auto-fill, minmax(50px, 1fr));
+    gap: 2px;
+  }
+
+  .ingredientItem,
+  .productItem {
+    padding: 2px;
+  }
+
+  .ingredientItem .ingredientIcon,
+  .productItem .productIcon {
+    width: 20px;
+    height: 20px;
+  }
+
+  .ingredientItem .ingredientName,
+  .productItem .productName {
+    font-size: 9px;
+  }
+
+  .recipeSection h4,
+  .technologySection h4 {
+    font-size: 12px;
+  }
+
+  .researchTrigger h5,
+  .researchCost h5 {
+    font-size: 11px;
+  }
+
+  .triggerItem,
+  .costItem {
+    font-size: 10px;
+  }
+
+  .rawsData {
+    font-size: 0.7rem;
+    padding: 0.4rem;
+    max-height: 25vh;
+  }
+}
 </style>
