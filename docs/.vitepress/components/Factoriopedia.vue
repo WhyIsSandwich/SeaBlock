@@ -13,8 +13,7 @@
             <button
               v-for="category in primaryCategories"
               :key="category.key"
-              class="filter-button"
-              :class="{ active: selectedCategory === category.key }"
+              :class="{ 'filter-button': true, active: selectedCategory === category.key }"
               @click="selectCategory(category.key)"
             >
               <SpriteIcon v-if="category.icon" :sprite-key="category.icon" :title="category.name" />
@@ -319,15 +318,15 @@ onUnmounted(() => {
   }
 })
 
-const base64Svg = computed(() => {
-  const cellSize = gridCellSize.value
-  const image = `url(data:image/svg+xml;base64,${btoa(`
+// Parametrized SVG generation function
+function generateGridPattern(cellSize, filterId = '') {
+  return `url(data:image/svg+xml;base64,${btoa(`
 <svg xmlns="http://www.w3.org/2000/svg" width="${cellSize}" height="${cellSize}">
   <defs>
-    <filter id="blur" x="-20%" y="-20%" width="140%" height="140%">
+    <filter id="blur${filterId}" x="-20%" y="-20%" width="140%" height="140%">
       <feGaussianBlur stdDeviation="0.5"/>
     </filter>
-    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+    <filter id="shadow${filterId}" x="-20%" y="-20%" width="140%" height="140%">
       <feGaussianBlur stdDeviation="0.3"/>
     </filter>
   </defs>
@@ -335,30 +334,70 @@ const base64Svg = computed(() => {
   <!-- Main grid cell background -->
   <rect x="0" y="0" width="${cellSize}" height="${cellSize}" fill="#1f1f1f"/>
   
-  <!-- Grid lines for cell boundaries -->
-  <!--<line x1="0" y1="0" x2="${cellSize}" y2="0" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>-->
-  <!--<line x1="0" y1="0" x2="0" y2="${cellSize}" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>-->
-  
   <!-- Inner debossed square (75% of cell size) -->
   <g transform="translate(${cellSize * 0.125}, ${cellSize * 0.125})">
     <!-- Drop shadow behind the square -->
-    <rect x="1" y="1" width="${cellSize * 0.75}" height="${cellSize * 0.75}" fill="rgba(0,0,0,0.4)" filter="url(#shadow)"/>
+    <rect x="1" y="1" width="${cellSize * 0.75}" height="${cellSize * 0.75}" fill="rgba(0,0,0,0.4)" filter="url(#shadow${filterId})"/>
     
     <!-- Main square background -->
     <rect x="0" y="0" width="${cellSize * 0.75}" height="${cellSize * 0.75}" fill="rgba(255,255,255,0.02)"/>
     
     <!-- Top highlight -->
-    <rect x="0" y="0" width="${cellSize * 0.75}" height="2" fill="rgba(255,255,255,0.18)" filter="url(#blur)"/>
+    <rect x="0" y="0" width="${cellSize * 0.75}" height="2" fill="rgba(255,255,255,0.18)" filter="url(#blur${filterId})"/>
     <!-- Left highlight -->
-    <rect x="0" y="0" width="2" height="${cellSize * 0.75}" fill="rgba(255,255,255,0.18)" filter="url(#blur)"/>
+    <rect x="0" y="0" width="2" height="${cellSize * 0.75}" fill="rgba(255,255,255,0.18)" filter="url(#blur${filterId})"/>
     
     <!-- Bottom shadow -->
-    <rect x="0" y="${cellSize * 0.75 - 2}" width="${cellSize * 0.75}" height="2" fill="rgba(0,0,0,0.35)" filter="url(#shadow)"/>
+    <rect x="0" y="${cellSize * 0.75 - 2}" width="${cellSize * 0.75}" height="2" fill="rgba(0,0,0,0.35)" filter="url(#shadow${filterId})"/>
     <!-- Right shadow -->
-    <rect x="${cellSize * 0.75 - 2}" y="0" width="2" height="${cellSize * 0.75}" fill="rgba(0,0,0,0.35)" filter="url(#shadow)"/>
+    <rect x="${cellSize * 0.75 - 2}" y="0" width="2" height="${cellSize * 0.75}" fill="rgba(0,0,0,0.35)" filter="url(#shadow${filterId})"/>
   </g>
 </svg>`)})`
-  return image
+}
+
+// Grid background for item subgroups
+const base64Svg = computed(() => {
+  return generateGridPattern(gridCellSize.value)
+})
+
+// Filter grid columns calculation - simple arithmetic: max columns that fit with minimum button size, capped at 6
+const filterColumns = computed(() => {
+  if (gridContainerWidth.value === 0) return 6 // Default fallback
+
+  const gap = 4
+  const availableWidth = gridContainerWidth.value - 16 // Account for padding
+  const minButtonWidth = 44 // Minimum filter button width (same as item grid)
+  const totalFilters = primaryCategories.value?.length || 1
+
+  // Calculate maximum columns that can fit with minimum button size
+  const maxColumnsWithMinSize = Math.floor((availableWidth + gap) / (minButtonWidth + gap))
+
+  // Cap at 6 columns maximum, and don't exceed total number of filters
+  return Math.min(6, maxColumnsWithMinSize, totalFilters)
+})
+
+// Filter button size calculation - same approach as item grid
+const filterButtonSize = computed(() => {
+  console.log('gridContainerWidth.value', gridContainerWidth.value)
+  if (gridContainerWidth.value === 0) return 72 // Default fallback
+
+  const gap = 4
+  const availableWidth = gridContainerWidth.value - 16 // Account for padding
+  const columns = filterColumns.value
+  const totalGapWidth = (columns - 1) * gap
+  const buttonWidth = (availableWidth - totalGapWidth) / columns
+  console.log('filter.buttonWidth', buttonWidth)
+  return Math.floor(buttonWidth) // Round down to ensure buttons fit
+})
+
+// Filter cell size calculation (button + gap) for background alignment
+const filterCellSize = computed(() => {
+  return filterButtonSize.value + 4 // Button size + gap
+})
+
+// Filter background for filter buttons
+const filterBase64Svg = computed(() => {
+  return generateGridPattern(filterCellSize.value, '-filter')
 })
 </script>
 
@@ -404,30 +443,34 @@ const base64Svg = computed(() => {
 }
 
 .category-filters {
+  display: grid;
   padding: 8px;
-  background: linear-gradient(to bottom, #3a3a3a, #2d2d2d);
+  grid-template-columns: repeat(v-bind(filterColumns), v-bind(filterButtonSize + 'px'));
+  gap: 4px;
+  background: #1f1f1f;
   border-bottom: 1px solid #4a4a4a;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 
 .filter-row {
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  gap: 4px;
-  margin-bottom: 4px;
-}
-
-.filter-row:last-child {
-  margin-bottom: 0;
+  grid-template-columns: subgrid;
+  grid-column: 1 / -1;
+  column-gap: inherit;
+  row-gap: inherit;
+  background-image: v-bind(filterBase64Svg);
+  background-size: v-bind(filterCellSize + 'px') v-bind(filterCellSize + 'px');
+  background-repeat: repeat;
+  background-attachment: local;
 }
 
 .filter-button {
-  width: 64px;
-  height: 64px;
-  min-width: 64px;
-  min-height: 64px;
-  max-width: 64px;
-  max-height: 64px;
+  width: v-bind(filterButtonSize + 'px');
+  height: v-bind(filterButtonSize + 'px');
+  min-width: v-bind(filterButtonSize + 'px');
+  min-height: v-bind(filterButtonSize + 'px');
+  max-width: v-bind(filterButtonSize + 'px');
+  max-height: v-bind(filterButtonSize + 'px');
   background: linear-gradient(to bottom, #4a4a4a, #3a3a3a);
   border: 1px solid #5a5a5a;
   border-radius: 2px;
@@ -449,15 +492,17 @@ const base64Svg = computed(() => {
 }
 
 .filter-button:hover {
-  background: linear-gradient(to bottom, #5a5a5a, #4a4a4a);
-  border-color: #6a6a6a;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+  background: #ffa207;
+  border-color: #ffa207;
+  box-shadow:
+    0 0 8px rgba(255, 200, 100, 0.4),
+    0 2px 4px rgba(0, 0, 0, 0.4);
 }
 
 .filter-button.active {
-  background: linear-gradient(to bottom, #6a6a6a, #5a5a5a);
-  border-color: #7a7a7a;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+  background: #ffa207;
+  border-color: #ffa207;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 
 .search-container {
@@ -497,11 +542,6 @@ const base64Svg = computed(() => {
   grid-template-columns: repeat(v-bind(gridColumns), v-bind(buttonSize + 'px'));
   overflow-y: auto;
   background: #1f1f1f;
-  background-image: v-bind(base64Svg);
-  background-size: v-bind(gridCellSize + 'px') v-bind(gridCellSize + 'px');
-  background-position: 5px 6px;
-  background-repeat: repeat;
-  background-attachment: local;
   border: 1px solid #4a4a4a;
   border-radius: 2px;
   box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.3);
@@ -513,6 +553,10 @@ const base64Svg = computed(() => {
   grid-column: 1 / -1;
   column-gap: inherit;
   row-gap: inherit;
+  background-image: v-bind(base64Svg);
+  background-size: v-bind(gridCellSize + 'px') v-bind(gridCellSize + 'px');
+  background-repeat: repeat;
+  background-attachment: local;
 }
 
 .item-slot {
@@ -834,23 +878,17 @@ const base64Svg = computed(() => {
     min-height: 50vh;
   }
 
-  /* Smaller filter buttons on mobile */
+  /* Smaller filter buttons on mobile - maintain size relative to grid */
   .filter-button {
-    width: 32px;
-    height: 32px;
-    min-width: 32px;
-    min-height: 32px;
-    max-width: 32px;
-    max-height: 32px;
-    flex-shrink: 1;
-    flex-basis: auto;
+    width: 48px;
+    height: 48px;
+    min-width: 48px;
+    min-height: 48px;
+    max-width: 48px;
+    max-height: 48px;
+    flex-shrink: 0;
     background: linear-gradient(to bottom, #4a4a4a, #3a3a3a);
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
-  }
-
-  .filter-row {
-    gap: 4px;
-    padding-bottom: 4px;
   }
 
   /* Adjust header font size */
@@ -883,23 +921,17 @@ const base64Svg = computed(() => {
     min-height: 55vh;
   }
 
-  /* Smaller filter buttons */
+  /* Smaller filter buttons - maintain minimum size */
   .filter-button {
-    width: 32px;
-    height: 32px;
-    min-width: 32px;
-    min-height: 32px;
-    max-width: 32px;
-    max-height: 32px;
-    flex-shrink: 1;
-    flex-basis: auto;
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+    min-height: 40px;
+    max-width: 40px;
+    max-height: 40px;
+    flex-shrink: 0;
     background: linear-gradient(to bottom, #4a4a4a, #3a3a3a);
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
-  }
-
-  .filter-row {
-    gap: 2px;
-    padding-bottom: 4px;
   }
 
   /* Adjust padding for mobile */
@@ -907,31 +939,23 @@ const base64Svg = computed(() => {
     padding: 8px 12px;
   }
 
-  .category-filters {
-    padding: 6px;
-  }
-
   .search-container {
     padding: 6px;
   }
 }
 
-/* Very small screens - extra aggressive shrinking */
+/* Very small screens - maintain minimum usable size */
 @media (max-width: 360px) {
   .filter-button {
-    width: 28px;
-    height: 28px;
-    min-width: 28px;
-    min-height: 28px;
-    max-width: 28px;
-    max-height: 28px;
-    flex-shrink: 1;
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    min-height: 36px;
+    max-width: 36px;
+    max-height: 36px;
+    flex-shrink: 0;
     background: linear-gradient(to bottom, #4a4a4a, #3a3a3a);
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
-  }
-
-  .filter-row {
-    gap: 1px;
   }
 }
 
