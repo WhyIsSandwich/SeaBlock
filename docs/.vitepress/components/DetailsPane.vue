@@ -12,16 +12,69 @@
           />
           <h3>{{ selectedItem.displayName }} ({{ itemTypeLabel }})</h3>
         </div>
-        <div :class="$style.headerTabs">
-          <button
-            :class="{ [$style.active]: activeTab === 'details' }"
-            @click="activeTab = 'details'"
-          >
-            Details
-          </button>
-          <button :class="{ [$style.active]: activeTab === 'raws' }" @click="activeTab = 'raws'">
-            Raws
-          </button>
+        <div :class="$style.headerControls">
+          <div :class="$style.headerTabs">
+            <button
+              :class="{ [$style.active]: activeTab === 'details' }"
+              @click="activeTab = 'details'"
+            >
+              Details
+            </button>
+            <button :class="{ [$style.active]: activeTab === 'raws' }" @click="activeTab = 'raws'">
+              Raws
+            </button>
+          </div>
+          <div :class="$style.navigationControls">
+            <button
+              :class="[$style.navButton, { [$style.disabled]: !canGoBack }]"
+              :disabled="!canGoBack"
+              title="Go back"
+              @click="$emit('navigate-back')"
+            >
+              ←
+            </button>
+            <button
+              :class="[$style.navButton, { [$style.disabled]: !canGoForward }]"
+              :disabled="!canGoForward"
+              title="Go forward"
+              @click="$emit('navigate-forward')"
+            >
+              →
+            </button>
+            <div :class="$style.historyContainer">
+              <button
+                :class="$style.historyButton"
+                title="Recently viewed items"
+                @click="$emit('toggle-history')"
+              >
+                History
+              </button>
+              <div v-if="showHistoryDropdown" :class="$style.historyDropdown">
+                <div v-if="historyItems.length === 0" :class="$style.historyEmpty">
+                  No recent items
+                </div>
+                <div
+                  v-for="item in historyItems"
+                  :key="`${item.type}-${item.name}`"
+                  :class="$style.historyItem"
+                  @click="$emit('select-from-history', item)"
+                >
+                  <SpriteIcon
+                    v-if="
+                      item.type === 'item' ||
+                      item.type === 'recipe' ||
+                      item.type === 'technology' ||
+                      item.type === 'fluid' ||
+                      item.type === 'tile'
+                    "
+                    :sprite-key="`${item.type}-${item.name}`"
+                    :title="item.displayName"
+                  />
+                  <span :class="$style.historyItemName">{{ item.displayName }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -879,11 +932,35 @@ const props = defineProps({
   isAnimationPaused: {
     type: Boolean,
     default: false
+  },
+  canGoBack: {
+    type: Boolean,
+    default: false
+  },
+  canGoForward: {
+    type: Boolean,
+    default: false
+  },
+  showHistoryDropdown: {
+    type: Boolean,
+    default: false
+  },
+  historyItems: {
+    type: Array,
+    default: () => []
   }
 })
 
 // Emits
-const emit = defineEmits(['select-item', 'toggle-animation-pause', 'item-selected'])
+const emit = defineEmits([
+  'select-item',
+  'toggle-animation-pause',
+  'item-selected',
+  'navigate-back',
+  'navigate-forward',
+  'toggle-history',
+  'select-from-history'
+])
 
 // Computed property to create selectedItem from name and type
 const selectedItem = computed(() => {
@@ -1257,9 +1334,141 @@ function getEffectTooltip(effect) {
   flex: 1;
 }
 
+.headerControls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .headerTabs {
   display: flex;
   gap: 2px;
+}
+
+.navigationControls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.navButton {
+  width: 32px;
+  height: 32px;
+  background: #4a4a4a;
+  border: 1px solid #6a6a6a;
+  border-top: 1px solid #7a7a7a;
+  border-left: 1px solid #7a7a7a;
+  border-radius: 2px;
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  box-shadow:
+    1px 1px 0px rgba(0, 0, 0, 0.3),
+    inset 0 1px 1px rgba(255, 255, 255, 0.1);
+}
+
+.navButton:hover:not(.disabled) {
+  background: #5a5a5a;
+  border-color: #7a7a7a;
+  border-top: 1px solid #8a8a8a;
+  border-left: 1px solid #8a8a8a;
+  box-shadow:
+    1px 1px 0px rgba(0, 0, 0, 0.4),
+    inset 0 1px 1px rgba(255, 255, 255, 0.15);
+}
+
+.navButton.disabled {
+  background: #2a2a2a;
+  border-color: #3a3a3a;
+  color: #666666;
+  cursor: not-allowed;
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+.historyContainer {
+  position: relative;
+}
+
+.historyDropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  width: 300px;
+  max-height: 400px;
+  background: #2d2d2d;
+  border: 1px solid #4a4a4a;
+  border-radius: 4px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  overflow-y: auto;
+  margin-top: 4px;
+}
+
+.historyEmpty {
+  padding: 12px;
+  color: #888888;
+  text-align: center;
+  font-size: 14px;
+}
+
+.historyItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  border-bottom: 1px solid #3a3a3a;
+}
+
+.historyItem:hover {
+  background: #3a3a3a;
+}
+
+.historyItem:last-child {
+  border-bottom: none;
+}
+
+.historyItemName {
+  color: #ffffff;
+  font-size: 14px;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.historyButton {
+  background: #4a4a4a;
+  border: 1px solid #6a6a6a;
+  border-top: 1px solid #7a7a7a;
+  border-left: 1px solid #7a7a7a;
+  border-radius: 2px;
+  padding: 4px 8px;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow:
+    1px 1px 0px rgba(0, 0, 0, 0.3),
+    inset 0 1px 1px rgba(255, 255, 255, 0.1);
+}
+
+.historyButton:hover {
+  background: #5a5a5a;
+  border-color: #7a7a7a;
+  border-top: 1px solid #8a8a8a;
+  border-left: 1px solid #8a8a8a;
+  box-shadow:
+    1px 1px 0px rgba(0, 0, 0, 0.4),
+    inset 0 1px 1px rgba(255, 255, 255, 0.15);
 }
 
 .headerTabs button {

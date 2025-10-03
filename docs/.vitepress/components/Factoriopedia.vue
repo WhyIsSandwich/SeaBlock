@@ -13,8 +13,15 @@
             <button
               v-for="category in primaryCategories"
               :key="category.key"
-              :class="[$style.filterButton, { [$style.active]: selectedCategory === category.key }]"
-              @click="selectCategory(category.key)"
+              :class="[
+                $style.filterButton,
+                {
+                  [$style.active]: selectedCategory === category.key,
+                  [$style.disabled]: disabledFilters.has(category.key)
+                }
+              ]"
+              :disabled="disabledFilters.has(category.key)"
+              @click="!disabledFilters.has(category.key) && selectCategory(category.key)"
             >
               <SpriteIcon v-if="category.icon" :sprite-key="category.icon" :title="category.name" />
             </button>
@@ -56,10 +63,18 @@
           :name="selectedItem?.name"
           :type="selectedItem ? getPrimaryType(selectedItem) : null"
           :is-animation-paused="isAnimationPaused"
+          :can-go-back="canGoBack"
+          :can-go-forward="canGoForward"
+          :show-history-dropdown="showMRUDropdown"
+          :history-items="mruItems"
           @select-item="selectItem"
           @navigate-item="navigateItem"
           @close-details="closeDetails"
           @toggle-animation-pause="toggleAnimationPause"
+          @navigate-back="navigateBack"
+          @navigate-forward="navigateForward"
+          @toggle-history="toggleMRUDropdown"
+          @select-from-history="selectFromMRU"
         />
       </div>
     </div>
@@ -83,6 +98,15 @@ const selectedItem = ref(null)
 const selectedCategory = ref('all')
 const searchQuery = ref('')
 const isAnimationPaused = ref(false)
+
+// Navigation stack for forward/back functionality
+const navigationStack = ref([])
+const currentStackIndex = ref(-1)
+
+// MRU (Most Recently Used) storage
+const mruItems = ref([])
+const maxMRUItems = 20
+const showMRUDropdown = ref(false)
 
 // Grid container width tracking
 const gridContainerWidth = ref(0)
@@ -148,10 +172,8 @@ const groupedRecipes = computed(() => {
       subgroups: categoryData.subgroups
         .map(subgroup => ({
           ...subgroup,
-          recipes: subgroup.recipes.filter(
-            recipe =>
-              recipe.displayName.toLowerCase().includes(query) ||
-              recipe.name.toLowerCase().includes(query)
+          recipes: subgroup.recipes.filter(recipe =>
+            recipe.displayName.toLowerCase().includes(query)
           )
         }))
         .filter(subgroup => subgroup.recipes.length > 0)
@@ -165,6 +187,111 @@ const groupedRecipes = computed(() => {
 const _allRecipes = computed(() => {
   return groupedRecipes.value.flatMap(subgroup => subgroup.recipes)
 })
+
+// Computed property to determine which filters have no items when searching
+const disabledFilters = computed(() => {
+  if (!searchQuery.value || !categoryStructure.value) {
+    return new Set()
+  }
+
+  const query = searchQuery.value.toLowerCase()
+  const disabled = new Set()
+
+  // Check each category to see if it has any items matching the search
+  Object.keys(categoryStructure.value).forEach(categoryKey => {
+    const categoryData = categoryStructure.value[categoryKey]
+    if (!categoryData) return
+
+    // Apply the same search filter logic as in groupedRecipes
+    const filteredSubgroups = categoryData.subgroups
+      .map(subgroup => ({
+        ...subgroup,
+        recipes: subgroup.recipes.filter(recipe => recipe.displayName.toLowerCase().includes(query))
+      }))
+      .filter(subgroup => subgroup.recipes.length > 0)
+
+    // If no subgroups have any matching recipes, disable this filter
+    if (filteredSubgroups.length === 0) {
+      disabled.add(categoryKey)
+    }
+  })
+
+  return disabled
+})
+
+// Navigation stack computed properties
+const canGoBack = computed(() => currentStackIndex.value > 0)
+const canGoForward = computed(() => currentStackIndex.value < navigationStack.value.length - 1)
+
+// Navigation functions
+function addToNavigationStack(item) {
+  const itemData = {
+    type: getPrimaryType(item),
+    name: item.name,
+    data: item
+  }
+
+  // If we're not at the top of the stack, remove everything after current position
+  if (currentStackIndex.value < navigationStack.value.length - 1) {
+    navigationStack.value = navigationStack.value.slice(0, currentStackIndex.value + 1)
+  }
+
+  // Add new item to stack
+  navigationStack.value.push(itemData)
+  currentStackIndex.value = navigationStack.value.length - 1
+}
+
+function navigateBack() {
+  if (canGoBack.value) {
+    currentStackIndex.value--
+    const item = navigationStack.value[currentStackIndex.value]
+    selectedItem.value = createUnifiedSelectionObject(item.type, item.name, item.data)
+  }
+}
+
+function navigateForward() {
+  if (canGoForward.value) {
+    currentStackIndex.value++
+    const item = navigationStack.value[currentStackIndex.value]
+    selectedItem.value = createUnifiedSelectionObject(item.type, item.name, item.data)
+  }
+}
+
+// MRU management functions
+function addToMRU(item) {
+  const itemData = {
+    type: getPrimaryType(item),
+    name: item.name,
+    displayName: item.displayName,
+    data: item
+  }
+
+  // Remove existing entry if it exists (to move it to front)
+  const existingIndex = mruItems.value.findIndex(
+    mruItem => mruItem.name === itemData.name && mruItem.type === itemData.type
+  )
+
+  if (existingIndex !== -1) {
+    mruItems.value.splice(existingIndex, 1)
+  }
+
+  // Add to front of MRU list
+  mruItems.value.unshift(itemData)
+
+  // Limit to maxMRUItems
+  if (mruItems.value.length > maxMRUItems) {
+    mruItems.value = mruItems.value.slice(0, maxMRUItems)
+  }
+}
+
+function selectFromMRU(item) {
+  selectItem(item.type, item.name, item.data)
+  showMRUDropdown.value = false
+}
+
+function toggleMRUDropdown() {
+  showMRUDropdown.value = !showMRUDropdown.value
+}
 
 // Function to set up category structure using composable
 function setupCategoryStructure() {
@@ -271,7 +398,8 @@ function selectItem(type, name, data = null) {
 
   if (unifiedObject) {
     selectedItem.value = unifiedObject
-    updateURL()
+    addToNavigationStack(unifiedObject)
+    addToMRU(unifiedObject)
   }
 }
 
@@ -279,6 +407,7 @@ function selectItem(type, name, data = null) {
 function handleKeydown(event) {
   if (event.key === 'Escape') {
     closeDetails()
+    showMRUDropdown.value = false
   } else if (event.key === 'ArrowLeft') {
     navigateItem(-1)
   } else if (event.key === 'ArrowRight') {
@@ -286,8 +415,25 @@ function handleKeydown(event) {
   }
 }
 
+// Handle click outside to close MRU dropdown
+function handleClickOutside(event) {
+  // Add a small delay to prevent immediate closing when opening
+  setTimeout(() => {
+    console.log('handleClickOutside called, showMRUDropdown:', showMRUDropdown.value)
+    console.log('event.target:', event.target)
+    console.log('closest historyContainer:', event.target.closest('.historyContainer'))
+
+    if (showMRUDropdown.value && !event.target.closest('.historyContainer')) {
+      console.log('Closing dropdown due to click outside')
+      showMRUDropdown.value = false
+    }
+  }, 10)
+}
+
 onMounted(() => {
   window.addEventListener('keydown', handleKeydown)
+  // Temporarily disable click outside handler to debug
+  // document.addEventListener('click', handleClickOutside)
 
   // Set up ResizeObserver to track grid container width
   if (gridContainer.value && typeof ResizeObserver !== 'undefined') {
@@ -313,6 +459,7 @@ onMounted(() => {
 
 onUnmounted(() => {
   window.removeEventListener('keydown', handleKeydown)
+  // document.removeEventListener('click', handleClickOutside)
   if (window._factoriopediaResizeObserver) {
     window._factoriopediaResizeObserver.disconnect()
   }
@@ -433,6 +580,9 @@ const filterBase64Svg = computed(() => {
   background: linear-gradient(to bottom, #3a3a3a, #2d2d2d);
   border-bottom: 1px solid #4a4a4a;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .factoripediaHeader h2 {
@@ -502,7 +652,27 @@ const filterBase64Svg = computed(() => {
 .filterButton.active {
   background: #ffa207;
   border-color: #ffa207;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  /*box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);*/
+}
+
+.filterButton.disabled {
+  background: #2a2a2a;
+  border-color: #3a3a3a;
+  cursor: not-allowed;
+  pointer-events: none;
+  filter: grayscale(100%);
+}
+
+.filterButton.disabled:hover {
+  background: #2a2a2a;
+  border-color: #3a3a3a;
+  box-shadow: none;
+}
+
+/* Apply greyscale to the sprite icon inside disabled buttons */
+.filterButton.disabled :global(.sprite-icon) {
+  filter: grayscale(100%);
+  opacity: 0.5;
 }
 
 .searchContainer {
@@ -540,7 +710,7 @@ const filterBase64Svg = computed(() => {
   padding: 8px;
   gap: 4px;
   grid-template-columns: repeat(v-bind(gridColumns), v-bind(buttonSize + 'px'));
-  overflow-y: auto;
+  overflow-y: scroll;
   background: #1f1f1f;
   border: 1px solid #4a4a4a;
   border-radius: 2px;
