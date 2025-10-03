@@ -124,6 +124,7 @@ const buttonSize = computed(() => {
 
 // Calculate grid cell size (button + gap) for background alignment
 const gridCellSize = computed(() => {
+  console.log('buttonSize.value', buttonSize.value)
   return buttonSize.value + 4 // Button size + gap
 })
 
@@ -317,6 +318,32 @@ onUnmounted(() => {
     window._factoriopediaResizeObserver.disconnect()
   }
 })
+
+const base64Svg = computed(() => {
+  const image = `url(data:image/svg+xml;base64,${btoa(`
+<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100">
+  <defs>
+    <filter id="s" x="-10%" y="-10%" width="120%" height="120%">
+      <feGaussianBlur stdDeviation="0.4"/>
+    </filter>
+  </defs>
+  <!-- faint grid lines (top and left only so seams align) -->
+  <path d="M0 0 H100" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
+  <path d="M0 0 V100" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
+  <!-- inner square bounds at 12.5% inset (75% size) -->
+  <g transform="translate(12.5,12.5)">
+    <rect x="0" y="0" width="75" height="75" fill="rgba(255,255,255,0.04)"/>
+    <!-- deboss rim: highlights top/left -->
+    <rect x="0" y="0" width="75" height="2" fill="rgba(255,255,255,0.12)" filter="url(#s)"/>
+    <rect x="0" y="0" width="2" height="75" fill="rgba(255,255,255,0.12)" filter="url(#s)"/>
+    <!-- shadows bottom/right -->
+    <rect x="0" y="73" width="75" height="2" fill="rgba(0,0,0,0.20)" filter="url(#s)"/>
+    <rect x="73" y="0" width="2" height="75" fill="rgba(0,0,0,0.20)" filter="url(#s)"/>
+  </g>
+</svg>`)})`
+  console.log('image', image)
+  return image
+})
 </script>
 
 <style scoped>
@@ -454,19 +481,15 @@ onUnmounted(() => {
   grid-template-columns: repeat(v-bind(gridColumns), v-bind(buttonSize + 'px'));
   overflow-y: auto;
   background: #2a2a2a;
-  background-image:
-    /* Debossed square pattern */
-    linear-gradient(
-      135deg,
-      rgba(255, 255, 255, 0.08) 0%,
-      rgba(255, 255, 255, 0.02) 2px,
-      transparent 2px
-    ),
-    linear-gradient(315deg, rgba(0, 0, 0, 0.15) 0%, rgba(0, 0, 0, 0.05) 2px, transparent 2px),
-    /* Grid lines */ linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
-  background-size: v-bind(gridCellSize + 'px') v-bind(buttonSize + 'px');
-  background-position: 8px 8px;
+  :root {
+    --cell: v-bind(gridCellSize + 'px'); /* your gridCellSize */
+    --inset: 12.5%; /* padding inside each cell on all sides (12.5% ≈ 75% inner) */
+    --edge: 2px; /* rim width for the deboss highlight/shadow */
+  }
+  background-image: v-bind(base64Svg);
+  background-size: var(--cell) var(--cell);
+  background-size: v-bind(gridCellSize + 'px') v-bind(gridCellSize + 'px');
+  background-position: 5px 6px;
   border: 1px solid #4a4a4a;
   border-radius: 2px;
   box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.3);
