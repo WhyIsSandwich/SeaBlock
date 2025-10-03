@@ -36,7 +36,7 @@
         <div ref="itemGrid" class="item-grid">
           <template v-for="subgroup in groupedRecipes" :key="subgroup.subgroup">
             <!-- Subgroup wrapper -->
-            <div class="subgroup-grid" v-if="subgroup.recipes.length > 0">
+            <div v-if="subgroup.recipes.length > 0" class="subgroup-grid">
               <IconButton
                 v-for="item in subgroup.recipes"
                 :key="item.name"
@@ -125,8 +125,8 @@ const groupedRecipes = computed(() => {
   return categoryData.subgroups
 })
 
-// Flattened list of all recipes for the grid
-const allRecipes = computed(() => {
+// Flattened list of all recipes for the grid (currently unused but kept for potential future use)
+const _allRecipes = computed(() => {
   return groupedRecipes.value.flatMap(subgroup => subgroup.recipes)
 })
 
@@ -337,6 +337,14 @@ onUnmounted(() => {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 
+/* Override SpriteIcon styling for filter buttons */
+.filter-button :deep(.sprite-icon) {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+}
+
 .filter-button:hover {
   background: linear-gradient(to bottom, #5a5a5a, #4a4a4a);
   border-color: #6a6a6a;
@@ -387,10 +395,6 @@ onUnmounted(() => {
   gap: 8px;
   overflow-y: auto;
   background: #2a2a2a;
-  background-image:
-    linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
-  background-size: 42px 42px;
   border: 1px solid #4a4a4a;
   border-radius: 2px;
   box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.3);
@@ -402,6 +406,14 @@ onUnmounted(() => {
   grid-auto-rows: 40px;
   gap: 2px;
   width: 100%;
+  background: #2a2a2a;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+  background-size: 40px 40px;
+  background-position: 1px 1px;
+  padding: 1px;
+  border-radius: 2px;
 }
 
 .item-slot {

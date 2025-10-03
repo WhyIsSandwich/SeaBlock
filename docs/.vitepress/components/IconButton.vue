@@ -144,12 +144,16 @@ function handleClick() {
   min-height: v-bind(size + 'px');
   max-width: v-bind(size + 'px');
   max-height: v-bind(size + 'px');
-  border: 1px solid var(--vp-c-border);
-  border-radius: 4px;
-  background: var(--vp-c-bg);
+  /* Factorio button styling */
+  background: linear-gradient(to bottom, #4a4a4a, #3a3a3a);
+  border: 1px solid #5a5a5a;
+  border-radius: 2px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
   transition: all 0.2s ease;
   position: relative;
   flex-shrink: 0;
+  /* Add padding around the sprite content */
+  padding: 2px;
 }
 
 .icon-button.clickable {
@@ -157,27 +161,40 @@ function handleClick() {
 }
 
 .icon-button.clickable:hover {
-  background: var(--vp-c-bg-soft-hover);
-  border-color: var(--vp-c-brand-1);
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  background: linear-gradient(to bottom, #5a5a5a, #4a4a4a);
+  border-color: #6a6a6a;
+  box-shadow:
+    0 0 8px rgba(255, 255, 255, 0.3),
+    0 2px 4px rgba(0, 0, 0, 0.4);
 }
 
 .icon-button.selected {
-  background: var(--vp-c-brand-soft);
-  border-color: var(--vp-c-brand-1);
-  box-shadow: 0 0 0 2px var(--vp-c-brand-1);
+  background: linear-gradient(to bottom, #6a6a6a, #5a5a5a);
+  border-color: #ffa500;
+  box-shadow:
+    0 0 0 2px #ffa500,
+    0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.icon-button.selected.clickable:hover {
+  background: linear-gradient(to bottom, #7a7a7a, #6a6a6a);
+  border-color: #ffa500;
+  box-shadow:
+    0 0 0 2px #ffa500,
+    0 0 8px rgba(255, 165, 0, 0.4),
+    0 2px 4px rgba(0, 0, 0, 0.4);
 }
 
 .icon-button.empty-cell {
   background: transparent;
-  border: none;
+  border: 1px solid #3a3a3a;
   cursor: default;
+  box-shadow: none;
 }
 
 .icon-button.empty-cell:hover {
   background: transparent;
-  border: none;
+  border: 1px solid #3a3a3a;
   transform: none;
   box-shadow: none;
 }
@@ -195,23 +212,7 @@ function handleClick() {
 }
 
 .icon-button.selected .icon-label {
-  color: var(--vp-c-brand-1);
+  color: #ffa500;
   font-weight: 500;
-}
-
-/* Dark mode adjustments */
-.dark .icon-button {
-  background: var(--vp-c-bg);
-  border-color: var(--vp-c-border);
-}
-
-.dark .icon-button.clickable:hover {
-  background: var(--vp-c-bg-soft-hover);
-  border-color: var(--vp-c-brand-1);
-}
-
-.dark .icon-button.selected {
-  background: var(--vp-c-brand-soft);
-  border-color: var(--vp-c-brand-1);
 }
 </style>
