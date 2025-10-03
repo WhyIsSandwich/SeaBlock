@@ -320,28 +320,44 @@ onUnmounted(() => {
 })
 
 const base64Svg = computed(() => {
+  const cellSize = gridCellSize.value
   const image = `url(data:image/svg+xml;base64,${btoa(`
-<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100">
+<svg xmlns="http://www.w3.org/2000/svg" width="${cellSize}" height="${cellSize}">
   <defs>
-    <filter id="s" x="-10%" y="-10%" width="120%" height="120%">
-      <feGaussianBlur stdDeviation="0.4"/>
+    <filter id="blur" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="0.5"/>
+    </filter>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="0.3"/>
     </filter>
   </defs>
-  <!-- faint grid lines (top and left only so seams align) -->
-  <path d="M0 0 H100" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
-  <path d="M0 0 V100" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
-  <!-- inner square bounds at 12.5% inset (75% size) -->
-  <g transform="translate(12.5,12.5)">
-    <rect x="0" y="0" width="75" height="75" fill="rgba(255,255,255,0.04)"/>
-    <!-- deboss rim: highlights top/left -->
-    <rect x="0" y="0" width="75" height="2" fill="rgba(255,255,255,0.12)" filter="url(#s)"/>
-    <rect x="0" y="0" width="2" height="75" fill="rgba(255,255,255,0.12)" filter="url(#s)"/>
-    <!-- shadows bottom/right -->
-    <rect x="0" y="73" width="75" height="2" fill="rgba(0,0,0,0.20)" filter="url(#s)"/>
-    <rect x="73" y="0" width="2" height="75" fill="rgba(0,0,0,0.20)" filter="url(#s)"/>
+  
+  <!-- Main grid cell background -->
+  <rect x="0" y="0" width="${cellSize}" height="${cellSize}" fill="#1f1f1f"/>
+  
+  <!-- Grid lines for cell boundaries -->
+  <!--<line x1="0" y1="0" x2="${cellSize}" y2="0" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>-->
+  <!--<line x1="0" y1="0" x2="0" y2="${cellSize}" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>-->
+  
+  <!-- Inner debossed square (75% of cell size) -->
+  <g transform="translate(${cellSize * 0.125}, ${cellSize * 0.125})">
+    <!-- Drop shadow behind the square -->
+    <rect x="1" y="1" width="${cellSize * 0.75}" height="${cellSize * 0.75}" fill="rgba(0,0,0,0.4)" filter="url(#shadow)"/>
+    
+    <!-- Main square background -->
+    <rect x="0" y="0" width="${cellSize * 0.75}" height="${cellSize * 0.75}" fill="rgba(255,255,255,0.02)"/>
+    
+    <!-- Top highlight -->
+    <rect x="0" y="0" width="${cellSize * 0.75}" height="2" fill="rgba(255,255,255,0.18)" filter="url(#blur)"/>
+    <!-- Left highlight -->
+    <rect x="0" y="0" width="2" height="${cellSize * 0.75}" fill="rgba(255,255,255,0.18)" filter="url(#blur)"/>
+    
+    <!-- Bottom shadow -->
+    <rect x="0" y="${cellSize * 0.75 - 2}" width="${cellSize * 0.75}" height="2" fill="rgba(0,0,0,0.35)" filter="url(#shadow)"/>
+    <!-- Right shadow -->
+    <rect x="${cellSize * 0.75 - 2}" y="0" width="2" height="${cellSize * 0.75}" fill="rgba(0,0,0,0.35)" filter="url(#shadow)"/>
   </g>
 </svg>`)})`
-  console.log('image', image)
   return image
 })
 </script>
@@ -480,16 +496,12 @@ const base64Svg = computed(() => {
   gap: 4px;
   grid-template-columns: repeat(v-bind(gridColumns), v-bind(buttonSize + 'px'));
   overflow-y: auto;
-  background: #2a2a2a;
-  :root {
-    --cell: v-bind(gridCellSize + 'px'); /* your gridCellSize */
-    --inset: 12.5%; /* padding inside each cell on all sides (12.5% ≈ 75% inner) */
-    --edge: 2px; /* rim width for the deboss highlight/shadow */
-  }
+  background: #1f1f1f;
   background-image: v-bind(base64Svg);
-  background-size: var(--cell) var(--cell);
   background-size: v-bind(gridCellSize + 'px') v-bind(gridCellSize + 'px');
   background-position: 5px 6px;
+  background-repeat: repeat;
+  background-attachment: local;
   border: 1px solid #4a4a4a;
   border-radius: 2px;
   box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.3);

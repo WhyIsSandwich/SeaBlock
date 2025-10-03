@@ -142,8 +142,8 @@ function handleClick() {
   max-width: v-bind(size + 'px');
   max-height: v-bind(size + 'px');
   /* Factorio button styling */
-  background: linear-gradient(to bottom, #4a4a4a, #3a3a3a);
-  border: 1px solid #5a5a5a;
+  background: linear-gradient(to bottom, #3a3a3a, #2a2a2a);
+  border: 1px solid #4a4a4a;
   border-radius: 2px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
   transition:
@@ -177,14 +177,14 @@ function handleClick() {
 
 .emptyCell {
   background: transparent;
-  border: 1px solid #3a3a3a;
+  border: 1px solid #2a2a2a;
   cursor: default;
   box-shadow: none;
 }
 
 .emptyCell:hover {
   background: transparent;
-  border: 1px solid #3a3a3a;
+  border: 1px solid #2a2a2a;
   transform: none;
   box-shadow: none;
 }
