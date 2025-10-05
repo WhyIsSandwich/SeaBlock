@@ -1,11 +1,6 @@
 /*
  * Composable for handling the details data for the selected item and generating the details pane data for tooltips files
  * The format of the data is:
- */
-
-import { types } from 'util'
-
-/*
 
 data type as follows:
 {
@@ -49,7 +44,83 @@ const sectionTypes = {
   can_craft: 'can craft',
   unlock_technologies: 'Unlock technologies',
   technology_cost: 'Cost',
-  technology_effects: 'Effects'
+  technology_effects: 'Effects',
+  turret: 'Turret',
+  effect: 'Effect',
+  consumes_water: 'Consumes water',
+  equipment_grid: 'Equipment grid',
+  vehicle_weapons: 'Vehicle weapons',
+  vehicle: 'Vehicle',
+  burnable_fuel: 'Burnable fuel',
+  generates_steam: 'Generates steam',
+  stores_electricity: 'Stores electricity',
+  consumes_nuclear_fuel: 'Consumes nuclear fuel',
+  generates_heat: 'Generates heat',
+  consumes_heat: 'Consumes heat',
+  consumes_electricity: 'Consumes electricity',
+  generates_electricity: 'Generates electricity',
+  placed_in_equipment_grid: 'Placed in equipment grid',
+  generates_equipment_grid_electricity: 'Generates equipment grid electricity',
+  consumes_equipment_grid_electricity: 'Consumes equipment grid electricity',
+  stores_equipment_grid_electricity: 'Stores equipment grid electricity'
+}
+
+const labels = {
+  // Entity labels
+  rotation_speed: 'Rotation Speed',
+  hand_stack_size: 'Hand Stack Size',
+  can_filter_items: 'Can filter items.',
+  storage_volume: 'Storage Volume',
+  max_length: 'Max Length',
+  belt_speed: 'Belt Speed',
+  storage_size: 'Storage Size',
+  wire_reach: 'Wire Reach',
+  supply_area: 'Supply Area',
+  construction_area: 'Construction area',
+  radar_coverage_distance: 'Radar coverage distance',
+  pumping_speed: 'Pumping Speed',
+  mining_speed: 'Mining Speed',
+  mining_area: 'Mining Area',
+  crafting_speed: 'Crafting Speed',
+  pollution: 'Pollution',
+  research_speed: 'Research Speed',
+  module_slots: 'Module Slots',
+  cargo_capacity: 'Cargo Capacity',
+  speed: 'Speed',
+  range: 'Range',
+  shooting_speed: 'Shooting Speed',
+  max_consumption: 'Max Consumption',
+  distribution_efficiency: 'Distribution Efficiency',
+  continuous_coverage_distance: 'Continuous coverage distance',
+  exploration_coverage_distance: 'Exploration coverage distance',
+  base_health: 'Base Health',
+  healing: 'Healing',
+  resistances: 'Resistances',
+
+  // Item labels
+  nuclear_fuel: 'Nuclear Fuel',
+  spent_result: 'Spent Result',
+  fuel_value: 'Fuel Value',
+  fuel_pollution: 'Fuel Pollution',
+  inventory_size_bonus: 'Inventory Size Bonus',
+  movement_speed_bonus: 'Movement Speed Bonus',
+  robot_limit: 'Robot limit',
+  shield_hitpoints: 'Shield hitpoints',
+  shield_recharge_rate: 'Shield recharge rate',
+  range_shooting_speed: 'Range shooting speed',
+  stack_size: 'Stack Size',
+
+  // Tile labels
+  walking_speed: 'Walking Speed',
+  pollution_absorption: 'Pollution Absorption',
+
+  // Fluid labels
+  min_temperature: 'Min Temp',
+  max_temperature: 'Max Temp',
+  heat_capacity: 'Heat Capacity',
+
+  // Recipe labels
+  crafting_time: 'Crafting time'
 }
 
 function setEntityDetails({ statistics, sections, entity, item, isTooltip }) {
@@ -61,45 +132,45 @@ function setEntityDetails({ statistics, sections, entity, item, isTooltip }) {
 -Max possible health (not in tooltip)
 -Stack Size (from item with same id and placable result presumably as none of the rails show up)
 */
-  statistics.push({ label: 'Rotation Speed', value: entity.rotation_speed })
-  statistics.push({ label: 'Hand Stack Size', value: entity.hand_stack_size })
-  statistics.push({ label: 'Can filter items.', value: entity.can_filter_items })
-  statistics.push({ label: 'Storage Volume', value: entity.storage_volume })
-  statistics.push({ label: 'Max Length', value: entity.max_length })
-  statistics.push({ label: 'Belt Speed', value: entity.belt_speed })
-  statistics.push({ label: 'Storage Size', value: entity.storage_size })
-  statistics.push({ label: 'Wire Reach', value: entity.wire_reach })
-  statistics.push({ label: 'Supply Area', value: entity.supply_area_electric_roboport })
-  statistics.push({ label: 'Construction area', value: entity.construction_area })
-  statistics.push({ label: 'Radar coverage distance', value: entity.radar_coverage_distance })
-  statistics.push({ label: 'Pumping Speed', value: entity.pumping_speed })
-  statistics.push({ label: 'Mining Speed', value: entity.mining_speed })
-  statistics.push({ label: 'Mining Area', value: entity.mining_area })
-  statistics.push({ label: 'Crafting Speed', value: entity.crafting_speed })
-  statistics.push({ label: 'Pollution', value: entity.pollution })
-  statistics.push({ label: 'Research Speed', value: entity.research_speed })
-  statistics.push({ label: 'Module Slots', value: entity.module_slots })
-  statistics.push({ label: 'Cargo Capacity', value: entity.cargo_capacity })
-  statistics.push({ label: 'Speed', value: entity.speed })
-  statistics.push({ label: 'Range', value: entity.range })
-  statistics.push({ label: 'Shooting Speed', value: entity.shooting_speed })
-  statistics.push({ label: 'Max Consumption', value: entity.max_consumption })
-  statistics.push({ label: 'Distribution Efficiency', value: entity.distribution_efficiency })
+  statistics.push({ label: labels.rotation_speed, value: entity.rotation_speed })
+  statistics.push({ label: labels.hand_stack_size, value: entity.hand_stack_size })
+  statistics.push({ label: labels.can_filter_items, value: entity.can_filter_items })
+  statistics.push({ label: labels.storage_volume, value: entity.storage_volume })
+  statistics.push({ label: labels.max_length, value: entity.max_length })
+  statistics.push({ label: labels.belt_speed, value: entity.belt_speed })
+  statistics.push({ label: labels.storage_size, value: entity.storage_size })
+  statistics.push({ label: labels.wire_reach, value: entity.wire_reach })
+  statistics.push({ label: labels.supply_area, value: entity.supply_area_electric_roboport })
+  statistics.push({ label: labels.construction_area, value: entity.construction_area })
+  statistics.push({ label: labels.radar_coverage_distance, value: entity.radar_coverage_distance })
+  statistics.push({ label: labels.pumping_speed, value: entity.pumping_speed })
+  statistics.push({ label: labels.mining_speed, value: entity.mining_speed })
+  statistics.push({ label: labels.mining_area, value: entity.mining_area })
+  statistics.push({ label: labels.crafting_speed, value: entity.crafting_speed })
+  statistics.push({ label: labels.pollution, value: entity.pollution })
+  statistics.push({ label: labels.research_speed, value: entity.research_speed })
+  statistics.push({ label: labels.module_slots, value: entity.module_slots })
+  statistics.push({ label: labels.cargo_capacity, value: entity.cargo_capacity })
+  statistics.push({ label: labels.speed, value: entity.speed })
+  statistics.push({ label: labels.range, value: entity.range })
+  statistics.push({ label: labels.shooting_speed, value: entity.shooting_speed })
+  statistics.push({ label: labels.max_consumption, value: entity.max_consumption })
+  statistics.push({ label: labels.distribution_efficiency, value: entity.distribution_efficiency })
   statistics.push({
-    label: 'Continuous coverage distance',
+    label: labels.continuous_coverage_distance,
     value: entity.continuous_coverage_distance
   })
   statistics.push({
-    label: 'Exploration coverage distance',
+    label: labels.exploration_coverage_distance,
     value: entity.exploration_coverage_distance
   })
   if (!isTooltip) {
-    statistics.push({ label: 'Base Health', value: entity.base_health })
-    statistics.push({ label: 'Healing', value: entity.healing })
+    statistics.push({ label: labels.base_health, value: entity.base_health })
+    statistics.push({ label: labels.healing, value: entity.healing })
   }
-  statistics.push({ label: 'Stack Size', value: item.stack_size })
+  statistics.push({ label: labels.stack_size, value: item.stack_size })
   if (!isTooltip) {
-    statistics.push({ label: 'Resistances', value: entity.resistances })
+    statistics.push({ label: labels.resistances, value: entity.resistances })
   }
 
   sections.push({
@@ -160,19 +231,19 @@ function setEntityDetails({ statistics, sections, entity, item, isTooltip }) {
   })
 }
 function setItemDetails({ statistics, sections, item }) {
-  statistics.push({ label: 'Nuclear Fuel', value: item.nuclear_fuel })
-  statistics.push({ label: 'Spent Result', value: item.spent_result })
-  statistics.push({ label: 'Fuel Value', value: item.fuel_value })
-  statistics.push({ label: 'Fuel Pollution', value: item.fuel_pollution })
-  statistics.push({ label: 'Resistances', value: item.resistances })
-  statistics.push({ label: 'Inventory Size Bonus', value: item.inventory_size_bonus })
-  statistics.push({ label: 'Movement Speed Bonus', value: item.movement_speed_bonus })
-  statistics.push({ label: 'Construction area', value: item.construction_area })
-  statistics.push({ label: 'Robot limit', value: item.robot_limit })
-  statistics.push({ label: 'Shield hitpoints', value: item.shield_hitpoints })
-  statistics.push({ label: 'Shield recharge rate', value: item.shield_recharge_rate })
-  statistics.push({ label: 'Range shooting speed', value: item.range_shooting_speed })
-  statistics.push({ label: 'Stack Size', value: item.stack_size })
+  statistics.push({ label: labels.nuclear_fuel, value: item.nuclear_fuel })
+  statistics.push({ label: labels.spent_result, value: item.spent_result })
+  statistics.push({ label: labels.fuel_value, value: item.fuel_value })
+  statistics.push({ label: labels.fuel_pollution, value: item.fuel_pollution })
+  statistics.push({ label: labels.resistances, value: item.resistances })
+  statistics.push({ label: labels.inventory_size_bonus, value: item.inventory_size_bonus })
+  statistics.push({ label: labels.movement_speed_bonus, value: item.movement_speed_bonus })
+  statistics.push({ label: labels.construction_area, value: item.construction_area })
+  statistics.push({ label: labels.robot_limit, value: item.robot_limit })
+  statistics.push({ label: labels.shield_hitpoints, value: item.shield_hitpoints })
+  statistics.push({ label: labels.shield_recharge_rate, value: item.shield_recharge_rate })
+  statistics.push({ label: labels.range_shooting_speed, value: item.range_shooting_speed })
+  statistics.push({ label: labels.stack_size, value: item.stack_size })
 
   sections.push({
     type: sectionTypes.placed_in_equipment_grid,
@@ -201,16 +272,16 @@ function setItemDetails({ statistics, sections, item }) {
 }
 
 function setTileDetails({ statistics, tile }) {
-  statistics.push({ label: 'Walking Speed', value: tile.walking_speed })
-  statistics.push({ label: 'Pollution Absorption', value: tile.pollution_absorption })
+  statistics.push({ label: labels.walking_speed, value: tile.walking_speed })
+  statistics.push({ label: labels.pollution_absorption, value: tile.pollution_absorption })
 }
 
 function setFluidDetails({ statistics, fluid }) {
-  statistics.push({ label: 'Fuel Value', value: fluid.fuel_value })
-  statistics.push({ label: 'Fuel Pollution', value: fluid.fuel_pollution })
-  statistics.push({ label: 'Min Temp', value: fluid.min_temperature })
-  statistics.push({ label: 'Max Temp', value: fluid.max_temperature })
-  statistics.push({ label: 'Heat Capacity', value: fluid.heat_capacity })
+  statistics.push({ label: labels.fuel_value, value: fluid.fuel_value })
+  statistics.push({ label: labels.fuel_pollution, value: fluid.fuel_pollution })
+  statistics.push({ label: labels.min_temperature, value: fluid.min_temperature })
+  statistics.push({ label: labels.max_temperature, value: fluid.max_temperature })
+  statistics.push({ label: labels.heat_capacity, value: fluid.heat_capacity })
 }
 function setTechnologyDetails({ sections, technology }) {
   sections.push({
@@ -229,7 +300,7 @@ function setRecipeDetails({ types, sections, recipe, isTooltip }) {
   })
   sections.push({
     type: sectionTypes.crafting_time,
-    statistics: [{ label: 'Crafting time', value: recipe.energy_required }]
+    statistics: [{ label: labels.crafting_time, value: recipe.energy_required }]
   })
   if (!types.includes('item') && !types.includes('fluid')) {
     sections.push({
@@ -272,36 +343,36 @@ function getDetailsData(types, unifiedObject, isTooltip) {
   const request = { types, isTooltip, sections: data.sections, statistics: data.statistics }
 
   if (types.includes('entity')) {
-    const entity = unifiedObject.entity
+    const { entity, item } = unifiedObject
     setEntityDetails({ ...request, entity, item })
   }
 
   if (types.includes('item')) {
-    const item = unifiedObject.item
+    const { item } = unifiedObject
     setItemDetails({ ...request, item })
   }
 
   if (types.includes('tile')) {
-    const tile = unifiedObject.tile
+    const { tile } = unifiedObject
     setTileDetails({ ...request, tile })
   }
   if (types.includes('fluid')) {
-    const fluid = unifiedObject.fluid
+    const { fluid } = unifiedObject
     setFluidDetails({ ...request, fluid })
   }
   if (types.includes('technology')) {
-    const technology = unifiedObject.technology
+    const { technology } = unifiedObject
     setTechnologyDetails({ ...request, technology })
   }
 
   if (types.includes('recipe')) {
-    const recipe = unifiedObject.recipe
+    const { recipe } = unifiedObject
     setRecipeDetails({ ...request, recipe })
   }
 
   if (isTooltip) {
     if (types.includes('recipe')) {
-      const recipe = unifiedObject.recipe
+      const { recipe } = unifiedObject
       recipe.products?.forEach(product => {
         data.tooltipExtras.push({ type: product.type, name: product.name })
       })
