@@ -88,7 +88,7 @@ const iconStyle = computed(() => {
     return {}
   }
 
-  const scale = iconSize.value / spritemapData.value.iconSize
+  const scale = iconSize.value / Math.max(spriteData.value.width, spriteData.value.height)
   const scaledWidth = spriteData.value.width * scale
   const scaledHeight = spriteData.value.height * scale
 
@@ -105,9 +105,6 @@ const iconStyle = computed(() => {
   if (props.color) {
     // Use CSS mask approach: set background color and use sprite as mask
     const baseUrl = withBase(`/data/${spritemapData.value.image}`)
-    const scale = iconSize.value / spritemapData.value.iconSize
-    const scaledWidth = spriteData.value.width * scale
-    const scaledHeight = spriteData.value.height * scale
     const scaledSheetWidth = spritemapData.value.width * scale
     const scaledSheetHeight = spritemapData.value.height * scale
     const scaledX = spriteData.value.x * scale

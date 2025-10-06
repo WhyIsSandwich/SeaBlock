@@ -7,6 +7,8 @@ import crypto from 'crypto'
 
 import sharp from 'sharp'
 
+import { useFactorioPrototypeMapping } from '../src/composables/useFactorioPrototypeMapping.js'
+
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
@@ -17,6 +19,7 @@ const __dirname = path.dirname(__filename)
  * - Preserves original data-raw format with minimal, reversible transformations
  * - Outputs language-specific locale file (locale-en.json, locale-de.json, etc.)
  * - Generates deduplicated spritemap (collapses identical images)
+ * - Uses skyline bin packing algorithm for efficient sprite atlas (icons capped at 64x64)
  * - Creates type-mapping.json showing type hierarchies
  * - Uses icon collapsing logic to find implicit icons
  * - All JSON output uses compact format (no pretty printing) for speed/size
@@ -24,7 +27,7 @@ const __dirname = path.dirname(__filename)
  * OUTPUT FILES:
  * - data.json: Original data-raw with minimal transforms (icon paths -> spritemap refs), compact
  * - locale-{lang}.json: Language-specific localization { lang, type: {name: {n: "", d: ""}} }, compact
- * - spritemap.json + spritemap.png: Deduplicated icon atlas, compact
+ * - spritemap.json + spritemap.png: Skyline-packed, deduplicated icon atlas (max 64x64), compact
  * - type-mapping.json: Maps which prototypes belong to which type hierarchies, compact
  */
 
@@ -170,87 +173,167 @@ class FactorioDataProcessorRefactored {
   hashIconFile(filePath) {
     try {
       const buffer = fs.readFileSync(filePath)
-      return crypto.createHash('md5').update(buffer).digest('hex')
+      const hash = crypto.createHash('md5').update(buffer).digest('hex')
+
+      // Debug logging for first few files
+      if (this.spritemapIndex < 3) {
+        console.log(`Hashing ${filePath}: ${buffer.length} bytes -> ${hash.substring(0, 8)}...`)
+      }
+
+      return hash
     } catch (error) {
       console.warn(`Failed to hash icon file ${filePath}:`, error.message)
       return null
     }
   }
 
+  baseTypesWithIcons = [
+    'achievement',
+    'airborne-pollutant',
+    'ammo-category',
+    'asteroid-chunk',
+    'decorative',
+    'entity',
+    'equipment',
+    'fluid',
+    'item',
+    'item-group',
+    'quality',
+    'recipe',
+    'shortcut',
+    'space-location',
+    'technology',
+    'tile',
+    'virtual-signal'
+  ]
   /**
    * Find icon for a prototype using collapsing logic
    * This mimics Factoriopedia behavior where some icons are inherited
    */
   findPrototypeIcon(prototypeType, prototypeName, prototypeData) {
+    // Get the mapping from the composable
+    const { subtypeToBaseType } = useFactorioPrototypeMapping()
+
+    // Determine the base type for this prototype
+    const baseType = subtypeToBaseType[prototypeType]
+
+    if (!this.baseTypesWithIcons.includes(baseType)) {
+      return { iconPath: null, baseType }
+    }
+
     // Direct paths to try
     const possiblePaths = []
 
-    // 1. Direct type/name path
-    possiblePaths.push(path.join(this.scriptOutputPath, prototypeType, `${prototypeName}.png`))
-
-    // 2. If it's an item with entity data, try entity path
-    if (prototypeData.place_result) {
-      possiblePaths.push(
-        path.join(this.scriptOutputPath, 'entity', `${prototypeData.place_result}.png`)
-      )
-    }
-
-    // 3. If it's a recipe, try the main product
-    if (prototypeType === 'recipe' && prototypeData.results) {
-      const mainResult = Array.isArray(prototypeData.results) ? prototypeData.results[0] : null
-      if (mainResult && mainResult.name) {
-        possiblePaths.push(
-          path.join(this.scriptOutputPath, mainResult.type || 'item', `${mainResult.name}.png`)
-        )
-      }
-    }
-
-    // 4. If it has a result field (old recipe format)
-    if (prototypeType === 'recipe' && prototypeData.result) {
-      possiblePaths.push(path.join(this.scriptOutputPath, 'item', `${prototypeData.result}.png`))
-    }
+    // 1. Direct base type/name path
+    possiblePaths.push(path.join(this.scriptOutputPath, baseType, `${prototypeName}.png`))
 
     // Try each path
     for (const iconPath of possiblePaths) {
       if (fs.existsSync(iconPath)) {
-        return iconPath
+        return { iconPath, baseType }
       }
     }
+    console.warn(`No icon found for ${baseType}-${prototypeName}`)
 
-    return null
+    return { iconPath: null, baseType }
   }
 
   /**
-   * Add icon to spritemap with deduplication
-   * Returns spritemap reference or null
+   * Register an icon for spritemap generation
+   * This just records the icon without processing it yet
    */
-  addIconToSpritemap(iconPath, spritemapKey) {
+  registerIcon(iconPath, spritemapKey) {
     if (!iconPath || !fs.existsSync(iconPath)) {
       return null
     }
 
     // Hash the icon to detect duplicates
     const hash = this.hashIconFile(iconPath)
-    if (!hash) return null
+    if (!hash) {
+      console.warn(`Failed to hash icon: ${iconPath}`)
+      return null
+    }
+
+    // Debug logging for first few icons
+    if (this.spritemapIndex < 5) {
+      console.log(`Icon ${spritemapKey}: hash=${hash.substring(0, 8)}...`)
+    }
 
     // Check if we already have this icon (by hash)
     if (this.iconHashes[hash]) {
-      // Reuse existing spritemap entry
-      return this.iconHashes[hash]
+      // Reuse existing icon - just record the mapping
+      const existingKey = this.iconHashes[hash]
+
+      // Debug logging for duplicates
+      console.log(
+        `Duplicate found: ${spritemapKey} -> ${existingKey} (hash: ${hash.substring(0, 8)}...)`
+      )
+
+      // Record that this key maps to the existing icon
+      this.spritemap[spritemapKey] = existingKey
+
+      return spritemapKey
     }
 
-    // New unique icon - add to spritemap
-    this.spritemap[spritemapKey] = {
-      x: 0, // Will be calculated during spritemap generation
-      y: 0,
-      width: 64,
-      height: 64
-    }
-    this.spritemapSources[spritemapKey] = iconPath
+    // New unique icon - record it
     this.iconHashes[hash] = spritemapKey
+    this.spritemapSources[spritemapKey] = iconPath
     this.spritemapIndex++
 
     return spritemapKey
+  }
+
+  /**
+   * Process all registered icons and create the final spritemap
+   * This is where we do the actual image processing and bin packing
+   */
+  async processRegisteredIcons() {
+    console.log('Processing registered icons...')
+
+    // Get unique icons (only those in spritemapSources)
+    const uniqueIcons = {}
+    for (const [key, sourcePath] of Object.entries(this.spritemapSources)) {
+      // Get actual image dimensions (capped at 64x64)
+      let width = 64
+      let height = 64
+      try {
+        // eslint-disable-next-line no-await-in-loop
+        const metadata = await sharp(sourcePath).metadata()
+        width = Math.min(metadata.width || 64, 64)
+        height = Math.min(metadata.height || 64, 64)
+      } catch (error) {
+        console.warn(`Failed to read dimensions for ${sourcePath}, using 64x64`)
+      }
+
+      uniqueIcons[key] = {
+        x: 0, // Will be calculated during bin packing
+        y: 0,
+        width,
+        height
+      }
+    }
+
+    // Do bin packing on unique icons only
+    const {
+      packed,
+      width: spritemapWidth,
+      height: spritemapHeight
+    } = this.binPackSprites(uniqueIcons)
+
+    // Update the spritemap with packed coordinates
+    for (const [key, packedSprite] of Object.entries(packed)) {
+      this.spritemap[key] = packedSprite
+    }
+
+    // For duplicate icons, copy the coordinates from their referenced icon
+    for (const [key, referencedKey] of Object.entries(this.spritemap)) {
+      if (typeof referencedKey === 'string' && referencedKey !== key) {
+        // This is a duplicate - copy coordinates from the referenced icon
+        this.spritemap[key] = { ...this.spritemap[referencedKey] }
+      }
+    }
+
+    return { spritemapWidth, spritemapHeight }
   }
 
   /**
@@ -288,23 +371,271 @@ class FactorioDataProcessorRefactored {
         this.typeHierarchy[prototypeType].push(prototypeName)
         typeMapping[categoryKey].push(prototypeName)
 
-        // Find and process icon
-        const iconPath = this.findPrototypeIcon(categoryKey, prototypeName, prototypeData)
+        // Find and register icon for spritemap generation
+        const { iconPath, baseType } = this.findPrototypeIcon(
+          categoryKey,
+          prototypeName,
+          prototypeData
+        )
         if (iconPath) {
-          const spritemapKey = `${categoryKey}:${prototypeName}`
-          const spritemapRef = this.addIconToSpritemap(iconPath, spritemapKey)
-
-          if (spritemapRef) {
-            // Add spritemap reference (reversible transform)
-            processedPrototype.__iconRef = spritemapRef
-          }
+          const spritemapKey = `${baseType}-${prototypeName}`
+          this.registerIcon(iconPath, spritemapKey)
         }
 
         processedData[categoryKey][prototypeName] = processedPrototype
       }
     }
 
+    // Process combined types for icons (items that are also entities, etc.)
+    // Note: This only adds icons to spritemap, doesn't modify original data
+    this.processCombinedTypeIcons(processedData)
+
     return { data: processedData, typeMapping }
+  }
+
+  /**
+   * Process combined types for icons (items that are also entities, etc.)
+   * This ensures that combined types get icons even when they don't override the icon
+   */
+  processCombinedTypeIcons(processedData) {
+    console.log('Processing combined type icons...')
+
+    // Get all unique keys across all categories
+    const allKeys = new Set()
+    for (const [_categoryKey, categoryData] of Object.entries(processedData)) {
+      for (const prototypeName of Object.keys(categoryData)) {
+        allKeys.add(prototypeName)
+      }
+    }
+
+    // Process each key to find combined types
+    for (const key of allKeys) {
+      const combinedTypes = this.findCombinedTypes(key, processedData)
+
+      if (combinedTypes.length > 1) {
+        // This key exists in multiple categories - it's a combined type
+        const { iconPath, baseType } = this.findCombinedTypeIcon(key, combinedTypes, processedData)
+
+        if (iconPath) {
+          // Use the base type for the spritemap key
+          const spritemapKey = `${baseType}-${key}`
+
+          // Check if we already have an icon for this key
+          const existingRef = this.findExistingIconRef(key, processedData)
+          if (!existingRef) {
+            this.registerIcon(iconPath, spritemapKey)
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Find all categories/types that contain a given key
+   */
+  findCombinedTypes(key, processedData) {
+    const types = []
+    for (const [categoryKey, categoryData] of Object.entries(processedData)) {
+      if (categoryData[key]) {
+        types.push(categoryKey)
+      }
+    }
+    return types
+  }
+
+  /**
+   * Find icon for a combined type using the same hierarchy as unified objects
+   * Priority: recipe > item > entity > fluid > tile
+   */
+  findCombinedTypeIcon(key, combinedTypes, processedData) {
+    // Define priority order (same as unified objects)
+    const priorityOrder = ['recipe', 'item', 'entity', 'fluid', 'tile']
+
+    // Sort combined types by priority
+    const sortedTypes = combinedTypes.sort((a, b) => {
+      const aIndex = priorityOrder.indexOf(a)
+      const bIndex = priorityOrder.indexOf(b)
+      return aIndex - bIndex
+    })
+
+    // Try to find icon using the hierarchy
+    for (const type of sortedTypes) {
+      const prototypeData = processedData[type]?.[key]
+      if (prototypeData) {
+        const { iconPath, baseType } = this.findPrototypeIcon(type, key, prototypeData)
+        if (iconPath) {
+          return { iconPath, baseType }
+        }
+      }
+    }
+
+    return { iconPath: null, baseType: null }
+  }
+
+  /**
+   * Check if we already have an icon in the spritemap for this key
+   */
+  findExistingIconRef(key, _processedData) {
+    // Check if we already have this icon in our spritemap
+    for (const [spritemapKey, _spriteData] of Object.entries(this.spritemap)) {
+      if (spritemapKey.endsWith(`-${key}`)) {
+        return spritemapKey
+      }
+    }
+    return null
+  }
+
+  /**
+   * Skyline bin packing algorithm
+   * Better for mostly-square images - maintains a "skyline" and places rectangles optimally
+   */
+  binPackSprites(sprites) {
+    // Sort sprites by max dimension (descending), then by area for better packing
+    const sortedSprites = Object.entries(sprites).sort((a, b) => {
+      const maxA = Math.max(a[1].width, a[1].height)
+      const maxB = Math.max(b[1].width, b[1].height)
+      if (maxA !== maxB) return maxB - maxA
+      return b[1].width * b[1].height - a[1].width * a[1].height
+    })
+
+    const packed = {}
+    const maxWidth = 2048 // Maximum texture width (conservative for compatibility)
+    const padding = 2 // Padding between sprites to avoid bleeding
+
+    // Skyline: array of {x, y, width} representing the top edge
+    const skyline = [{ x: 0, y: 0, width: maxWidth }]
+
+    for (const [key, sprite] of sortedSprites) {
+      const w = sprite.width + padding * 2
+      const h = sprite.height + padding * 2
+
+      // Find best position on skyline (lowest y position that fits)
+      let bestIdx = -1
+      let bestY = Infinity
+      let bestWastedHeight = Infinity
+
+      for (let i = 0; i < skyline.length; i++) {
+        const skylineSegment = skyline[i]
+        // eslint-disable-next-line prefer-destructuring
+        let y = skylineSegment.y
+        let wastedHeight = 0
+        let widthLeft = w
+        let canFit = true
+
+        // Check if sprite fits starting at this position
+        for (let j = i; j < skyline.length && widthLeft > 0; j++) {
+          const checkSegment = skyline[j]
+          if (checkSegment.x >= skylineSegment.x + w) break
+
+          if (checkSegment.y > y) {
+            // eslint-disable-next-line prefer-destructuring
+            y = checkSegment.y
+          }
+
+          const segmentWidth = Math.min(checkSegment.width, widthLeft)
+          wastedHeight += (y - checkSegment.y) * segmentWidth
+          widthLeft -= segmentWidth
+        }
+
+        if (widthLeft > 0) {
+          canFit = false // Doesn't fit within skyline segments
+        }
+
+        // Check if this is the best position so far
+        if (canFit && (y < bestY || (y === bestY && wastedHeight < bestWastedHeight))) {
+          bestIdx = i
+          bestY = y
+          bestWastedHeight = wastedHeight
+        }
+      }
+
+      if (bestIdx === -1) {
+        // Couldn't fit anywhere, place at end
+        const lastSegment = skyline[skyline.length - 1]
+        bestIdx = skyline.length - 1
+        bestY = lastSegment.y
+      }
+
+      // Place sprite at best position
+      const { x } = skyline[bestIdx]
+      packed[key] = {
+        x: x + padding,
+        y: bestY + padding,
+        width: sprite.width,
+        height: sprite.height
+      }
+
+      // Update skyline
+      const newSkylineSegment = { x, y: bestY + h, width: w }
+
+      // Remove segments that are fully covered
+      const updatedSkyline = []
+      let segmentAdded = false
+
+      for (let i = 0; i < skyline.length; i++) {
+        const seg = skyline[i]
+
+        // Segment is before new sprite
+        if (seg.x + seg.width <= x) {
+          updatedSkyline.push(seg)
+        }
+        // Segment is after new sprite
+        else if (seg.x >= x + w) {
+          if (!segmentAdded) {
+            updatedSkyline.push(newSkylineSegment)
+            segmentAdded = true
+          }
+          updatedSkyline.push(seg)
+        }
+        // Segment is partially covered
+        else {
+          if (!segmentAdded) {
+            updatedSkyline.push(newSkylineSegment)
+            segmentAdded = true
+          }
+
+          // Keep the uncovered part
+          if (seg.x + seg.width > x + w) {
+            updatedSkyline.push({
+              x: x + w,
+              y: seg.y,
+              width: seg.x + seg.width - (x + w)
+            })
+          }
+        }
+      }
+
+      if (!segmentAdded) {
+        updatedSkyline.push(newSkylineSegment)
+      }
+
+      skyline.length = 0
+      skyline.push(...updatedSkyline)
+
+      // Merge adjacent segments with same height
+      const mergedSkyline = []
+      for (const seg of skyline) {
+        if (
+          mergedSkyline.length > 0 &&
+          mergedSkyline[mergedSkyline.length - 1].y === seg.y &&
+          mergedSkyline[mergedSkyline.length - 1].x +
+            mergedSkyline[mergedSkyline.length - 1].width ===
+            seg.x
+        ) {
+          mergedSkyline[mergedSkyline.length - 1].width += seg.width
+        } else {
+          mergedSkyline.push(seg)
+        }
+      }
+      skyline.length = 0
+      skyline.push(...mergedSkyline)
+    }
+
+    // Calculate final dimensions
+    const width = Math.max(...Object.values(packed).map(s => s.x + s.width + padding), 64)
+    const height = Math.max(...Object.values(packed).map(s => s.y + s.height + padding), 64)
+
+    return { packed, width, height }
   }
 
   /**
@@ -317,17 +648,12 @@ class FactorioDataProcessorRefactored {
       return
     }
 
-    console.log(`Generating spritemap with ${iconCount} unique icons...`)
+    console.log(`Generating spritemap with ${iconCount} total icons...`)
 
-    // Calculate spritemap dimensions
-    const iconsPerRow = Math.ceil(Math.sqrt(iconCount))
-    const iconSize = 64
-    const spritemapWidth = iconsPerRow * iconSize
-    const spritemapHeight = Math.ceil(iconCount / iconsPerRow) * iconSize
+    // Process all registered icons (deduplication and bin packing)
+    const { spritemapWidth, spritemapHeight } = await this.processRegisteredIcons()
 
-    console.log(
-      `Spritemap dimensions: ${spritemapWidth}x${spritemapHeight} (${iconsPerRow} icons per row)`
-    )
+    console.log(`Spritemap dimensions: ${spritemapWidth}x${spritemapHeight}`)
 
     // Create blank canvas
     const spritemapCanvas = sharp({
@@ -341,31 +667,16 @@ class FactorioDataProcessorRefactored {
 
     // Prepare composite operations
     const compositeOperations = []
-    const updatedSpritemap = {}
 
-    let iconIndex = 0
-    for (const [spritemapKey, _spriteData] of Object.entries(this.spritemap)) {
-      const row = Math.floor(iconIndex / iconsPerRow)
-      const col = iconIndex % iconsPerRow
-      const x = col * iconSize
-      const y = row * iconSize
-
-      // Update coordinates
-      updatedSpritemap[spritemapKey] = {
-        x,
-        y,
-        width: iconSize,
-        height: iconSize
-      }
-
-      // Get source file
-      const sourcePath = this.spritemapSources[spritemapKey]
-      if (sourcePath && fs.existsSync(sourcePath)) {
+    // Only process unique icons (those in spritemapSources)
+    for (const [spritemapKey, sourcePath] of Object.entries(this.spritemapSources)) {
+      const spriteData = this.spritemap[spritemapKey]
+      if (spriteData && sourcePath && fs.existsSync(sourcePath)) {
         try {
-          // Process icon
+          // Process icon (resize to match packed dimensions, capped at 64x64)
           // eslint-disable-next-line no-await-in-loop
           const iconBuffer = await sharp(sourcePath)
-            .resize(iconSize, iconSize, {
+            .resize(spriteData.width, spriteData.height, {
               fit: 'contain',
               background: { r: 0, g: 0, b: 0, alpha: 0 }
             })
@@ -374,15 +685,13 @@ class FactorioDataProcessorRefactored {
 
           compositeOperations.push({
             input: iconBuffer,
-            left: x,
-            top: y
+            left: spriteData.x,
+            top: spriteData.y
           })
         } catch (error) {
           console.warn(`Failed to process icon ${sourcePath}:`, error.message)
         }
       }
-
-      iconIndex++
     }
 
     // Generate spritemap image
@@ -400,9 +709,8 @@ class FactorioDataProcessorRefactored {
         image: 'spritemap.png',
         width: spritemapWidth,
         height: spritemapHeight,
-        iconsPerRow,
-        iconSize,
-        sprites: updatedSpritemap
+        imageSize: 64, // Standard icon size for Factorio sprites
+        sprites: this.spritemap
       }
       fs.writeFileSync(spritemapFile, JSON.stringify(spritemapData))
       console.log(`✓ Written spritemap JSON: ${spritemapFile}`)
@@ -411,10 +719,18 @@ class FactorioDataProcessorRefactored {
       const totalIcons = this.spritemapIndex
       const uniqueIcons = Object.keys(this.iconHashes).length
       const deduped = totalIcons - uniqueIcons
+
+      console.log(`📊 Deduplication stats:`)
+      console.log(`  Total icons processed: ${totalIcons}`)
+      console.log(`  Unique icons: ${uniqueIcons}`)
+      console.log(`  Duplicates found: ${deduped}`)
+
       if (deduped > 0) {
         console.log(
           `✓ Deduplicated ${deduped} duplicate icons (${((deduped / totalIcons) * 100).toFixed(1)}% reduction)`
         )
+      } else {
+        console.log(`⚠ No duplicates found - all icons are unique`)
       }
     } catch (error) {
       console.error('Failed to generate spritemap:', error.message)
