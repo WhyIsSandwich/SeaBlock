@@ -79,666 +79,33 @@
       </div>
 
       <!-- Large Item Image (for entities and items) -->
-      <div
-        v-if="isEntity || selectedItem.types?.includes('item')"
-        :class="$style.itemImageContainer"
-      >
+      <div v-if="selectedItem.entity" :class="$style.itemImageContainer">
         <FactorioSprite
-          v-if="entitySpriteData && isEntity"
+          v-if="selectedItem.entity"
           :key="type + name"
-          :sprite-data="entitySpriteData"
+          :sprite-data="selectedItem.entity"
           :size="128"
           :play-animation="!isAnimationPaused"
           :is-paused="isAnimationPaused"
           @toggle-pause="emit('toggle-animation-pause')"
         />
-        <IconButton
-          v-else
-          :type="getPrimaryType(selectedItem)"
-          :name="selectedItem.name"
-          :size="128"
-          :clickable="false"
-        />
       </div>
-
-      <!-- Usage Description -->
-      <div
-        v-if="selectedItem.description && activeTab === 'details'"
-        :class="$style.usageDescription"
-      ></div>
       <!-- Details Tab Content -->
       <div v-if="activeTab === 'details'">
         <p>{{ selectedItem.description }}</p>
         <!-- Statistics -->
-        <div :class="$style.statistics">
-          <div v-for="stat in statisticsData" :key="stat.label" :class="$style.statItem">
-            <SpriteIcon v-if="stat.icon" :sprite-key="stat.icon" :size="16" />
-            <strong>{{ stat.label }}:</strong>
-            <template v-if="stat.children">
-              <ul v-if="stat.children.length > 0" :class="$style.resistanceList">
-                <li v-for="child in stat.children" :key="child.label">
-                  <template v-if="child.children">
-                    <strong>{{ child.label }}:</strong>
-                    <ul v-if="child.children.length > 0" :class="$style.resistanceList">
-                      <li v-for="grandchild in child.children" :key="grandchild.label">
-                        {{ grandchild.label }}: {{ grandchild.value }}
-                      </li>
-                    </ul>
-                  </template>
-                  <template v-else> {{ child.label }}: {{ child.value }} </template>
-                </li>
-              </ul>
-            </template>
-            <template v-else>
-              {{ stat.value }}
-            </template>
-          </div>
+        <Statistics
+          v-if="detailsData.statistics?.length > 0"
+          :statistics="detailsData.statistics"
+        />
 
-          <!-- Electricity Consumption -->
-          <div v-if="hasElectricityConsumption" :class="$style.electricityConsumption">
-            <div :class="$style.electricitySection">
-              <SpriteIcon sprite-key="utility-electricity" :size="16" color="#ffeb3b" />
-              <span>Consumes electricity</span>
-            </div>
-            <div v-if="entityEnergyUsage" :class="$style.energyDetails">
-              <div v-if="entityEnergyUsage.max" :class="$style.energyItem">
-                <strong>Max. consumption:</strong> {{ entityEnergyUsage.max }} kW
-              </div>
-              <div v-if="entityEnergyUsage.min" :class="$style.energyItem">
-                <strong>Min. consumption:</strong> {{ entityEnergyUsage.min }} kW
-              </div>
-            </div>
-          </div>
-
-          <!-- Power Generation -->
-          <div v-if="hasPowerGeneration" :class="$style.powerGeneration">
-            <div :class="$style.powerSection">
-              <SpriteIcon sprite-key="utility-electricity" :size="16" />
-              <span>Generates electricity</span>
-            </div>
-            <div v-if="powerOutput" :class="$style.powerOutput">
-              <strong>Max. output:</strong> {{ powerOutput }} kW
-            </div>
-          </div>
-
-          <!-- Recipe-specific content -->
-          <template v-if="selectedItem.types?.includes('recipe') && selectedItem.recipe">
-            <!-- Ingredients -->
-            <div v-if="selectedItem.recipe.ingredients?.length > 0" :class="$style.recipeSection">
-              <h4 title="Items required to craft this recipe">Ingredients:</h4>
-              <div :class="$style.ingredientsList">
-                <div
-                  v-for="ingredient in selectedItem.recipe.ingredients"
-                  :key="`${ingredient.name}-${ingredient.amount}`"
-                  :class="$style.ingredientItem"
-                >
-                  <IconButton
-                    :type="ingredient.type"
-                    :name="ingredient.name"
-                    :size="36"
-                    :clickable="true"
-                    @click="handleIconClick(ingredient.type, ingredient.name)"
-                  />
-                  <span
-                    >{{ ingredient.amount }} ×
-                    {{ getDisplayName(ingredient.name, ingredient.type) }}</span
-                  >
-                </div>
-              </div>
-
-              <!-- Crafting Time -->
-              <div v-if="selectedItem.recipe.energyRequired" :class="$style.craftingTimeContainer">
-                <hr :class="$style.craftingTimeHr" />
-                <div :class="$style.craftingTime">
-                  <SpriteIcon sprite-key="utility-time" :size="16" />
-                  <span>{{ selectedItem.recipe.energyRequired }}s Crafting time</span>
-                </div>
-              </div>
-            </div>
-
-            <!-- Results (only for multi-product recipes) -->
-            <div v-if="selectedItem.recipe.results?.length > 1" :class="$style.recipeSection">
-              <h4 title="Items produced by this recipe">Results:</h4>
-              <div
-                v-for="result in selectedItem.recipe.results"
-                :key="`${result.name}-${result.amount}`"
-                :class="$style.productItem"
-              >
-                <IconButton
-                  :type="result.type"
-                  :name="result.name"
-                  :size="36"
-                  :clickable="true"
-                  @click="handleIconClick(result.type, result.name)"
-                />
-                <span>{{ result.amount }} × {{ getDisplayName(result.name, result.type) }}</span>
-              </div>
-            </div>
-
-            <!-- Made in -->
-            <div v-if="madeInBuildings.length > 0" :class="$style.recipeSection">
-              <h4 title="Building or machine required to craft this recipe">Made in:</h4>
-              <div :class="$style.madeInGrid">
-                <div
-                  v-for="building in madeInBuildings"
-                  :key="building.name"
-                  :class="$style.madeInItem"
-                >
-                  <IconButton
-                    type="entity"
-                    :name="building.name"
-                    :size="36"
-                    :clickable="true"
-                    @click="handleIconClick('building', building.name)"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <!-- Used in -->
-            <div v-if="usedInRecipes.length > 0" :class="$style.recipeSection">
-              <h4 title="Recipes that use this item as an ingredient">Used in:</h4>
-              <div :class="$style.buttonGrid">
-                <div v-for="recipe in usedInRecipes" :key="recipe.name" :class="$style.gridItem">
-                  <IconButton
-                    type="recipe"
-                    :name="recipe.name"
-                    :size="36"
-                    :clickable="true"
-                    @click="handleIconClick('recipe', recipe.name, recipe)"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <!-- Can Craft -->
-            <div v-if="isEntity && canCraftRecipes.length > 0" :class="$style.recipeSection">
-              <h4 title="Recipes that can be crafted in this building">Can craft:</h4>
-              <div :class="$style.canCraftGrid">
-                <div
-                  v-for="recipe in canCraftRecipes"
-                  :key="recipe.name"
-                  :class="$style.canCraftItem"
-                >
-                  <IconButton
-                    type="recipe"
-                    :name="recipe.name"
-                    :size="36"
-                    :clickable="true"
-                    @click="handleIconClick('recipe', recipe.name)"
-                  />
-                </div>
-              </div>
-            </div>
-          </template>
-
-          <!-- Technology-specific content -->
-          <template v-if="selectedItem.types?.includes('technology') && selectedItem.technology">
-            <div :class="$style.technologySection">
-              <h4>Technology Details</h4>
-
-              <!-- Research Trigger (Primary Unlock) -->
-              <div v-if="selectedItem.technology.research_trigger" :class="$style.researchTrigger">
-                <h5>Unlock Requirement:</h5>
-                <div :class="$style.triggerDetails">
-                  <div
-                    v-if="selectedItem.technology.research_trigger.type === 'craft-item'"
-                    :class="$style.triggerItem"
-                  >
-                    <SpriteIcon sprite-key="utility-craft" :size="16" />
-                    <strong>Craft:</strong>
-                    <IconButton
-                      type="item"
-                      :name="selectedItem.technology.research_trigger.item"
-                      :size="20"
-                      :clickable="true"
-                      @click="
-                        handleIconClick('item', selectedItem.technology.research_trigger.item)
-                      "
-                    />
-                    {{ selectedItem.technology.research_trigger.count || 1 }} ×
-                    {{ getDisplayName(selectedItem.technology.research_trigger.item, 'item') }}
-                  </div>
-                  <div
-                    v-else-if="selectedItem.technology.research_trigger.type === 'mine-entity'"
-                    :class="$style.triggerItem"
-                  >
-                    <SpriteIcon sprite-key="utility-mining" :size="16" />
-                    <strong>Mine:</strong>
-                    <IconButton
-                      type="entity"
-                      :name="selectedItem.technology.research_trigger.entity"
-                      :size="20"
-                      :clickable="true"
-                      @click="
-                        handleIconClick('entity', selectedItem.technology.research_trigger.entity)
-                      "
-                    />
-                    {{ getDisplayName(selectedItem.technology.research_trigger.entity) }}
-                  </div>
-                  <div
-                    v-else-if="
-                      selectedItem.technology.research_trigger.type === 'send-item-to-orbit'
-                    "
-                    :class="$style.triggerItem"
-                  >
-                    <SpriteIcon sprite-key="utility-rocket" :size="16" />
-                    <strong>Send to orbit:</strong>
-                    <IconButton
-                      type="item"
-                      :name="selectedItem.technology.research_trigger.item"
-                      :size="20"
-                      :clickable="true"
-                      @click="
-                        handleIconClick('item', selectedItem.technology.research_trigger.item)
-                      "
-                    />
-                    {{ getDisplayName(selectedItem.technology.research_trigger.item, 'item') }}
-                  </div>
-                  <div v-else :class="$style.triggerItem">
-                    <SpriteIcon sprite-key="utility-trigger" :size="16" />
-                    <strong>{{ selectedItem.technology.research_trigger.type }}:</strong>
-                    {{
-                      selectedItem.technology.research_trigger.item ||
-                      selectedItem.technology.research_trigger.entity
-                    }}
-                  </div>
-                </div>
-              </div>
-
-              <!-- Research Cost -->
-              <div v-if="selectedItem.technology.unit" :class="$style.researchCost">
-                <h5>Research Cost:</h5>
-                <div :class="$style.costDetails">
-                  <!-- Research Time and Count (separate lines) -->
-                  <div :class="$style.researchTimeSection">
-                    <div :class="$style.researchTimeItem">
-                      <SpriteIcon sprite-key="utility-time" :size="16" />
-                      <strong>Research time:</strong> {{ selectedItem.technology.unit.time || 30 }}s
-                    </div>
-                    <div :class="$style.researchCountItem">
-                      <strong>Research count:</strong> {{ selectedItem.technology.unit.count }}
-                    </div>
-                  </div>
-
-                  <!-- Science Packs -->
-                  <div
-                    v-if="selectedItem.technology.unit.ingredients?.length > 0"
-                    :class="$style.sciencePacksSection"
-                  >
-                    <div :class="$style.sciencePacksList">
-                      <div
-                        v-for="pack in selectedItem.technology.unit.ingredients"
-                        :key="pack[0] || pack.name"
-                        :class="$style.sciencePackItem"
-                      >
-                        <IconButton
-                          type="recipe"
-                          :name="pack[0] || pack.name"
-                          :size="24"
-                          :clickable="true"
-                          @click="handleIconClick('recipe', pack[0] || pack.name)"
-                        />
-                        <span
-                          >{{ pack[1] || pack.amount }} ×
-                          {{ getDisplayName(pack[0], 'item') }}</span
-                        >
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Prerequisites -->
-              <div v-if="selectedItem.technology.prerequisites?.length > 0">
-                <h4>Prerequisites:</h4>
-                <div :class="$style.buttonGrid">
-                  <div
-                    v-for="prereq in selectedItem.technology.prerequisites"
-                    :key="prereq"
-                    :class="$style.gridItem"
-                    @click="selectTechnology(prereq)"
-                  >
-                    <IconButton
-                      type="technology"
-                      :name="prereq"
-                      :size="36"
-                      :clickable="true"
-                      @click="handleIconClick('technology', prereq)"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <!-- Technology Level Info -->
-              <div
-                v-if="selectedItem.technology.maxLevel || selectedItem.technology.upgrade"
-                :class="$style.technologyLevel"
-              >
-                <h5>Technology Level:</h5>
-                <div :class="$style.levelInfo">
-                  <div v-if="selectedItem.technology.maxLevel" :class="$style.levelItem">
-                    <strong>Max level:</strong> {{ selectedItem.technology.maxLevel }}
-                  </div>
-                  <div v-if="selectedItem.technology.upgrade" :class="$style.levelItem">
-                    <strong>Upgrade technology:</strong> Yes
-                  </div>
-                </div>
-              </div>
-
-              <!-- Effects -->
-              <div v-if="selectedItem.technology.effects?.length > 0">
-                <h4>Effects:</h4>
-                <div :class="$style.buttonGrid">
-                  <div
-                    v-for="effect in selectedItem.technology.effects"
-                    :key="`${effect.type}-${effect.recipe || effect.modifier || effect.ammoCategory}`"
-                    :class="$style.gridItem"
-                  >
-                    <!-- Unlock recipe effects - show recipe icon -->
-                    <IconButton
-                      v-if="effect.type === 'unlock-recipe'"
-                      type="recipe"
-                      :name="effect.recipe"
-                      :size="36"
-                      :clickable="true"
-                      @click="handleIconClick('recipe', effect.recipe)"
-                    />
-                    <!-- Other effects - show generic effect icon or fallback -->
-                    <div v-else :class="$style.effectIcon" :title="getEffectTooltip(effect)">
-                      <SpriteIcon
-                        v-if="getEffectIconKey(effect.type)"
-                        :sprite-key="getEffectIconKey(effect.type)"
-                        :title="getEffectTooltip(effect)"
-                        :size="36"
-                      />
-                      <div v-else :class="$style.fallbackIcon" :title="getEffectTooltip(effect)">
-                        {{ effect.type.charAt(0).toUpperCase() }}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Research that depends on this technology -->
-              <div v-if="dependentTechnologies.length > 0">
-                <h4>Enables research:</h4>
-                <div :class="$style.buttonGrid">
-                  <div
-                    v-for="depTech in dependentTechnologies"
-                    :key="depTech"
-                    :class="$style.gridItem"
-                    @click="selectTechnology(depTech)"
-                  >
-                    <IconButton
-                      type="technology"
-                      :name="depTech"
-                      :size="36"
-                      :clickable="true"
-                      @click="handleIconClick('technology', depTech)"
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-          </template>
-
-          <!-- Item-specific content -->
-          <template v-if="selectedItem.types?.includes('item') && selectedItem.item">
-            <!-- Crafting recipes -->
-            <div v-if="selectedItem.craftingRecipes?.length > 0" :class="$style.recipeSection">
-              <h5>Crafted by:</h5>
-              <div :class="$style.recipeList">
-                <div
-                  v-for="recipeName in selectedItem.craftingRecipes"
-                  :key="recipeName"
-                  :class="$style.recipeReference"
-                >
-                  <IconButton
-                    type="recipe"
-                    :name="recipeName"
-                    :size="36"
-                    :clickable="true"
-                    @click="handleIconClick('recipe', recipeName)"
-                  />
-                  <span>{{ getDisplayName(recipeName, 'recipe') }}</span>
-                </div>
-              </div>
-            </div>
-
-            <!-- Usage recipes -->
-            <div v-if="selectedItem.usageRecipes?.length > 0" :class="$style.recipeSection">
-              <h5>Used in:</h5>
-              <div :class="$style.recipeList">
-                <div
-                  v-for="recipeName in selectedItem.usageRecipes"
-                  :key="recipeName"
-                  :class="$style.recipeReference"
-                >
-                  <IconButton
-                    type="recipe"
-                    :name="recipeName"
-                    :size="36"
-                    :clickable="true"
-                    @click="handleIconClick('recipe', recipeName)"
-                  />
-                  <span>{{ getDisplayName(recipeName, 'recipe') }}</span>
-                </div>
-              </div>
-            </div>
-          </template>
-
-          <!-- Fluid-specific content -->
-          <template v-if="selectedItem.types?.includes('fluid') && selectedItem.fluid">
-            <div :class="$style.fluidSection">
-              <h4>Fluid Details</h4>
-              <div v-if="selectedItem.fluid?.auto_barrel" :class="$style.fluidProperty">
-                <strong>Auto-barrel:</strong> Yes
-              </div>
-
-              <!-- Crafting recipes -->
-              <div v-if="selectedItem.craftingRecipes?.length > 0" :class="$style.recipeSection">
-                <h5>Produced by:</h5>
-                <div :class="$style.recipeList">
-                  <div
-                    v-for="recipeName in selectedItem.craftingRecipes"
-                    :key="recipeName"
-                    :class="$style.recipeReference"
-                  >
-                    <IconButton
-                      type="recipe"
-                      :name="recipeName"
-                      :size="36"
-                      :clickable="true"
-                      @click="handleIconClick('recipe', recipeName)"
-                    />
-                    <span>{{ getDisplayName(recipeName, 'recipe') }}</span>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Usage recipes -->
-              <div v-if="selectedItem.usageRecipes?.length > 0" :class="$style.recipeSection">
-                <h5>Used in:</h5>
-                <div :class="$style.recipeList">
-                  <div
-                    v-for="recipeName in selectedItem.usageRecipes"
-                    :key="recipeName"
-                    :class="$style.recipeReference"
-                  >
-                    <IconButton
-                      type="recipe"
-                      :name="recipeName"
-                      :size="36"
-                      :clickable="true"
-                      @click="handleIconClick('recipe', recipeName)"
-                    />
-                    <span>{{ getDisplayName(recipeName, 'recipe') }}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </template>
-
-          <!-- Tile-specific content -->
-          <template v-if="selectedItem.types?.includes('tile') && selectedItem.tile">
-            <!-- Game-style Tile Sections -->
-            <div :class="$style.tileGameSections">
-              <!-- Allows placement of -->
-              <div :class="$style.tileGameSection" v-if="tilePlaceableItems.length > 0">
-                <div :class="$style.tileSectionHeader">
-                  <strong>Allows placement of</strong>
-                </div>
-                <div :class="$style.tileSectionContent">
-                  <div :class="$style.tileSectionSlots">
-                    <div
-                      v-for="(item, index) in tilePlaceableItems.slice(0, 7)"
-                      :key="index"
-                      :class="$style.tileSlot"
-                      :title="item.displayName"
-                    >
-                      <IconButton
-                        :type="getPrimaryType(item)"
-                        :name="item.name"
-                        :size="28"
-                        :clickable="true"
-                        @click="handleIconClick('item', item.name)"
-                      />
-                    </div>
-                    <div
-                      v-for="n in Math.max(0, 7 - tilePlaceableItems.length)"
-                      :key="`empty-${n}`"
-                      :class="$style.tileSlot"
-                    ></div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Source of -->
-              <div :class="$style.tileGameSection" v-if="tileSourceFluid">
-                <div :class="$style.tileSectionHeader">
-                  <strong>Source of</strong>
-                </div>
-                <div :class="$style.tileSectionContent">
-                  <div :class="$style.tileSectionSlots">
-                    <div
-                      v-if="tileSourceFluid"
-                      :class="$style.tileSlot"
-                      :title="tileSourceFluid.displayName"
-                    >
-                      <IconButton
-                        type="fluid"
-                        :name="tileSourceFluid.name"
-                        :size="28"
-                        :clickable="true"
-                        @click="handleIconClick('fluid', tileSourceFluid.name)"
-                      />
-                    </div>
-                    <div v-for="n in 6" :key="`empty-${n}`" :class="$style.tileSlot"></div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Extracted by -->
-              <div :class="$style.tileGameSection" v-if="tileExtractor">
-                <div :class="$style.tileSectionHeader">
-                  <strong>Extracted by</strong>
-                </div>
-                <div :class="$style.tileSectionContent">
-                  <div :class="$style.tileSectionSlots">
-                    <div
-                      v-if="tileExtractor"
-                      :class="$style.tileSlot"
-                      :title="tileExtractor.displayName"
-                    >
-                      <IconButton
-                        type="entity"
-                        :name="tileExtractor.name"
-                        :size="28"
-                        :clickable="true"
-                        @click="handleIconClick('entity', tileExtractor.name)"
-                      />
-                    </div>
-                    <div v-for="n in 6" :key="`empty-${n}`" :class="$style.tileSlot"></div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Can be placed on (for items like Landfill) -->
-              <div :class="$style.tileGameSection" v-if="canBePlacedOnTiles.length > 0">
-                <div :class="$style.tileSectionHeader">
-                  <strong>Can be placed on</strong>
-                </div>
-                <div :class="$style.tileSectionContent">
-                  <div :class="$style.tileSectionSlots">
-                    <div
-                      v-for="(tile, index) in canBePlacedOnTiles.slice(0, 7)"
-                      :key="index"
-                      :class="$style.tileSlot"
-                      :title="tile.displayName"
-                    >
-                      <IconButton
-                        type="tile"
-                        :name="tile.name"
-                        :size="28"
-                        :clickable="true"
-                        @click="handleIconClick('tile', tile.name)"
-                      />
-                    </div>
-                    <div
-                      v-for="n in Math.max(0, 7 - canBePlacedOnTiles.length)"
-                      :key="`empty-${n}`"
-                      :class="$style.tileSlot"
-                    ></div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </template>
-
-          <!-- Unlocked by -->
-          <div v-if="unlockTechnologies.length > 0" :class="$style.recipeSection">
-            <h4 title="Research required to unlock this item">
-              {{ unlockTechnologies.length === 1 ? 'Unlocked by:' : 'Unlocked by any of:' }}
-            </h4>
-            <div :class="$style.unlockTechnologiesList">
-              <div
-                v-for="techName in unlockTechnologies"
-                :key="techName"
-                :class="$style.unlockTechnologyItem"
-              >
-                <div :class="$style.technologyIcon">
-                  <IconButton
-                    type="technology"
-                    :name="techName"
-                    :size="48"
-                    :clickable="true"
-                    @click="handleIconClick('technology', techName)"
-                  />
-                </div>
-                <div :class="$style.technologyInfo">
-                  <div :class="$style.technologyName">
-                    {{ getDisplayName(techName, 'technology') }}
-                  </div>
-                  <div :class="$style.researchLevel">
-                    Research level: {{ getTechnologyLevel(techName) }}
-                  </div>
-                  <div :class="$style.sciencePacks">
-                    <IconButton
-                      v-for="pack in getTechnologySciencePacks(techName)"
-                      :key="pack.name"
-                      type="recipe"
-                      :name="pack.name"
-                      :size="24"
-                      :clickable="true"
-                      @click="handleIconClick('recipe', pack.name)"
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+        <template v-for="section in detailsData.sections" :key="section.type">
+          <DetailsPaneSection
+            :section="section"
+            @select-item="handleItemSelection"
+            @item-selected="handleItemSelection"
+          />
+        </template>
       </div>
       <!-- Raws Tab Content -->
       <div v-if="activeTab === 'raws'" :class="$style.rawsContent">
@@ -812,6 +179,21 @@
           </div>
         </div>
 
+        <!-- Equipment Raw Data -->
+        <div v-if="selectedItem?.equipment" :class="$style.rawSection">
+          <button :class="$style.rawSectionHeader" @click="toggleRawSection('equipment')">
+            <span :class="$style.rawSectionTitle">Equipment Data</span>
+            <span :class="$style.rawSectionToggle">{{
+              rawSectionsOpen.equipment ? '▼' : '▶'
+            }}</span>
+          </button>
+          <div v-if="rawSectionsOpen.equipment" :class="$style.rawSectionContent">
+            <pre :class="$style.rawsData">{{
+              JSON.stringify(selectedItem.equipment, null, 2)
+            }}</pre>
+          </div>
+        </div>
+
         <!-- Unified Raw Data -->
         <div :class="$style.rawSection">
           <button :class="$style.rawSectionHeader" @click="toggleRawSection('unified')">
@@ -841,31 +223,18 @@
 <script setup>
 import { computed, ref } from 'vue'
 
-import {
-  useFactorioData,
-  useRecipeDetails,
-  useItemDetails,
-  useEntityDetails,
-  usePowerDetails,
-  useRecipeCrafting
-} from '../../../src/index.js'
+import { useFactorioData } from '../../../src/index.js'
 
 import SpriteIcon from './SpriteIcon.vue'
 import IconButton from './IconButton.vue'
 import FactorioSprite from './FactorioSprite.vue'
-import { useStatistics } from '../../../src/composables/useStatistics.js'
+import Statistics from './Statistics.vue'
+import DetailsPaneSection from './DetailsPaneSection.vue'
 
+import { useDetailsData } from '../../../src/composables/useDetailsData.js'
 // Use the data composable
-const {
-  recipesData,
-  buildingsData,
-  technologiesData,
-  itemsData,
-  fluidsData,
-  tilesData,
-  createUnifiedSelectionObject
-} = useFactorioData()
-
+const { organizedData, createUnifiedSelectionObject } = useFactorioData()
+const { getDetailsData } = useDetailsData()
 // Tab state
 const activeTab = ref('details')
 
@@ -877,6 +246,7 @@ const rawSectionsOpen = ref({
   tile: false,
   technology: false,
   entity: false,
+  equipment: false,
   sprite: false,
   unified: false
 })
@@ -884,15 +254,6 @@ const rawSectionsOpen = ref({
 // Toggle raw section
 function toggleRawSection(section) {
   rawSectionsOpen.value[section] = !rawSectionsOpen.value[section]
-}
-
-// Helper function to get display name for any item
-function getDisplayName(itemName, type) {
-  if (!itemName || !type) return 'Unknown'
-
-  // Try to get display name from unified object
-  const unifiedObject = createUnifiedSelectionObject(type, itemName)
-  return unifiedObject?.displayName || itemName
 }
 
 // Computed property for unified raw data (excluding already shown sections)
@@ -970,333 +331,27 @@ const selectedItem = computed(() => {
   return createUnifiedSelectionObject(props.type, props.name)
 })
 
-// Use recipe details composable
-const recipeDetails = useRecipeDetails(selectedItem, recipesData, buildingsData)
-const {
-  usedInRecipes,
-  unlockTechnologies,
-  madeInBuildings,
-  getTechnologyLevel,
-  getTechnologySciencePacks
-} = recipeDetails
-
-// Computed property for technologies that depend on the current technology
-const dependentTechnologies = computed(() => {
-  if (!selectedItem.value?.name || !technologiesData.value) return []
-
-  const currentTechName = selectedItem.value.name
-  const dependent = []
-
-  for (const [techName, techData] of Object.entries(technologiesData.value)) {
-    if (techData.prerequisites?.includes(currentTechName)) {
-      dependent.push(techName)
-    }
-  }
-
-  return dependent
-})
-
-// Use entity details composable
-const entityDetails = useEntityDetails(selectedItem)
-const { isEntity, itemTypeLabel, entitySpriteData } = entityDetails
-
-// Use item details composable
-const itemDetails = useItemDetails(selectedItem)
-const { primaryResultStackSize, primaryResultTooltipDetails } = itemDetails
-
-// Use power details composable
-const powerDetails = usePowerDetails(selectedItem, isEntity)
-const { hasPowerGeneration, powerOutput, hasElectricityConsumption } = powerDetails
-
-// Use recipe crafting composable
-const recipeCrafting = useRecipeCrafting(selectedItem, recipesData, isEntity)
-const { canCraftRecipes } = recipeCrafting
-
-// Computed properties for entity data
-const entity = computed(() => selectedItem.value?.entity)
-const item = computed(() => selectedItem.value?.item)
-const _recipe = computed(() => selectedItem.value?.recipe)
-const _technology = computed(() => selectedItem.value?.technology)
-const _fluid = computed(() => selectedItem.value?.fluid)
-
-// Computed properties for tile-specific data
-const tilePlaceableItems = computed(() => {
-  if (!selectedItem.value?.tile || !itemsData.value) return []
-
-  const tileName = selectedItem.value.name
-  const placeableItems = []
-
-  // Find items that can be placed on this tile
-  for (const [itemName, itemData] of Object.entries(itemsData.value)) {
-    if (itemData.place_as_tile) {
-      // Check if this item can be placed on the current tile
-      const canPlace = checkTilePlacementCondition(itemData.place_as_tile, selectedItem.value.tile)
-      if (canPlace) {
-        placeableItems.push({
-          name: itemData.place_as_tile?.result,
-          displayName: itemData.displayName || itemName,
-          types: ['item']
-        })
-      }
-    }
-  }
-
-  return placeableItems
-})
-
-// Helper function to check if an item can be placed on a tile
-function checkTilePlacementCondition(placeAsTile, targetTile) {
-  if (!placeAsTile || !targetTile) return false
-  const invert = placeAsTile.invert ?? false
-  // Check tile_condition first (explicit whitelist)
-  if (placeAsTile.tile_condition) {
-    const allowedTiles = Array.isArray(placeAsTile.tile_condition)
-      ? placeAsTile.tile_condition
-      : [placeAsTile.tile_condition]
-
-    if (allowedTiles.includes(targetTile.name) !== invert) {
-      return true
-    }
-  }
-
-  // Check collision mask condition
-  if (placeAsTile.condition) {
-    const targetCollisionMask = targetTile.collision_mask || {}
-    let maskPasses = true
-
-    // Handle both array and object formats for condition
-    if (typeof placeAsTile.condition === 'object') {
-      // Object format: { "water-tile": true, "ground-tile": true }
-      for (const [layer, required] of Object.entries(placeAsTile.condition)) {
-        const hasLayer = targetCollisionMask.layers?.[layer] || targetCollisionMask[layer]
-        const shouldHaveLayer = placeAsTile.invert ? !required : required
-
-        if (hasLayer !== shouldHaveLayer) {
-          maskPasses = false
-          break
-        }
-      }
-    }
-
-    if (!maskPasses) {
-      return false
-    }
-  }
-
-  return true
+function handleItemSelection(item) {
+  emit('select-item', item.type, item.name)
 }
 
-const tileSourceFluid = computed(() => {
-  if (!selectedItem.value?.tile?.fluid || !fluidsData.value) return null
-
-  const fluidName = selectedItem.value.tile.fluid
-  const fluidData = fluidsData.value[fluidName]
-
-  if (!fluidData) return null
-
-  return {
-    name: fluidName,
-    displayName: fluidData.displayName || fluidName,
-    types: ['fluid']
+const itemTypeLabel = computed(() => {
+  // todo sort the ordering to match in game ordering
+  if (!selectedItem.value?.types) {
+    return 'Unknown'
   }
+  return selectedItem.value.types
+    .map(type => type.charAt(0).toUpperCase() + type.slice(1))
+    .join('/')
 })
 
-const tileExtractor = computed(() => {
-  // As mentioned, it's always offshore-pump for tiles with fluid
-  if (!selectedItem.value?.tile?.fluid) return null
-
-  return {
-    name: 'offshore-pump',
-    displayName: 'Offshore pump',
-    types: ['entity']
-  }
+const detailsData = computed(() => {
+  const data =
+    selectedItem.value &&
+    getDetailsData(selectedItem.value.types, selectedItem.value, false, organizedData.value)
+  console.log('detailsData', data)
+  return data
 })
-
-// Computed property for tiles that this item can be placed on (for items like Landfill)
-const canBePlacedOnTiles = computed(() => {
-  if (!selectedItem.value?.item?.place_as_tile || !tilesData.value) return []
-
-  const placeAsTile = selectedItem.value.item.place_as_tile
-  const compatibleTiles = []
-
-  // Check all available tiles to see which ones this item can be placed on
-  for (const [tileName, tileData] of Object.entries(tilesData.value)) {
-    if (checkTilePlacementCondition(placeAsTile, tileData)) {
-      compatibleTiles.push({
-        name: tileName,
-        displayName: tileData.displayName || tileName,
-        types: ['tile']
-      })
-    }
-  }
-
-  return compatibleTiles
-})
-
-// Computed properties for entity-specific data
-const entityPollution = computed(() => {
-  if (!entity.value?.energy_source?.emissions_per_minute?.pollution) return null
-  return entity.value.energy_source.emissions_per_minute.pollution
-})
-
-const entityAllowedEffects = computed(() => {
-  if (!entity.value?.allowed_effects) return null
-  return entity.value.allowed_effects
-})
-
-const entityEnergyUsage = computed(() => {
-  if (!entity.value?.energy_usage || typeof entity.value.energy_usage !== 'string') return null
-
-  // Parse energy usage string with Factorio energy mechanics
-  // Min consumption is 3.33% (1/30th) of the energy usage
-  // Max consumption is energy usage + min consumption
-  const match = entity.value.energy_usage.match(/(\d+(?:\.\d+)?)/)
-  if (!match) return null
-
-  const baseConsumption = parseFloat(match[1])
-  const minConsumption = baseConsumption / 30 // 3.33% of energy usage
-  const maxConsumption = baseConsumption + minConsumption
-
-  return {
-    min: minConsumption,
-    max: maxConsumption
-  }
-})
-
-// Statistics data structure
-const { statisticsData } = useStatistics(selectedItem)
-
-// Event handlers
-function handleIconClick(type, name, data = null) {
-  emit('select-item', type, name, data)
-}
-
-// Convenience functions for backward compatibility
-function selectTechnology(technologyName) {
-  emit('select-item', 'technology', technologyName)
-}
-
-// Helper function to get icon key for effect types
-function getEffectIconKey(effectType) {
-  const iconMap = {
-    'ammo-damage': 'utility-damage',
-    'gun-speed': 'utility-speed',
-    'turret-attack': 'utility-attack',
-    'unlock-recipe': 'utility-unlock',
-    'bulk-inserter-capacity-bonus': 'utility-inserter',
-    'train-braking-force-bonus': 'utility-train',
-    'maximum-following-robots-count': 'utility-robot',
-    'laboratory-speed': 'utility-lab',
-    'worker-robot-speed': 'utility-robot',
-    'character-inventory-slots-bonus': 'utility-inventory',
-    'character-logistic-trash-slots': 'utility-logistics',
-    'worker-robot-storage': 'utility-robot',
-    'inserter-stack-size-bonus': 'utility-inserter',
-    'mining-drill-productivity-bonus': 'utility-mining',
-    'artillery-range': 'utility-artillery'
-  }
-  return iconMap[effectType] || null
-}
-
-// Helper function to generate effect tooltip text
-function getEffectTooltip(effect) {
-  const { type, modifier, ammo_category, turret_id, recipe } = effect
-
-  switch (type) {
-    case 'unlock-recipe':
-      return `Unlocks recipe: ${getDisplayName(recipe, 'recipe')}`
-
-    case 'ammo-damage': {
-      const damagePercent = Math.round(modifier * 100)
-      return `+${damagePercent}% ${ammo_category || 'ammo'} damage`
-    }
-
-    case 'gun-speed': {
-      const speedPercent = Math.round(modifier * 100)
-      return `+${speedPercent}% ${ammo_category || 'ammo'} firing speed`
-    }
-
-    case 'turret-attack': {
-      const attackPercent = Math.round(modifier * 100)
-      return `+${attackPercent}% ${turret_id || 'turret'} attack power`
-    }
-
-    case 'bulk-inserter-capacity-bonus':
-      return `+${modifier} bulk inserter capacity`
-
-    case 'train-braking-force-bonus': {
-      const brakingPercent = Math.round(modifier * 100)
-      return `+${brakingPercent}% train braking force`
-    }
-
-    case 'maximum-following-robots-count':
-      return `+${modifier} follower robots`
-
-    case 'laboratory-speed': {
-      const labSpeedPercent = Math.round(modifier * 100)
-      return `+${labSpeedPercent}% research speed`
-    }
-
-    case 'worker-robot-speed': {
-      const robotSpeedPercent = Math.round(modifier * 100)
-      return `+${robotSpeedPercent}% robot speed`
-    }
-
-    case 'character-inventory-slots-bonus':
-      return `+${modifier} inventory slots`
-
-    case 'character-logistic-trash-slots':
-      return `+${modifier} logistic trash slots`
-
-    case 'worker-robot-storage':
-      return `+${modifier} robot cargo slots`
-
-    case 'inserter-stack-size-bonus':
-      return `+${modifier} inserter stack size`
-
-    case 'mining-drill-productivity-bonus': {
-      const miningPercent = Math.round(modifier * 100)
-      return `+${miningPercent}% mining productivity`
-    }
-
-    case 'artillery-range': {
-      const artilleryPercent = Math.round(modifier * 100)
-      return `+${artilleryPercent}% artillery range`
-    }
-
-    // Boolean effects
-    case 'cliff-deconstruction-enabled':
-      return 'Enables cliff destruction'
-
-    case 'create-ghost-on-entity-death':
-      return 'Creates blueprints on entity death'
-
-    case 'character-logistic-requests':
-      return 'Enables logistic requests'
-
-    case 'vehicle-logistics':
-      return 'Enables vehicle logistics'
-
-    case 'mining-with-fluid':
-      return 'Enables fluid-based mining'
-
-    case 'unlock-circuit-network':
-      return 'Unlocks circuit network'
-
-    case 'rail-planner-allow-elevated-rails':
-      return 'Enables elevated rails'
-
-    default:
-      // Generic fallback for unknown effects
-      if (modifier !== undefined) {
-        if (typeof modifier === 'boolean') {
-          return modifier ? `Enables ${type}` : `Disables ${type}`
-        }
-        return `${type}: ${modifier}`
-      }
-      return type
-  }
-}
 </script>
 
 <style module>
@@ -1591,48 +646,6 @@ function getEffectTooltip(effect) {
   font-size: 12px;
   font-weight: bold;
   border: 1px solid #5a5a5a;
-}
-
-.statistics {
-  margin-bottom: 12px;
-  padding: 10px;
-  background: linear-gradient(135deg, #3a3a3a, #2d2d2d);
-  border-radius: 2px;
-  border: 1px solid #4a4a4a;
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.2);
-}
-
-.statItem {
-  margin-bottom: 6px;
-  color: #ffffff;
-  font-size: 13px;
-  line-height: 1.3;
-}
-
-.statItem:last-child {
-  margin-bottom: 0;
-}
-
-.statItem strong {
-  color: #ffffff;
-  font-weight: 600;
-}
-
-.resistanceList {
-  margin: 4px 0 0 0;
-  padding-left: 16px;
-  color: #ffffff;
-  font-size: 14px;
-  list-style-type: square;
-}
-
-.resistanceList li {
-  margin-bottom: 2px;
-}
-
-/* Second level children - also square bullets */
-.resistanceList .resistanceList {
-  list-style-type: square;
 }
 
 .powerGeneration {

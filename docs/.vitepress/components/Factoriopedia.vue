@@ -43,15 +43,18 @@
           <template v-for="subgroup in groupedRecipes" :key="subgroup.subgroup">
             <!-- Subgroup wrapper -->
             <div v-if="subgroup.recipes.length > 0" :class="$style.subgroupGrid">
-              <IconButton
-                v-for="item in subgroup.recipes"
-                :key="item.name"
-                :type="getPrimaryType(item)"
-                :name="item.name"
-                :size="buttonSize"
-                :is-selected="selectedItem?.name === item.name"
-                @click="selectItem(getPrimaryType(item), item.name, item)"
-              />
+              <template :key="item.name" v-for="item in subgroup.recipes">
+                <IconButton
+                  :type="getPrimaryType(item)"
+                  :name="item.name"
+                  :size="buttonSize"
+                  :is-selected="
+                    selectedItem?.name === item.name &&
+                    getPrimaryType(selectedItem) === getPrimaryType(item)
+                  "
+                  @click="selectItem(getPrimaryType(item), item.name, item)"
+                />
+              </template>
             </div>
           </template>
         </div>
@@ -299,11 +302,9 @@ function setupCategoryStructure() {
   categoryStructure.value = structure
 
   // Set up primary categories - include all categories from structure
-  const validCategories = Object.values(structure)
-    .filter(cat => cat.key !== 'all' && cat.key !== 'other') // Exclude 'all' and 'unsorted' as they're added separately
-    .sort((a, b) => a.order.localeCompare(b.order))
+  const validCategories = Object.values(structure).sort((a, b) => a.order.localeCompare(b.order))
 
-  primaryCategories.value = [structure['all'], ...validCategories]
+  primaryCategories.value = [...validCategories]
   secondaryCategories.value = []
 }
 

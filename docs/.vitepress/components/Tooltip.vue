@@ -156,7 +156,7 @@ async function loadTooltipData() {
     return tooltipCachePromise
   }
 
-  tooltipCachePromise = fetch(withBase('/data/en-tooltips.json'))
+  tooltipCachePromise = fetch(withBase('/data/tooltips.json'))
     .then(response => {
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`)

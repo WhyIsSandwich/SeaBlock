@@ -7,61 +7,32 @@
  */
 export const transforms = {
   // Format numbers with 2 decimal places
-  formatNumber: (value) => typeof value === 'number' ? value.toFixed(2) : value,
-  
+  formatNumber: value => (typeof value === 'number' ? value.toFixed(2) : value),
+
   // Format percentages
-  formatPercent: (value) => typeof value === 'number' ? `${(value * 100).toFixed(1)}%` : value,
-  
+  formatPercent: value => (typeof value === 'number' ? `${(value * 100).toFixed(1)}%` : value),
+
   // Format boolean as Yes/No
-  formatBoolean: (value) => value ? 'Yes' : 'No',
-  
+  formatBoolean: value => (value ? 'Yes' : 'No'),
+
   // Format boolean as Yes/No with custom labels
-  formatBooleanWithLabels: (yesLabel = 'Yes', noLabel = 'No') => (value) => value ? yesLabel : noLabel,
-  
+  formatBooleanWithLabels:
+    (yesLabel = 'Yes', noLabel = 'No') =>
+    value =>
+      value ? yesLabel : noLabel,
+
   // Format array length
-  formatArrayLength: (value) => Array.isArray(value) ? value.length : value,
-  
+  formatArrayLength: value => (Array.isArray(value) ? value.length : value),
+
   // Format object keys count
-  formatObjectKeys: (value) => typeof value === 'object' && value !== null ? Object.keys(value).length : value,
-  
+  formatObjectKeys: value =>
+    typeof value === 'object' && value !== null ? Object.keys(value).length : value,
+
   // Format with units
-  formatWithUnit: (unit) => (value) => typeof value === 'number' ? `${value} ${unit}` : value,
-  
+  formatWithUnit: unit => value => (typeof value === 'number' ? `${value} ${unit}` : value),
+
   // Format with prefix
-  formatWithPrefix: (prefix) => (value) => typeof value === 'number' ? `${prefix}${value}` : value)
-}
-
-/**
- * Apply statistics rules to generate statistics array
- * @param {Array} rules - Array of rule objects
- * @param {Object} data - The data object (entity, item, etc.)
- * @param {Object} context - Additional context (isTooltip, etc.)
- * @returns {Array} Array of statistics objects
- */
-export function applyStatisticsRules(rules, data, context = {}) {
-  return rules
-    .filter(rule => rule.condition(data, context))
-    .map(rule => ({
-      label: rule.label,
-      value: rule.getValue(data)
-    }))
-}
-
-/**
- * Apply section rules to generate sections array
- * @param {Array} rules - Array of rule objects
- * @param {Object} data - The data object (entity, item, etc.)
- * @param {Object} context - Additional context (isTooltip, etc.)
- * @returns {Array} Array of section objects
- */
-export function applySectionRules(rules, data, context = {}) {
-  return rules
-    .filter(rule => rule.condition(data, context))
-    .map(rule => ({
-      type: rule.type,
-      items: rule.getItems ? rule.getItems(data) : [],
-      statistics: rule.getStatistics ? rule.getStatistics(data) : []
-    }))
+  formatWithPrefix: prefix => value => (typeof value === 'number' ? `${prefix}${value}` : value)
 }
 
 /**
@@ -79,7 +50,7 @@ export function createSimpleStatisticsRule(key, label, transform = null) {
       const hasValue = data[key] !== undefined && data[key] !== null
       return hasValue
     },
-    getValue: data => transform ? transform(data[key]) : data[key]
+    getValue: data => (transform ? transform(data[key]) : data[key])
   }
 }
 
@@ -97,7 +68,7 @@ export function createCustomStatisticsRule(key, label, getValue, condition = nul
     label,
     condition: (data, context) => {
       if (condition) return condition(data, context)
-      const value = getValue(data)
+      const value = getValue(data, context)
       return value !== undefined && value !== null
     },
     getValue
@@ -126,7 +97,18 @@ export function createStatisticsRule(key, label, options = {}) {
 
       return hasValue && isTooltipAllowed
     },
-    getValue: data => (customValue ? customValue(data) : data[key])
+    getValue: (data, context) => (customValue ? customValue(data, context) : data[key])
+  }
+}
+
+export function createResistancesStatisticsRule(key, label, options = {}) {
+  const { required = false, tooltip = true, customCondition = null, customValue = null } = options
+  return {
+    key,
+    label,
+    condition: (data, context) => {
+      if (customCondition) return customCondition(data, context)
+    }
   }
 }
 
@@ -137,21 +119,51 @@ export function createStatisticsRule(key, label, options = {}) {
  * @param {Object} options - Additional options
  * @returns {Object} Rule object
  */
-export function createSectionRule(type, getItems, options = {}) {
-  const { required = false, tooltip = true, customCondition = null, getStatistics = null } = options
-
+export function createSectionRule(type, getValue, options = {}) {
+  const { required = false, tooltip = true, customCondition = null } = options
   return {
     type,
-    getItems,
-    getStatistics,
+    getValue,
     condition: (data, context) => {
       if (customCondition) return customCondition(data, context)
 
       // Default: just check if items exist
-      const hasItems = getItems(data) && getItems(data).length > 0
+      const hasData = getValue(data, context)
       const isTooltipAllowed = tooltip || !context.isTooltip
 
-      return hasItems && isTooltipAllowed
+      return hasData && isTooltipAllowed
     }
   }
+}
+
+/**
+ * Apply statistics rules to generate statistics array
+ * @param {Array} rules - Array of rule objects
+ * @param {Object} data - The data object (entity, item, etc.)
+ * @param {Object} context - Additional context (isTooltip, etc.)
+ * @returns {Array} Array of statistics objects
+ */
+export function applyStatisticsRules(rules, data, context = {}) {
+  return rules
+    .filter(rule => rule.condition(data, context))
+    .map(rule => ({
+      label: rule.label,
+      value: rule.getValue(data, context)
+    }))
+}
+
+/**
+ * Apply section rules to generate sections array
+ * @param {Array} rules - Array of rule objects
+ * @param {Object} data - The data object (entity, item, etc.)
+ * @param {Object} context - Additional context (isTooltip, etc.)
+ * @returns {Array} Array of section objects
+ */
+export function applySectionRules(rules, data, context = {}) {
+  return rules
+    .filter(rule => rule.condition(data, context))
+    .map(rule => ({
+      ...rule.getValue(data, context),
+      type: rule.type
+    }))
 }

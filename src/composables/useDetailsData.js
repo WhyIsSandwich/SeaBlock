@@ -1,26 +1,7 @@
 /*
  * Composable for handling the details data for the selected item and generating the details pane data for tooltips files
  * The format of the data is:
- */
 
-import {
-  applyStatisticsRules,
-  applySectionRules,
-  entityStatisticsRules,
-  entitySectionRules,
-  itemStatisticsRules,
-  itemSectionRules,
-  tileStatisticsRules,
-  tileSectionRules,
-  fluidStatisticsRules,
-  fluidSectionRules,
-  recipeStatisticsRules,
-  recipeSectionRules,
-  technologyStatisticsRules,
-  technologySectionRules
-} from './useDetailsData/index.js'
-
-/*
 data type as follows:
 {
     title: string? title of the entry
@@ -54,142 +35,77 @@ factorioObjects type
 
 */
 
-const sectionTypes = {
-  ingredients: 'ingredients',
-  crafting_time: 'crafting time',
-  products: 'products',
-  made_in: 'made in',
-  used_in: 'used in',
-  can_craft: 'can craft',
-  unlock_technologies: 'Unlock technologies',
-  technology_cost: 'Cost',
-  technology_effects: 'Effects',
-  turret: 'Turret',
-  effect: 'Effect',
-  consumes_water: 'Consumes water',
-  equipment_grid: 'Equipment grid',
-  vehicle_weapons: 'Vehicle weapons',
-  vehicle: 'Vehicle',
-  burnable_fuel: 'Burnable fuel',
-  generates_steam: 'Generates steam',
-  stores_electricity: 'Stores electricity',
-  consumes_nuclear_fuel: 'Consumes nuclear fuel',
-  generates_heat: 'Generates heat',
-  consumes_heat: 'Consumes heat',
-  consumes_electricity: 'Consumes electricity',
-  generates_electricity: 'Generates electricity',
-  placed_in_equipment_grid: 'Placed in equipment grid',
-  generates_equipment_grid_electricity: 'Generates equipment grid electricity',
-  consumes_equipment_grid_electricity: 'Consumes equipment grid electricity',
-  stores_equipment_grid_electricity: 'Stores equipment grid electricity'
-}
+import { labels, sectionTypes } from './detailsDataTypes.js'
 
-const labels = {
-  // Entity labels
-  rotation_speed: 'Rotation Speed',
-  hand_stack_size: 'Hand Stack Size',
-  can_filter_items: 'Can filter items.',
-  storage_volume: 'Storage Volume',
-  max_length: 'Max Length',
-  belt_speed: 'Belt Speed',
-  storage_size: 'Storage Size',
-  wire_reach: 'Wire Reach',
-  supply_area: 'Supply Area',
-  construction_area: 'Construction area',
-  radar_coverage_distance: 'Radar coverage distance',
-  pumping_speed: 'Pumping Speed',
-  mining_speed: 'Mining Speed',
-  mining_area: 'Mining Area',
-  crafting_speed: 'Crafting Speed',
-  pollution: 'Pollution',
-  research_speed: 'Research Speed',
-  module_slots: 'Module Slots',
-  cargo_capacity: 'Cargo Capacity',
-  speed: 'Speed',
-  range: 'Range',
-  shooting_speed: 'Shooting Speed',
-  max_consumption: 'Max Consumption',
-  distribution_efficiency: 'Distribution Efficiency',
-  continuous_coverage_distance: 'Continuous coverage distance',
-  exploration_coverage_distance: 'Exploration coverage distance',
-  base_health: 'Base Health',
-  healing: 'Healing',
-  resistances: 'Resistances',
+export { labels, sectionTypes }
 
-  // Item labels
-  nuclear_fuel: 'Nuclear Fuel',
-  spent_result: 'Spent Result',
-  fuel_value: 'Fuel Value',
-  fuel_pollution: 'Fuel Pollution',
-  inventory_size_bonus: 'Inventory Size Bonus',
-  movement_speed_bonus: 'Movement Speed Bonus',
-  robot_limit: 'Robot limit',
-  shield_hitpoints: 'Shield hitpoints',
-  shield_recharge_rate: 'Shield recharge rate',
-  range_shooting_speed: 'Range shooting speed',
-  stack_size: 'Stack Size',
+import {
+  applyStatisticsRules,
+  applySectionRules,
+  entityStatisticsRules,
+  entitySectionRules,
+  itemStatisticsRules,
+  itemSectionRules,
+  tileStatisticsRules,
+  tileSectionRules,
+  fluidStatisticsRules,
+  fluidSectionRules,
+  recipeSectionRules,
+  technologySectionRules
+} from './useDetailsData/index.js'
 
-  // Tile labels
-  walking_speed: 'Walking Speed',
-  pollution_absorption: 'Pollution Absorption',
-
-  // Fluid labels
-  min_temperature: 'Min Temp',
-  max_temperature: 'Max Temp',
-  heat_capacity: 'Heat Capacity',
-
-  // Recipe labels
-  crafting_time: 'Crafting time'
-}
-
-function setEntityDetails({ statistics, sections, entity, item, isTooltip }) {
+function setEntityDetails({ statistics, sections, entity, item, isTooltip, factorioData }) {
   // Apply entity statistics rules
   const entityStats = applyStatisticsRules(entityStatisticsRules, entity, { isTooltip, item })
   statistics.push(...entityStats)
 
   // Apply entity section rules
-  const entitySections = applySectionRules(entitySectionRules, entity, { isTooltip })
+  const entitySections = applySectionRules(entitySectionRules, entity, { isTooltip, factorioData })
   sections.push(...entitySections)
 }
-function setItemDetails({ statistics, sections, item }) {
+function setItemDetails({ statistics, sections, item, factorioData }) {
   // Apply item statistics rules
-  const itemStats = applyStatisticsRules(itemStatisticsRules, item)
+  const itemStats = applyStatisticsRules(itemStatisticsRules, item, { factorioData })
   statistics.push(...itemStats)
 
   // Apply item section rules
-  const itemSections = applySectionRules(itemSectionRules, item)
+  const itemSections = applySectionRules(itemSectionRules, item, { factorioData })
   sections.push(...itemSections)
 }
 
-function setTileDetails({ statistics, sections, tile }) {
+function setTileDetails({ statistics, sections, tile, factorioData }) {
   // Apply tile statistics rules
-  const tileStats = applyStatisticsRules(tileStatisticsRules, tile)
+  const tileStats = applyStatisticsRules(tileStatisticsRules, tile, { factorioData })
   statistics.push(...tileStats)
 
   // Apply tile section rules
-  const tileSections = applySectionRules(tileSectionRules, tile)
+  const tileSections = applySectionRules(tileSectionRules, tile, { factorioData })
   sections.push(...tileSections)
 }
 
-function setFluidDetails({ statistics, sections, fluid }) {
+function setFluidDetails({ statistics, sections, fluid, factorioData }) {
   // Apply fluid statistics rules
-  const fluidStats = applyStatisticsRules(fluidStatisticsRules, fluid)
+  const fluidStats = applyStatisticsRules(fluidStatisticsRules, fluid, { factorioData })
   statistics.push(...fluidStats)
 
   // Apply fluid section rules
-  const fluidSections = applySectionRules(fluidSectionRules, fluid)
+  const fluidSections = applySectionRules(fluidSectionRules, fluid, { factorioData })
   sections.push(...fluidSections)
 }
 
-function setTechnologyDetails({ sections, technology }) {
+function setTechnologyDetails({ sections, technology, factorioData }) {
   // Apply technology section rules
-  const techSections = applySectionRules(technologySectionRules, technology)
+  const techSections = applySectionRules(technologySectionRules, technology, { factorioData })
   sections.push(...techSections)
 }
 
-function setRecipeDetails({ types, sections, recipe, isTooltip }) {
+function setRecipeDetails({ types, sections, recipe, isTooltip, factorioData }) {
   // Apply recipe section rules
-  const recipeSections = applySectionRules(recipeSectionRules, recipe, { types, isTooltip })
+  const recipeSections = applySectionRules(recipeSectionRules, recipe, {
+    types,
+    isTooltip,
+    factorioData
+  })
   sections.push(...recipeSections)
 }
 
@@ -200,7 +116,7 @@ function setRecipeDetails({ types, sections, recipe, isTooltip }) {
  * @param {boolean} isTooltip - whether the data is being generated for a tooltip
  * @returns {object} the details data
  */
-function getDetailsData(types, unifiedObject, isTooltip) {
+function getDetailsData(types, unifiedObject, isTooltip, factorioData) {
   const data = {
     title: unifiedObject.displayName,
     description: unifiedObject.description,
@@ -213,7 +129,13 @@ function getDetailsData(types, unifiedObject, isTooltip) {
     view armour and note stack size is above resistances
     */
 
-  const request = { types, isTooltip, sections: data.sections, statistics: data.statistics }
+  const request = {
+    types,
+    isTooltip,
+    sections: data.sections,
+    statistics: data.statistics,
+    factorioData
+  }
 
   if (types.includes('entity')) {
     const { entity, item } = unifiedObject

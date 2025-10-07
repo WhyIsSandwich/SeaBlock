@@ -1,5 +1,6 @@
 import { createSectionRule } from './rulesEngine.js'
-import { labels, sectionTypes } from '../useDetailsData.js'
+import { labels } from '../useDetailsData.js'
+import { sectionTypes } from '../detailsDataTypes.js'
 
 /**
  * Recipe statistics rules - recipes typically don't have direct statistics
@@ -10,20 +11,40 @@ export const recipeStatisticsRules = []
  * Recipe section rules
  */
 export const recipeSectionRules = [
-  createSectionRule(sectionTypes.ingredients, (data) => data.ingredients),
-  createSectionRule(sectionTypes.crafting_time, (data) => [], {
-    getStatistics: (data) => [{ label: labels.crafting_time, value: data.energy_required }]
-  }),
-  createSectionRule(sectionTypes.products, (data) => data.products, {
+  createSectionRule(sectionTypes.ingredients, data => ({ items: data.ingredients })),
+  createSectionRule(sectionTypes.crafting_time, data => ({
+    statistics: [{ label: labels.crafting_time, value: data.energy_required }]
+  })),
+  createSectionRule(sectionTypes.products, data => ({ items: data.results }), {
     customCondition: (data, context) => {
-      // Only show products if not an item or fluid
-      return data.products && 
-             !context.types?.includes('item') && 
-             !context.types?.includes('fluid')
+      // Only show products if not redundant
+      return data.results && data.results.some(product => product.name !== data.name)
+    }
   }),
-  createSectionRule(sectionTypes.made_in, (data) => []), // TODO: add made in buildings
-  createSectionRule(sectionTypes.unlock_technologies, (data) => [], {
-    tooltip: false // TODO: add unlock technologies
-  })
+  createSectionRule(sectionTypes.made_in, (data, context) => {
+    const entities = Object.values(context.factorioData.entity)
+      .filter(entity => entity.crafting_categories?.includes(data.category || 'crafting'))
+      .map(entity => ({ name: entity.name, type: 'entity' }))
+    return { items: entities }
+  }),
+  createSectionRule(
+    sectionTypes.unlock_technologies,
+    (data, context) => {
+      const technologies = Object.values(context.factorioData.technology)
+      const unlockTechnologies = technologies
+        .filter(
+          a =>
+            a?.effects?.length > 0 &&
+            a?.effects?.filter(
+              effect => effect.type === 'unlock-recipe' && effect.recipe === data.name
+            )?.length > 0
+        )
+        .map(technology => ({ name: technology.name, type: 'technology' }))
+      console.log(unlockTechnologies)
+      return { items: unlockTechnologies }
+    },
+    {
+      tooltip: false // TODO: add unlock technologies
+    }
+  )
 ]
-

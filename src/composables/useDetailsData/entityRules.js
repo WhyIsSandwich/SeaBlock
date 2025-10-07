@@ -1,3 +1,5 @@
+import { labels, sectionTypes } from '../detailsDataTypes.js'
+
 import {
   createSimpleStatisticsRule,
   createCustomStatisticsRule,
@@ -5,7 +7,6 @@ import {
   createSectionRule,
   transforms
 } from './rulesEngine.js'
-import { labels, sectionTypes } from '../useDetailsData.js'
 
 /**
  * Entity statistics rules
@@ -39,8 +40,8 @@ export const entityStatisticsRules = [
   createSimpleStatisticsRule('mining_speed', labels.mining_speed, transforms.formatNumber),
   createSimpleStatisticsRule('mining_area', labels.mining_area, transforms.formatNumber),
   createSimpleStatisticsRule('crafting_speed', labels.crafting_speed, transforms.formatNumber),
-  createSimpleStatisticsRule('pollution', labels.pollution, transforms.formatNumber),
-  createSimpleStatisticsRule('research_speed', labels.research_speed, transforms.formatNumber),
+  createSimpleStatisticsRule('emissions_per_second', labels.pollution, transforms.formatNumber),
+  createSimpleStatisticsRule('researching_speed', labels.research_speed, transforms.formatNumber),
   createSimpleStatisticsRule('module_slots', labels.module_slots),
   createSimpleStatisticsRule('cargo_capacity', labels.cargo_capacity),
   createSimpleStatisticsRule('speed', labels.speed, transforms.formatNumber),

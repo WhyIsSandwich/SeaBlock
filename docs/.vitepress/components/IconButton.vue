@@ -98,17 +98,8 @@ const resolvedTitle = computed(() => {
   // Otherwise, resolve from type and name
   if (props.type && props.name) {
     try {
+      //todo get name from locale data
       switch (props.type) {
-        case 'item':
-          return getItemData(props.name)?.displayName || props.name
-        case 'recipe':
-          return getRecipeData(props.name)?.displayName || props.name
-        case 'technology':
-          return getTechnologyData(props.name)?.displayName || props.name
-        case 'fluid':
-          return getFluidData(props.name)?.displayName || props.name
-        case 'building':
-          return getBuildingData(props.name)?.displayName || props.name
         default:
           return props.name
       }

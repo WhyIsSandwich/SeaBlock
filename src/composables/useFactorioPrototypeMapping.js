@@ -384,9 +384,10 @@ const subtypeToBaseType = Object.fromEntries(
 
 console.log(subtypeToBaseType)
 
-export function useFactorioPrototypeMapping() {
+export function useFactorioPrototypeMapping(language = 'en') {
   return {
     baseTypeToSubtypes,
-    subtypeToBaseType
+    subtypeToBaseType,
+    language
   }
 }

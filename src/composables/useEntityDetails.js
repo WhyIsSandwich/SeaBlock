@@ -6,13 +6,7 @@ export function useEntityDetails(selectedItem) {
     if (!selectedItem.value?.types) {
       return false
     }
-
-    // Check if it's ONLY non-entity types (fewer non-entities to check)
-    const nonEntityTypes = ['item', 'fluid', 'recipe', 'technology', 'tile']
-    const hasOnlyNonEntityTypes = selectedItem.value.types.every(type =>
-      nonEntityTypes.includes(type)
-    )
-    return !hasOnlyNonEntityTypes
+    return selectedItem.value.types.includes('entity')
   })
 
   const itemTypeLabel = computed(() => {
