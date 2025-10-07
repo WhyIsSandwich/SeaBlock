@@ -1,5 +1,37 @@
 <template>
+  <Tooltip
+    v-if="!isEmpty && type && name"
+    :item-id="name"
+    :category="type"
+    position="top"
+    :delay="300"
+    :auto-pin-delay="2000"
+  >
+    <div
+      :class="[
+        $style.iconButton,
+        {
+          [$style.selected]: isSelected,
+          [$style.clickable]: clickable,
+          [$style.emptyCell]: isEmpty
+        }
+      ]"
+      :title="resolvedTitle"
+      @click="handleClick"
+    >
+      <SpriteIcon
+        v-if="!isEmpty && resolvedSpriteKey"
+        :sprite-key="resolvedSpriteKey"
+        :size="size"
+        :title="resolvedTitle"
+      />
+      <span v-if="label" :class="$style.iconLabel">
+        {{ label }}
+      </span>
+    </div>
+  </Tooltip>
   <div
+    v-else
     :class="[
       $style.iconButton,
       {
@@ -17,20 +49,17 @@
       :size="size"
       :title="resolvedTitle"
     />
-    <span v-if="label" :class="$style.iconLabel">{{ label }}</span>
+    <span v-if="label" :class="$style.iconLabel">
+      {{ label }}
+    </span>
   </div>
 </template>
 
 <script setup>
 import { computed } from 'vue'
 
-import { useFactorioData } from '../../../src/index.js'
-
 import SpriteIcon from './SpriteIcon.vue'
-
-// Use the data composable
-const { getItemData, getRecipeData, getTechnologyData, getFluidData, getBuildingData } =
-  useFactorioData()
+import Tooltip from './Tooltip.vue'
 
 // Props
 const props = defineProps({

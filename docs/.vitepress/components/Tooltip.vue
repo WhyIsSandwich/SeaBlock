@@ -7,7 +7,7 @@
       :aria-describedby="tooltipId"
       @mouseenter="showTooltip"
       @mouseleave="hideTooltip"
-      @click="togglePin"
+      @click="closeTooltip"
       @focus="showTooltip"
       @blur="hideTooltip"
     >
@@ -27,38 +27,24 @@
             <div v-if="isLoading" class="tooltip-loading">Loading...</div>
             <template v-else>
               <div class="tooltip-header">
-                <SpriteIcon
-                  v-if="tooltipData?.icon"
-                  :sprite-key="tooltipData.icon.replace('spritemap:', '')"
-                  :size="36"
-                  class="tooltip-icon"
-                />
                 <div
                   v-if="tooltipData?.title"
                   class="tooltip-title"
-                  :class="{ 'tooltip-error': hasError }"
+                  :class="{
+                    'tooltip-error': hasError
+                  }"
                 >
                   {{ tooltipData.title }}
                 </div>
                 <button
-                  class="tooltip-pin-button"
-                  :title="isPinned ? 'Unpin tooltip' : 'Pin tooltip'"
-                  :aria-label="isPinned ? 'Unpin tooltip' : 'Pin tooltip'"
-                  @click.stop="togglePin"
+                  class="tooltip-close-button"
+                  title="Close tooltip"
+                  aria-label="Close tooltip"
+                  @click.stop="closeTooltip"
                 >
-                  <svg
-                    v-if="isPinned"
-                    width="12"
-                    height="12"
-                    viewBox="0 0 24 24"
-                    fill="currentColor"
-                  >
-                    <path d="M16,12V4H17V2H7V4H8V12L6,14V16H11.2V22H12.8V16H18V14L16,12Z" />
-                  </svg>
-                  <svg v-else width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
                     <path
-                      d="M16,12V4H17V2H7V4H8V12L6,14V16H11.2V22H12.8V16H18V14L16,12Z"
-                      opacity="0.5"
+                      d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"
                     />
                   </svg>
                 </button>
@@ -66,18 +52,23 @@
               <div
                 v-if="tooltipData?.description"
                 class="tooltip-description"
-                :class="{ 'tooltip-error': hasError }"
+                :class="{
+                  'tooltip-error': hasError
+                }"
               >
-                {{ tooltipData.description }}
+                <p>{{ tooltipData.description }}</p>
               </div>
-              <div v-if="tooltipData?.details?.length" class="tooltip-details">
-                <div
-                  v-for="(detail, index) in tooltipData.details"
-                  :key="index"
-                  class="tooltip-detail"
-                >
-                  {{ detail }}
-                </div>
+              <Statistics
+                v-if="tooltipData.statistics?.length > 0"
+                :statistics="tooltipData.statistics"
+              />
+              <!-- Render sections using DetailsPaneSection components -->
+              <div v-if="tooltipData?.sections?.length" class="tooltip-sections">
+                <DetailsPaneSection
+                  v-for="(section, index) in tooltipData.sections"
+                  :key="`${section.type}-${index}`"
+                  :section="section"
+                />
               </div>
             </template>
           </div>
@@ -93,9 +84,12 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
-import { withBase } from 'vitepress'
 
-import SpriteIcon from './SpriteIcon.vue'
+import { useFactorioData } from '../../../src/index.js'
+import { useDetailsData } from '../../../src/composables/useDetailsData.js'
+
+import DetailsPaneSection from './DetailsPaneSection.vue'
+import Statistics from './Statistics.vue'
 
 // Props
 const props = defineProps({
@@ -105,9 +99,7 @@ const props = defineProps({
   },
   category: {
     type: String,
-    default: 'items', // 'items', 'recipes', 'fluids', 'buildings', etc.
-    validator: value =>
-      ['items', 'recipes', 'fluids', 'buildings', 'technologies', 'tiles'].includes(value)
+    default: 'item' // 'items', 'recipes', 'fluids', 'buildings', etc.
   },
   position: {
     type: String,
@@ -117,6 +109,10 @@ const props = defineProps({
   delay: {
     type: Number,
     default: 300
+  },
+  autoPinDelay: {
+    type: Number,
+    default: 10000 // Auto-pin after 2 seconds of hovering
   }
 })
 
@@ -127,6 +123,7 @@ const tooltipData = ref(null)
 const tooltipStyle = ref({})
 const showTimeout = ref(null)
 const hideTimeout = ref(null)
+const pinTimeout = ref(null)
 const isLoading = ref(false)
 const hasError = ref(false)
 
@@ -142,47 +139,43 @@ const tooltipClasses = computed(() => ({
   'tooltip-pinned': isPinned.value
 }))
 
-// Global tooltip cache
-let tooltipCache = null
-let tooltipCachePromise = null
+// Initialize composables
+const { organizedData } = useFactorioData()
+const { getDetailsData } = useDetailsData()
 
-// Load tooltip data with caching
-async function loadTooltipData() {
-  if (tooltipCache) {
-    return tooltipCache
-  }
-
-  if (tooltipCachePromise) {
-    return tooltipCachePromise
-  }
-
-  tooltipCachePromise = fetch(withBase('/data/tooltips.json'))
-    .then(response => {
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-      return response.json()
-    })
-    .then(data => {
-      tooltipCache = data
-      return tooltipCache
-    })
-    .catch(error => {
-      console.error('Failed to load tooltip data:', error)
-      tooltipCachePromise = null
+// Get tooltip data for specific item using the new system
+function getTooltipData() {
+  try {
+    // Get the item data from the factorio data
+    const itemData = organizedData.value[props.category][props.itemId]
+    if (!itemData) {
       return null
-    })
+    }
 
-  return tooltipCachePromise
-}
+    const unifiedObject = {
+      types: [props.category],
+      [props.category]: itemData,
+      displayName: itemData.displayName,
+      description: itemData.description
+    }
 
-// Get tooltip data for specific item
-async function getTooltipData() {
-  const data = await loadTooltipData()
-  if (!data || !data[props.category]) {
+    if (props.category === 'entity') {
+      unifiedObject.item = organizedData.value.item[props.itemId]
+      if (unifiedObject.item) {
+        unifiedObject.types.push('item')
+      }
+    }
+
+    const { types } = unifiedObject
+
+    // Generate details data for tooltip
+    const detailsData = getDetailsData(types, unifiedObject, true, organizedData.value)
+
+    return detailsData
+  } catch (error) {
+    console.error('Failed to get tooltip data:', error)
     return null
   }
-  return data[props.category][props.itemId] || null
 }
 
 // Position tooltip relative to trigger element
@@ -246,20 +239,50 @@ function positionTooltip() {
   })
 }
 
-// Toggle pin state
-function togglePin() {
-  isPinned.value = !isPinned.value
-  if (isPinned.value) {
-    // Clear any hide timeout when pinning
-    if (hideTimeout.value) {
-      clearTimeout(hideTimeout.value)
-      hideTimeout.value = null
+// Start auto-pin timer
+function startAutoPinTimer() {
+  if (pinTimeout.value) {
+    clearTimeout(pinTimeout.value)
+  }
+
+  pinTimeout.value = setTimeout(() => {
+    if (isVisible.value && !isPinned.value) {
+      console.log('Auto-pinning tooltip after', props.autoPinDelay, 'ms')
+      isPinned.value = true
+      // Clear any hide timeout when auto-pinning
+      if (hideTimeout.value) {
+        clearTimeout(hideTimeout.value)
+        hideTimeout.value = null
+      }
     }
+  }, props.autoPinDelay)
+}
+
+// Close tooltip
+function closeTooltip() {
+  isVisible.value = false
+  isPinned.value = false
+  tooltipData.value = null
+  isLoading.value = false
+  hasError.value = false
+
+  // Clear all timeouts
+  if (showTimeout.value) {
+    clearTimeout(showTimeout.value)
+    showTimeout.value = null
+  }
+  if (hideTimeout.value) {
+    clearTimeout(hideTimeout.value)
+    hideTimeout.value = null
+  }
+  if (pinTimeout.value) {
+    clearTimeout(pinTimeout.value)
+    pinTimeout.value = null
   }
 }
 
 // Show tooltip
-async function showTooltip() {
+function showTooltip() {
   console.log('showTooltip called for', props.itemId, props.category)
   if (showTimeout.value) {
     clearTimeout(showTimeout.value)
@@ -268,14 +291,18 @@ async function showTooltip() {
     clearTimeout(hideTimeout.value)
     hideTimeout.value = null
   }
+  if (pinTimeout.value) {
+    clearTimeout(pinTimeout.value)
+    pinTimeout.value = null
+  }
 
-  showTimeout.value = setTimeout(async () => {
+  showTimeout.value = setTimeout(() => {
     console.log('Loading tooltip data for', props.itemId, props.category)
     isLoading.value = true
     hasError.value = false
 
     try {
-      const data = await getTooltipData()
+      const data = getTooltipData()
       console.log('Tooltip data loaded:', data)
 
       if (data) {
@@ -283,16 +310,22 @@ async function showTooltip() {
         isVisible.value = true
         console.log('Setting tooltip visible, positioning...')
         positionTooltip()
+
+        // Start auto-pin timer
+        startAutoPinTimer()
       } else {
         // Show fallback message when no data is found
         tooltipData.value = {
           title: props.itemId,
           description: `No tooltip data available for ${props.category}`,
-          details: []
+          sections: []
         }
         isVisible.value = true
         console.log('No tooltip data found, showing fallback')
         positionTooltip()
+
+        // Start auto-pin timer
+        startAutoPinTimer()
       }
     } catch (error) {
       console.error('Error loading tooltip data:', error)
@@ -300,10 +333,13 @@ async function showTooltip() {
       tooltipData.value = {
         title: 'Error',
         description: 'Failed to load tooltip data',
-        details: []
+        sections: []
       }
       isVisible.value = true
       positionTooltip()
+
+      // Start auto-pin timer
+      startAutoPinTimer()
     } finally {
       isLoading.value = false
     }
@@ -318,6 +354,10 @@ function hideTooltip() {
   }
   if (hideTimeout.value) {
     clearTimeout(hideTimeout.value)
+  }
+  if (pinTimeout.value) {
+    clearTimeout(pinTimeout.value)
+    pinTimeout.value = null
   }
 
   // Don't hide if pinned
@@ -361,6 +401,9 @@ onUnmounted(() => {
   if (hideTimeout.value) {
     clearTimeout(hideTimeout.value)
   }
+  if (pinTimeout.value) {
+    clearTimeout(pinTimeout.value)
+  }
   window.removeEventListener('resize', handleResize)
   document.removeEventListener('keydown', handleKeydown)
 })
@@ -382,18 +425,21 @@ onUnmounted(() => {
 
 .tooltip {
   position: fixed;
-  background: var(--vp-c-bg-soft);
-  border: 1px solid var(--vp-c-border);
-  border-radius: 6px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  max-width: 300px;
+  background: #222222;
+  border: 1px solid #444444;
+  border-radius: 4px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
+  max-width: 620px;
+  min-width: 200px;
+  width: max-content;
   z-index: 9999;
   opacity: 0;
   transform: translateY(-4px);
   transition:
     opacity 0.2s ease,
     transform 0.2s ease;
-  pointer-events: none;
+  pointer-events: auto;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
 .tooltip-visible {
@@ -408,12 +454,13 @@ onUnmounted(() => {
     0 0 0 1px var(--vp-c-brand-1);
 }
 
-.tooltip-pinned .tooltip-pin-button {
+.tooltip-pinned .tooltip-close-button {
   color: var(--vp-c-brand-1);
 }
 
 .tooltip-content {
-  padding: 8px 12px;
+  padding: 12px 16px;
+  color: #cccccc;
 }
 
 .tooltip-header {
@@ -429,18 +476,18 @@ onUnmounted(() => {
 
 .tooltip-title {
   font-weight: 600;
-  font-size: 14px;
-  color: var(--vp-c-text-1);
+  font-size: 16px;
+  color: #ffffff;
   margin: 0;
   flex: 1;
 }
 
-.tooltip-pin-button {
+.tooltip-close-button {
   background: none;
   border: none;
-  padding: 2px;
+  padding: 4px;
   cursor: pointer;
-  color: var(--vp-c-text-3);
+  color: #888888;
   border-radius: 2px;
   display: flex;
   align-items: center;
@@ -449,35 +496,105 @@ onUnmounted(() => {
   flex-shrink: 0;
 }
 
-.tooltip-pin-button:hover {
-  background: var(--vp-c-bg-soft);
-  color: var(--vp-c-text-2);
+.tooltip-close-button:hover {
+  background: #333333;
+  color: #cccccc;
 }
 
-.tooltip-pin-button:focus {
-  outline: 2px solid var(--vp-c-brand-1);
+.tooltip-close-button:focus {
+  outline: 2px solid #666666;
   outline-offset: 1px;
 }
 
 .tooltip-description {
   font-size: 13px;
-  color: var(--vp-c-text-2);
-  margin-bottom: 6px;
+  color: #cccccc;
+  margin-bottom: 8px;
   line-height: 1.4;
 }
 
-.tooltip-details {
+.tooltip-sections {
+  margin-top: 8px;
+}
+
+.tooltip-sections :deep(.section) {
+  margin-bottom: 8px;
+  padding: 8px;
+  background: #1a1a1a;
+  border: 1px solid #333333;
+  border-radius: 2px;
+}
+
+.tooltip-sections :deep(.sectionTitle) {
+  margin: 0 0 8px 0;
+  color: #ffcc66;
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: capitalize;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tooltip-sections :deep(.itemsList) {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.tooltip-sections :deep(.itemsGrid) {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(32px, 1fr));
+  gap: 2px;
+  max-height: 120px;
+  overflow-y: auto;
+  background: #111111;
+  border: 1px solid #444444;
+  border-radius: 2px;
+  padding: 4px;
+  width: 100%;
+}
+
+.tooltip-sections :deep(.itemEntry) {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
   font-size: 12px;
-  color: var(--vp-c-text-3);
+  color: #cccccc;
 }
 
-.tooltip-detail {
-  margin-bottom: 2px;
-  line-height: 1.3;
+.tooltip-sections :deep(.itemEntry:hover) {
+  background-color: #333333;
 }
 
-.tooltip-detail:last-child {
-  margin-bottom: 0;
+.tooltip-sections :deep(.gridItem) {
+  width: 32px;
+  height: 32px;
+  background: #2a2a2a;
+  border: 1px solid #444444;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tooltip-sections :deep(.gridItem:hover) {
+  background: #3a3a3a;
+  border-color: #666666;
+}
+
+.tooltip-sections :deep(.itemLabel) {
+  color: #cccccc;
+  font-size: 12px;
+  flex: 1;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
 }
 
 .tooltip-arrow {
@@ -491,71 +608,49 @@ onUnmounted(() => {
   bottom: -6px;
   left: 50%;
   transform: translateX(-50%);
-  border-top-color: var(--vp-c-border);
+  border-top-color: #444444;
 }
 
 .tooltip-bottom .tooltip-arrow {
   top: -6px;
   left: 50%;
   transform: translateX(-50%);
-  border-bottom-color: var(--vp-c-border);
+  border-bottom-color: #444444;
 }
 
 .tooltip-left .tooltip-arrow {
   right: -6px;
   top: 50%;
   transform: translateY(-50%);
-  border-left-color: var(--vp-c-border);
+  border-left-color: #444444;
 }
 
 .tooltip-right .tooltip-arrow {
   left: -6px;
   top: 50%;
   transform: translateY(-50%);
-  border-right-color: var(--vp-c-border);
+  border-right-color: #444444;
 }
 
-/* Dark mode adjustments */
-.dark .tooltip {
-  background: var(--vp-c-bg-soft);
-  border-color: var(--vp-c-border);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-}
-
-.dark .tooltip-pinned {
-  border-color: var(--vp-c-brand-2);
+/* Pinned tooltip styling */
+.tooltip-pinned {
+  border-color: #666666;
   box-shadow:
-    0 4px 12px rgba(0, 0, 0, 0.3),
-    0 0 0 1px var(--vp-c-brand-2);
+    0 4px 12px rgba(0, 0, 0, 0.6),
+    0 0 0 1px #666666;
 }
 
-.dark .tooltip-pinned .tooltip-pin-button {
-  color: var(--vp-c-brand-2);
-}
-
-.dark .tooltip-title {
-  color: var(--vp-c-text-1);
-}
-
-.dark .tooltip-description {
-  color: var(--vp-c-text-2);
-}
-
-.dark .tooltip-details {
-  color: var(--vp-c-text-3);
+.tooltip-pinned .tooltip-close-button {
+  color: #cccccc;
 }
 
 .tooltip-loading {
   font-size: 13px;
-  color: var(--vp-c-text-2);
+  color: #888888;
   font-style: italic;
 }
 
 .tooltip-error {
-  color: var(--vp-c-danger-1) !important;
-}
-
-.dark .tooltip-error {
-  color: var(--vp-c-danger-2) !important;
+  color: #ff6666 !important;
 }
 </style>

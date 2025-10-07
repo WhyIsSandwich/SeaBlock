@@ -280,6 +280,13 @@ export function useUnifiedObjects() {
    */
   function getPrimaryType(unifiedObject) {
     if (!unifiedObject || !unifiedObject.types || unifiedObject.types.length === 0) return null
+    //order entity / item / fluid / other
+    const orderedTypes = ['entity', 'item', 'fluid', 'other']
+    for (const type of orderedTypes) {
+      if (unifiedObject.types.includes(type)) {
+        return type
+      }
+    }
     return unifiedObject.types[0]
   }
 
