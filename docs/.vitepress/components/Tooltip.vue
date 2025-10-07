@@ -17,7 +17,7 @@
       <slot />
       <Teleport to="body">
         <div
-          v-if="isVisible"
+          v-if="isVisible && shouldShowTooltips"
           :id="tooltipId"
           class="tooltip"
           :class="tooltipClasses"
@@ -140,6 +140,15 @@ const hasError = ref(false)
 const tooltipId = computed(
   () => `tooltip-${props.itemId}-${Math.random().toString(36).substr(2, 9)}`
 )
+
+// Detect if we should show tooltips (disable on mobile)
+const shouldShowTooltips = computed(() => {
+  // Don't show tooltips on mobile devices
+  if (isTouchDevice()) {
+    return false
+  }
+  return true
+})
 
 // Tooltip classes
 const tooltipClasses = computed(() => ({
@@ -308,6 +317,11 @@ function closeTooltip() {
 
 // Show tooltip
 function showTooltip() {
+  // Don't show tooltips on mobile devices
+  if (!shouldShowTooltips.value) {
+    return
+  }
+
   console.log('showTooltip called for', props.itemId, props.category)
   if (showTimeout.value) {
     clearTimeout(showTimeout.value)
@@ -434,11 +448,9 @@ function handleTooltipKeydown(event) {
 }
 
 // Handle touch start on tooltip
-function handleTooltipTouchStart(event) {
-  // Prevent default to avoid triggering mouse events
-  event.preventDefault()
-
-  // Keep tooltip pinned on touch
+function handleTooltipTouchStart(_event) {
+  // Don't prevent default - let interactions work normally
+  // Just keep tooltip pinned on touch
   if (hideTimeout.value) {
     clearTimeout(hideTimeout.value)
     hideTimeout.value = null
@@ -446,11 +458,9 @@ function handleTooltipTouchStart(event) {
 }
 
 // Handle touch end on tooltip
-function handleTooltipTouchEnd(event) {
-  // Prevent default to avoid triggering mouse events
-  event.preventDefault()
-
-  // Keep tooltip pinned on touch devices
+function handleTooltipTouchEnd(_event) {
+  // Don't prevent default - let interactions work normally
+  // Just keep tooltip pinned on touch devices
   if (!isPinned.value) {
     isPinned.value = true
   }
@@ -486,6 +496,11 @@ function handleResize() {
 
 // Handle click events on trigger element
 function handleTriggerClick(event) {
+  // Don't interfere with mobile devices
+  if (!shouldShowTooltips.value) {
+    return
+  }
+
   // If tooltip is visible and pinned, close it
   if (isVisible.value && isPinned.value) {
     event.preventDefault()
@@ -504,15 +519,16 @@ function handleTriggerClick(event) {
   // If tooltip is not visible, show it (but don't prevent default to allow button clicks)
   else if (!isVisible.value) {
     showTooltip()
-    // Auto-pin on touch devices
-    if (isTouchDevice()) {
-      isPinned.value = true
-    }
   }
 }
 
 // Handle keyboard events on trigger element
 function handleTriggerKeydown(event) {
+  // Don't interfere with mobile devices
+  if (!shouldShowTooltips.value) {
+    return
+  }
+
   // Enter or Space to show tooltip if not visible
   if ((event.key === 'Enter' || event.key === ' ') && !isVisible.value) {
     event.preventDefault()
@@ -526,29 +542,38 @@ function handleTriggerKeydown(event) {
 }
 
 // Handle touch start
-function handleTouchStart(event) {
-  // Prevent default to avoid triggering mouse events
-  event.preventDefault()
+function handleTouchStart(_event) {
+  // Don't show tooltips on mobile devices
+  if (!shouldShowTooltips.value) {
+    return
+  }
 
-  // Show tooltip immediately on touch
+  // Just show tooltip if not visible
   if (!isVisible.value) {
     showTooltip()
   }
 }
 
 // Handle touch end
-function handleTouchEnd(event) {
-  // Prevent default to avoid triggering mouse events
-  event.preventDefault()
+function handleTouchEnd(_event) {
+  // Don't show tooltips on mobile devices
+  if (!shouldShowTooltips.value) {
+    return
+  }
 
-  // Pin tooltip on touch devices
+  // Just pin tooltip on touch devices after a short delay
   if (isVisible.value && !isPinned.value) {
-    isPinned.value = true
-    // Clear any hide timeout when pinning
-    if (hideTimeout.value) {
-      clearTimeout(hideTimeout.value)
-      hideTimeout.value = null
-    }
+    // Use a small delay to allow the button click to process first
+    setTimeout(() => {
+      if (isVisible.value && !isPinned.value) {
+        isPinned.value = true
+        // Clear any hide timeout when pinning
+        if (hideTimeout.value) {
+          clearTimeout(hideTimeout.value)
+          hideTimeout.value = null
+        }
+      }
+    }, 100)
   }
 }
 
