@@ -7,9 +7,12 @@
       :aria-describedby="tooltipId"
       @mouseenter="showTooltip"
       @mouseleave="hideTooltip"
-      @click="closeTooltip"
+      @click="handleTriggerClick"
       @focus="showTooltip"
       @blur="hideTooltip"
+      @keydown="handleTriggerKeydown"
+      @touchstart="handleTouchStart"
+      @touchend="handleTouchEnd"
     >
       <slot />
       <Teleport to="body">
@@ -22,8 +25,12 @@
           role="tooltip"
           :aria-hidden="!isVisible"
           :data-debug="`visible: ${isVisible}, data: ${!!tooltipData}`"
+          tabindex="0"
           @mouseenter="handleTooltipMouseEnter"
           @mouseleave="handleTooltipMouseLeave"
+          @keydown="handleTooltipKeydown"
+          @touchstart="handleTooltipTouchStart"
+          @touchend="handleTooltipTouchEnd"
         >
           <div class="tooltip-content">
             <div v-if="isLoading" class="tooltip-loading">Loading...</div>
@@ -232,6 +239,22 @@ function positionTooltip() {
       top = viewport.height - tooltipRect.height - 8
     }
 
+    // Adjust positioning for touch devices
+    if (isTouchDevice()) {
+      // On touch devices, prefer positioning that doesn't cover the trigger
+      const touchOffset = 20
+      if (props.position === 'top' && top < triggerRect.bottom + touchOffset) {
+        // Move to bottom if top would cover trigger
+        top = triggerRect.bottom + touchOffset
+      } else if (
+        props.position === 'bottom' &&
+        top + tooltipRect.height > triggerRect.top - touchOffset
+      ) {
+        // Move to top if bottom would cover trigger
+        top = triggerRect.top - tooltipRect.height - touchOffset
+      }
+    }
+
     tooltipStyle.value = {
       position: 'fixed',
       top: `${top}px`,
@@ -313,6 +336,9 @@ function showTooltip() {
         console.log('Setting tooltip visible, positioning...')
         positionTooltip()
 
+        // Announce to screen readers
+        announceTooltip(data?.title || props.itemId)
+
         // Start auto-pin timer
         startAutoPinTimer()
       } else {
@@ -393,6 +419,64 @@ function handleTooltipMouseLeave() {
   }
 }
 
+// Handle keyboard events on tooltip itself
+function handleTooltipKeydown(event) {
+  // Escape to close tooltip
+  if (event.key === 'Escape') {
+    event.preventDefault()
+    closeTooltip()
+  }
+  // Tab to move focus back to trigger
+  else if (event.key === 'Tab') {
+    // Let the browser handle tab navigation naturally
+    // The tooltip will close on blur
+  }
+}
+
+// Handle touch start on tooltip
+function handleTooltipTouchStart(event) {
+  // Prevent default to avoid triggering mouse events
+  event.preventDefault()
+
+  // Keep tooltip pinned on touch
+  if (hideTimeout.value) {
+    clearTimeout(hideTimeout.value)
+    hideTimeout.value = null
+  }
+}
+
+// Handle touch end on tooltip
+function handleTooltipTouchEnd(event) {
+  // Prevent default to avoid triggering mouse events
+  event.preventDefault()
+
+  // Keep tooltip pinned on touch devices
+  if (!isPinned.value) {
+    isPinned.value = true
+  }
+}
+
+// Announce tooltip to screen readers
+function announceTooltip(title) {
+  // Create a temporary element for screen reader announcement
+  const announcement = document.createElement('div')
+  announcement.setAttribute('aria-live', 'polite')
+  announcement.setAttribute('aria-atomic', 'true')
+  announcement.style.position = 'absolute'
+  announcement.style.left = '-10000px'
+  announcement.style.width = '1px'
+  announcement.style.height = '1px'
+  announcement.style.overflow = 'hidden'
+  announcement.textContent = `Tooltip: ${title}`
+
+  document.body.appendChild(announcement)
+
+  // Remove after announcement
+  setTimeout(() => {
+    document.body.removeChild(announcement)
+  }, 1000)
+}
+
 // Handle window resize
 function handleResize() {
   if (isVisible.value) {
@@ -400,10 +484,83 @@ function handleResize() {
   }
 }
 
-// Handle escape key
+// Handle click events on trigger element
+function handleTriggerClick(event) {
+  // If tooltip is visible and pinned, close it
+  if (isVisible.value && isPinned.value) {
+    event.preventDefault()
+    closeTooltip()
+  }
+  // If tooltip is visible but not pinned, pin it
+  else if (isVisible.value && !isPinned.value) {
+    event.preventDefault()
+    isPinned.value = true
+    // Clear any hide timeout when pinning
+    if (hideTimeout.value) {
+      clearTimeout(hideTimeout.value)
+      hideTimeout.value = null
+    }
+  }
+  // If tooltip is not visible, show it (but don't prevent default to allow button clicks)
+  else if (!isVisible.value) {
+    showTooltip()
+    // Auto-pin on touch devices
+    if (isTouchDevice()) {
+      isPinned.value = true
+    }
+  }
+}
+
+// Handle keyboard events on trigger element
+function handleTriggerKeydown(event) {
+  // Enter or Space to show tooltip if not visible
+  if ((event.key === 'Enter' || event.key === ' ') && !isVisible.value) {
+    event.preventDefault()
+    showTooltip()
+  }
+  // Escape to close tooltip if visible
+  else if (event.key === 'Escape' && isVisible.value) {
+    event.preventDefault()
+    closeTooltip()
+  }
+}
+
+// Handle touch start
+function handleTouchStart(event) {
+  // Prevent default to avoid triggering mouse events
+  event.preventDefault()
+
+  // Show tooltip immediately on touch
+  if (!isVisible.value) {
+    showTooltip()
+  }
+}
+
+// Handle touch end
+function handleTouchEnd(event) {
+  // Prevent default to avoid triggering mouse events
+  event.preventDefault()
+
+  // Pin tooltip on touch devices
+  if (isVisible.value && !isPinned.value) {
+    isPinned.value = true
+    // Clear any hide timeout when pinning
+    if (hideTimeout.value) {
+      clearTimeout(hideTimeout.value)
+      hideTimeout.value = null
+    }
+  }
+}
+
+// Detect touch device
+function isTouchDevice() {
+  return 'ontouchstart' in window || navigator.maxTouchPoints > 0
+}
+
+// Handle escape key globally
 function handleKeydown(event) {
   if (event.key === 'Escape' && isVisible.value) {
-    hideTooltip()
+    closeTooltip()
   }
 }
 
@@ -440,6 +597,33 @@ onUnmounted(() => {
   outline: 2px solid var(--vp-c-brand-1);
   outline-offset: 2px;
   border-radius: 2px;
+}
+
+.tooltip:focus {
+  outline: 2px solid var(--vp-c-brand-1);
+  outline-offset: 2px;
+}
+
+/* Touch device improvements */
+@media (hover: none) and (pointer: coarse) {
+  .tooltip-trigger {
+    /* Increase touch target size on touch devices */
+    min-width: 44px;
+    min-height: 44px;
+    padding: 8px;
+  }
+
+  .tooltip {
+    /* Larger touch targets in tooltip */
+    min-width: 200px;
+  }
+
+  .tooltip-close-button {
+    /* Larger close button for touch */
+    min-width: 44px;
+    min-height: 44px;
+    padding: 8px;
+  }
 }
 
 .tooltip {
