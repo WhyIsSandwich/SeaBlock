@@ -22,6 +22,8 @@
           role="tooltip"
           :aria-hidden="!isVisible"
           :data-debug="`visible: ${isVisible}, data: ${!!tooltipData}`"
+          @mouseenter="handleTooltipMouseEnter"
+          @mouseleave="handleTooltipMouseLeave"
         >
           <div class="tooltip-content">
             <div v-if="isLoading" class="tooltip-loading">Loading...</div>
@@ -372,6 +374,23 @@ function hideTooltip() {
     hasError.value = false
     isPinned.value = false // Reset pin state when hiding
   }, 100)
+}
+
+// Handle mouse enter on tooltip itself
+function handleTooltipMouseEnter() {
+  // Clear any pending hide timeout when mouse enters tooltip
+  if (hideTimeout.value) {
+    clearTimeout(hideTimeout.value)
+    hideTimeout.value = null
+  }
+}
+
+// Handle mouse leave on tooltip itself
+function handleTooltipMouseLeave() {
+  // Only hide if not pinned
+  if (!isPinned.value) {
+    hideTooltip()
+  }
 }
 
 // Handle window resize
