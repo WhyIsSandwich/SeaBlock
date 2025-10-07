@@ -41,7 +41,7 @@ export const fluidSectionRules = [
           )
       )
       .map(recipe => ({ name: recipe.name, type: 'recipe' }))
-    return { items: usedIn }
+    return { items: usedIn, itemsType: 'grid' }
   }),
   createSectionRule(sectionTypes.alternative_recipes, (data, context) => {
     const recipes = Object.values(context.factorioData.recipe)
@@ -53,7 +53,7 @@ export const fluidSectionRules = [
           recipe.results?.length > 0 &&
           recipe.results?.some(result => result.name === data.name)
       )
-      .map(recipe => ({ name: recipe.name, type: 'recipe' }))
-    return { items: alternativeRecipes }
+      .map(recipe => ({ name: recipe.name, type: 'recipe', label: recipe.displayName }))
+    return { items: alternativeRecipes, itemsType: 'list' }
   })
 ]

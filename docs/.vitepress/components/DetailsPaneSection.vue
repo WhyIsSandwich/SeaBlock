@@ -8,20 +8,22 @@
       <Statistics v-if="section.statistics?.length > 0" :statistics="section.statistics" />
 
       <!-- Items for this section -->
-      <div v-if="section.items?.length > 0" :class="$style.itemsList">
+      <div v-if="section.items?.length > 0" :class="getItemsContainerClass()">
         <div
           v-for="item in section.items"
           :key="`${item.type}-${item.name}`"
-          :class="$style.itemEntry"
+          :class="getItemEntryClass()"
         >
           <IconButton
             :type="item.type"
             :name="item.name"
-            :size="24"
+            :size="getIconSize()"
             :clickable="true"
             @click="handleItemClick(item)"
           />
-          <span :class="$style.itemLabel">{{ item.label || item.name }}</span>
+          <span v-if="shouldShowLabel()" :class="$style.itemLabel">{{
+            getItemLabel(item) || item.name
+          }}</span>
         </div>
       </div>
     </div>
@@ -48,7 +50,19 @@ export default {
     }
   },
   emits: ['select-item', 'item-selected'],
+  computed: {
+    isGridLayout() {
+      return this.section.itemsType === 'grid'
+    },
+    isListLayout() {
+      return !this.section.itemsType || this.section.itemsType === 'list'
+    }
+  },
   methods: {
+    getItemLabel(item) {
+      const localisedName = item.name
+      return this.label?.replace(/{{item_name}}/g, localisedName)
+    },
     handleItemClick(item) {
       // Emit both events for compatibility
       this.$emit('select-item', {
@@ -59,6 +73,29 @@ export default {
         type: item.type,
         name: item.name
       })
+    },
+    getItemsContainerClass() {
+      if (this.isGridLayout) {
+        return this.$style.itemsGrid
+      }
+      return this.$style.itemsList
+    },
+    getItemEntryClass() {
+      if (this.isGridLayout) {
+        return this.$style.gridItem
+      }
+      return this.$style.itemEntry
+    },
+    getIconSize() {
+      return this.isGridLayout ? 32 : 24
+    },
+    shouldShowLabel() {
+      // In grid layout, only show labels if explicitly requested
+      if (this.isGridLayout) {
+        return this.section.showLabels || false
+      }
+      // In list layout, always show labels
+      return true
     }
   }
 }
@@ -87,6 +124,19 @@ export default {
   gap: 4px;
 }
 
+.itemsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
+  gap: 2px;
+  max-height: 200px;
+  overflow-y: auto;
+  background: #1f1f1f;
+  border: 1px solid #4a4a4a;
+  border-radius: 2px;
+  padding: 2px;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
 .itemEntry {
   display: flex;
   align-items: center;
@@ -99,6 +149,28 @@ export default {
 
 .itemEntry:hover {
   background-color: #3a3a3a;
+}
+
+.gridItem {
+  width: 40px;
+  height: 40px;
+  background: #4a4a4a;
+  border: 1px solid #5a5a5a;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.gridItem:hover {
+  background: #5a5a5a;
+  border-color: #7a7a7a;
+  box-shadow:
+    inset 0 1px 2px rgba(0, 0, 0, 0.3),
+    0 0 4px rgba(255, 165, 0, 0.3);
 }
 
 .itemLabel {

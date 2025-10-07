@@ -50,9 +50,9 @@ export const itemSectionRules = [
           recipe.results?.length > 0 &&
           recipe.results?.some(result => result.name === data.name && result.type === 'item')
       )
-      .map(recipe => ({ name: recipe.name, type: 'recipe' }))
+      .map(recipe => ({ name: recipe.name, type: 'recipe', label: recipe.displayName }))
     if (alternativeRecipes.length > 0) {
-      return { items: alternativeRecipes }
+      return { items: alternativeRecipes, itemsType: 'list' }
     }
   }),
   createSectionRule(sectionTypes.used_in, (data, context) => {
@@ -65,7 +65,10 @@ export const itemSectionRules = [
       )
       .map(recipe => ({ name: recipe.name, type: 'recipe' }))
     if (usedIn.length > 0) {
-      return { items: usedIn }
+      return {
+        items: usedIn,
+        itemsType: 'grid' // Use grid layout for used_in section
+      }
     }
   }),
   createSectionRule(sectionTypes.burned_in, (data, context) => {
@@ -73,7 +76,7 @@ export const itemSectionRules = [
     //find entities that burn this item
     const burnedIn = entity
       .filter(entity => {
-        const energy_source = entity.energy_source
+        const { energy_source } = entity
         if (energy_source && energy_source.type === 'burner') {
           if (energy_source?.fuel_categories?.some(category => category === data.fuel_category)) {
             return true
@@ -82,7 +85,7 @@ export const itemSectionRules = [
       })
       .map(entity => ({ name: entity.name, type: 'entity' }))
     if (burnedIn.length > 0) {
-      return { items: burnedIn }
+      return { items: burnedIn, itemsType: 'grid' }
     }
   }),
 

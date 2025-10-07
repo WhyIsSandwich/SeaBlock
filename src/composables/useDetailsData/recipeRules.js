@@ -11,21 +11,45 @@ export const recipeStatisticsRules = []
  * Recipe section rules
  */
 export const recipeSectionRules = [
-  createSectionRule(sectionTypes.ingredients, data => ({ items: data.ingredients })),
+  createSectionRule(sectionTypes.ingredients, data => ({
+    items: data.ingredients?.map(ingredient => ({
+      name: ingredient.name,
+      type: ingredient.type,
+      label: `{{item_name}} x ${ingredient.amount}`
+    })),
+    itemsType: 'list'
+  })),
   createSectionRule(sectionTypes.crafting_time, data => ({
     statistics: [{ label: labels.crafting_time, value: data.energy_required }]
   })),
-  createSectionRule(sectionTypes.products, data => ({ items: data.results }), {
-    customCondition: (data, context) => {
-      // Only show products if not redundant
-      return data.results && data.results.some(product => product.name !== data.name)
+  createSectionRule(
+    sectionTypes.products,
+    data => ({
+      items: data.results?.map(result => ({
+        name: result.name,
+        type: result.type,
+        label: `{{item_name}} x ${result.amount}`
+      })),
+      itemsType: 'list'
+    }),
+    {
+      customCondition: (data, context) => {
+        // Only show products if not redundant
+        return (
+          (data.results && data.results.some(product => product.name !== data.name)) ||
+          data.always_show_products
+        )
+      }
     }
-  }),
+  ),
   createSectionRule(sectionTypes.made_in, (data, context) => {
     const entities = Object.values(context.factorioData.entity)
       .filter(entity => entity.crafting_categories?.includes(data.category || 'crafting'))
       .map(entity => ({ name: entity.name, type: 'entity' }))
-    return { items: entities }
+    return {
+      items: entities,
+      itemsType: 'grid' // Use grid layout for made_in section
+    }
   }),
   createSectionRule(
     sectionTypes.unlock_technologies,
