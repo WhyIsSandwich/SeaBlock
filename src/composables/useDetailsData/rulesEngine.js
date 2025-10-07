@@ -50,7 +50,7 @@ export function createSimpleStatisticsRule(key, label, transform = null) {
       const hasValue = data[key] !== undefined && data[key] !== null
       return hasValue
     },
-    getValue: data => (transform ? transform(data[key]) : data[key])
+    getValue: data => ({ label, value: transform ? transform(data[key]) : data[key] })
   }
 }
 
@@ -71,7 +71,7 @@ export function createCustomStatisticsRule(key, label, getValue, condition = nul
       const value = getValue(data, context)
       return value !== undefined && value !== null
     },
-    getValue
+    getValue: (data, context) => ({ label, value: getValue(data, context) })
   }
 }
 
@@ -97,7 +97,8 @@ export function createStatisticsRule(key, label, options = {}) {
 
       return hasValue && isTooltipAllowed
     },
-    getValue: (data, context) => (customValue ? customValue(data, context) : data[key])
+    getValue: (data, context) =>
+      customValue ? { label, value: customValue(data, context) } : { label, value: data[key] }
   }
 }
 
@@ -106,8 +107,20 @@ export function createResistancesStatisticsRule(key, label, options = {}) {
   return {
     key,
     label,
+    getValue: (data, context) => {
+      return {
+        label,
+        children: data[key].map(resistance => ({
+          label: resistance.type,
+          value: resistance.percent
+        }))
+      }
+    },
     condition: (data, context) => {
-      if (customCondition) return customCondition(data, context)
+      const hasValue = data[key] !== undefined && data[key] !== null
+      const isTooltipAllowed = tooltip || !context.isTooltip
+
+      return hasValue && isTooltipAllowed
     }
   }
 }
@@ -146,10 +159,7 @@ export function createSectionRule(type, getValue, options = {}) {
 export function applyStatisticsRules(rules, data, context = {}) {
   return rules
     .filter(rule => rule.condition(data, context))
-    .map(rule => ({
-      label: rule.label,
-      value: rule.getValue(data, context)
-    }))
+    .map(rule => rule.getValue(data, context))
 }
 
 /**

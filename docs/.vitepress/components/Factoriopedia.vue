@@ -98,7 +98,7 @@ const { getPrimaryType } = useUnifiedObjects()
 
 const { loadAllData, precomputeCategoryStructure, createUnifiedSelectionObject } = useFactorioData()
 const selectedItem = ref(null)
-const selectedCategory = ref('all')
+const selectedCategory = ref('logistics')
 const searchQuery = ref('')
 const isAnimationPaused = ref(false)
 

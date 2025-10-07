@@ -635,12 +635,6 @@ export function createFactorioAnimationEngine({
       await this.renderLayeredSprite(ctx, processedLayers.base, props)
       await this.renderLayeredSprite(ctx, processedLayers.glow, props)
       await this.renderLayeredSprite(ctx, processedLayers.light, props)
-
-      if (renderingMethod) {
-        await this.renderLayeredSprite(ctx, renderingMethod, props)
-        return
-      }
-      console.warn(`Unknown animation type: ${animationData.type}`)
     }
   }
 }

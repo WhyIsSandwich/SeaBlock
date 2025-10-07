@@ -109,101 +109,68 @@
       </div>
       <!-- Raws Tab Content -->
       <div v-if="activeTab === 'raws'" :class="$style.rawsContent">
-        <!-- Recipe Raw Data -->
-        <div v-if="selectedItem?.recipe" :class="$style.rawSection">
-          <button :class="$style.rawSectionHeader" @click="toggleRawSection('recipe')">
-            <span :class="$style.rawSectionTitle">Recipe Data</span>
-            <span :class="$style.rawSectionToggle">{{ rawSectionsOpen.recipe ? '▼' : '▶' }}</span>
-          </button>
-          <div v-if="rawSectionsOpen.recipe" :class="$style.rawSectionContent">
-            <pre :class="$style.rawsData">{{ JSON.stringify(selectedItem.recipe, null, 2) }}</pre>
-          </div>
-        </div>
+        <RawSection
+          v-if="selectedItem?.recipe"
+          title="Recipe Data"
+          :data="selectedItem.recipe"
+          :is-open="rawSectionsOpen.recipe"
+          @toggle="toggleRawSection('recipe')"
+        />
 
-        <!-- Item Raw Data -->
-        <div v-if="selectedItem?.item" :class="$style.rawSection">
-          <button :class="$style.rawSectionHeader" @click="toggleRawSection('item')">
-            <span :class="$style.rawSectionTitle">Item Data</span>
-            <span :class="$style.rawSectionToggle">{{ rawSectionsOpen.item ? '▼' : '▶' }}</span>
-          </button>
-          <div v-if="rawSectionsOpen.item" :class="$style.rawSectionContent">
-            <pre :class="$style.rawsData">{{ JSON.stringify(selectedItem.item, null, 2) }}</pre>
-          </div>
-        </div>
+        <RawSection
+          v-if="selectedItem?.item"
+          title="Item Data"
+          :data="selectedItem.item"
+          :is-open="rawSectionsOpen.item"
+          @toggle="toggleRawSection('item')"
+        />
 
-        <!-- Fluid Raw Data -->
-        <div v-if="selectedItem?.fluid" :class="$style.rawSection">
-          <button :class="$style.rawSectionHeader" @click="toggleRawSection('fluid')">
-            <span :class="$style.rawSectionTitle">Fluid Data</span>
-            <span :class="$style.rawSectionToggle">{{ rawSectionsOpen.fluid ? '▼' : '▶' }}</span>
-          </button>
-          <div v-if="rawSectionsOpen.fluid" :class="$style.rawSectionContent">
-            <pre :class="$style.rawsData">{{ JSON.stringify(selectedItem.fluid, null, 2) }}</pre>
-          </div>
-        </div>
+        <RawSection
+          v-if="selectedItem?.fluid"
+          title="Fluid Data"
+          :data="selectedItem.fluid"
+          :is-open="rawSectionsOpen.fluid"
+          @toggle="toggleRawSection('fluid')"
+        />
 
-        <!-- Tile Raw Data -->
-        <div v-if="selectedItem?.tile" :class="$style.rawSection">
-          <button :class="$style.rawSectionHeader" @click="toggleRawSection('tile')">
-            <span :class="$style.rawSectionTitle">Tile Data</span>
-            <span :class="$style.rawSectionToggle">{{ rawSectionsOpen.tile ? '▼' : '▶' }}</span>
-          </button>
-          <div v-if="rawSectionsOpen.tile" :class="$style.rawSectionContent">
-            <pre :class="$style.rawsData">{{ JSON.stringify(selectedItem.tile, null, 2) }}</pre>
-          </div>
-        </div>
+        <RawSection
+          v-if="selectedItem?.tile"
+          title="Tile Data"
+          :data="selectedItem.tile"
+          :is-open="rawSectionsOpen.tile"
+          @toggle="toggleRawSection('tile')"
+        />
 
-        <!-- Technology Raw Data -->
-        <div v-if="selectedItem?.technology" :class="$style.rawSection">
-          <button :class="$style.rawSectionHeader" @click="toggleRawSection('technology')">
-            <span :class="$style.rawSectionTitle">Technology Data</span>
-            <span :class="$style.rawSectionToggle">{{
-              rawSectionsOpen.technology ? '▼' : '▶'
-            }}</span>
-          </button>
-          <div v-if="rawSectionsOpen.technology" :class="$style.rawSectionContent">
-            <pre :class="$style.rawsData">{{
-              JSON.stringify(selectedItem.technology, null, 2)
-            }}</pre>
-          </div>
-        </div>
+        <RawSection
+          v-if="selectedItem?.technology"
+          title="Technology Data"
+          :data="selectedItem.technology"
+          :is-open="rawSectionsOpen.technology"
+          @toggle="toggleRawSection('technology')"
+        />
 
-        <!-- Entity Raw Data -->
-        <div v-if="selectedItem?.entity" :class="$style.rawSection">
-          <button :class="$style.rawSectionHeader" @click="toggleRawSection('entity')">
-            <span :class="$style.rawSectionTitle">Entity Data</span>
-            <span :class="$style.rawSectionToggle">{{ rawSectionsOpen.entity ? '▼' : '▶' }}</span>
-          </button>
-          <div v-if="rawSectionsOpen.entity" :class="$style.rawSectionContent">
-            <pre :class="$style.rawsData">{{ JSON.stringify(selectedItem.entity, null, 2) }}</pre>
-          </div>
-        </div>
+        <RawSection
+          v-if="selectedItem?.entity"
+          title="Entity Data"
+          :data="selectedItem.entity"
+          :is-open="rawSectionsOpen.entity"
+          @toggle="toggleRawSection('entity')"
+        />
 
-        <!-- Equipment Raw Data -->
-        <div v-if="selectedItem?.equipment" :class="$style.rawSection">
-          <button :class="$style.rawSectionHeader" @click="toggleRawSection('equipment')">
-            <span :class="$style.rawSectionTitle">Equipment Data</span>
-            <span :class="$style.rawSectionToggle">{{
-              rawSectionsOpen.equipment ? '▼' : '▶'
-            }}</span>
-          </button>
-          <div v-if="rawSectionsOpen.equipment" :class="$style.rawSectionContent">
-            <pre :class="$style.rawsData">{{
-              JSON.stringify(selectedItem.equipment, null, 2)
-            }}</pre>
-          </div>
-        </div>
+        <RawSection
+          v-if="selectedItem?.equipment"
+          title="Equipment Data"
+          :data="selectedItem.equipment"
+          :is-open="rawSectionsOpen.equipment"
+          @toggle="toggleRawSection('equipment')"
+        />
 
-        <!-- Unified Raw Data -->
-        <div :class="$style.rawSection">
-          <button :class="$style.rawSectionHeader" @click="toggleRawSection('unified')">
-            <span :class="$style.rawSectionTitle">Unified Raw Data</span>
-            <span :class="$style.rawSectionToggle">{{ rawSectionsOpen.unified ? '▼' : '▶' }}</span>
-          </button>
-          <div v-if="rawSectionsOpen.unified" :class="$style.rawSectionContent">
-            <pre :class="$style.rawsData">{{ JSON.stringify(unifiedRawData, null, 2) }}</pre>
-          </div>
-        </div>
+        <RawSection
+          title="Unified Raw Data"
+          :data="unifiedRawData"
+          :is-open="rawSectionsOpen.unified"
+          @toggle="toggleRawSection('unified')"
+        />
       </div>
 
       <!-- No Selection State -->
@@ -224,14 +191,14 @@
 import { computed, ref } from 'vue'
 
 import { useFactorioData } from '../../../src/index.js'
+import { useDetailsData } from '../../../src/composables/useDetailsData.js'
 
 import SpriteIcon from './SpriteIcon.vue'
 import IconButton from './IconButton.vue'
 import FactorioSprite from './FactorioSprite.vue'
 import Statistics from './Statistics.vue'
 import DetailsPaneSection from './DetailsPaneSection.vue'
-
-import { useDetailsData } from '../../../src/composables/useDetailsData.js'
+import RawSection from './RawSection.vue'
 // Use the data composable
 const { organizedData, createUnifiedSelectionObject } = useFactorioData()
 const { getDetailsData } = useDetailsData()
@@ -1331,66 +1298,6 @@ const detailsData = computed(() => {
   padding: 1rem 0;
 }
 
-.rawSection {
-  margin-bottom: 12px;
-  border: 1px solid #4a4a4a;
-  border-radius: 4px;
-  background: #3a3a3a;
-  overflow: hidden;
-}
-
-.rawSectionHeader {
-  width: 100%;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px 16px;
-  background: linear-gradient(135deg, #4a4a4a, #3a3a3a);
-  border: none;
-  color: #ffffff;
-  font-size: 14px;
-  font-weight: bold;
-  cursor: pointer;
-  transition: background 0.2s ease;
-  border-bottom: 1px solid #5a5a5a;
-}
-
-.rawSectionHeader:hover {
-  background: linear-gradient(135deg, #5a5a5a, #4a4a4a);
-}
-
-.rawSectionTitle {
-  flex: 1;
-  text-align: left;
-}
-
-.rawSectionToggle {
-  font-size: 12px;
-  color: #cccccc;
-  transition: transform 0.2s ease;
-}
-
-.rawSectionContent {
-  padding: 0;
-  background: #2d2d2d;
-}
-
-.rawsData {
-  background: var(--vp-c-bg-soft);
-  border: 1px solid var(--vp-c-divider);
-  border-radius: 0;
-  padding: 1rem;
-  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-  font-size: 0.875rem;
-  line-height: 1.5;
-  overflow-x: auto;
-  white-space: pre-wrap;
-  word-break: break-word;
-  max-height: 40vh;
-  overflow-y: auto;
-  margin: 0;
-}
-
 /* Mobile Responsive Styles */
 @media (max-width: 768px) {
   .detailsPane {
@@ -1502,18 +1409,6 @@ const detailsData = computed(() => {
     padding: 2px 4px;
     margin-bottom: 2px;
   }
-
-  /* Adjust raws content for mobile */
-  .rawsData {
-    font-size: 0.75rem;
-    padding: 0.5rem;
-    max-height: 30vh;
-  }
-
-  .rawSectionHeader {
-    padding: 8px 12px;
-    font-size: 12px;
-  }
 }
 
 /* iPhone 12 Pro and similar devices */
@@ -1573,12 +1468,6 @@ const detailsData = computed(() => {
   .triggerItem,
   .costItem {
     font-size: 10px;
-  }
-
-  .rawsData {
-    font-size: 0.7rem;
-    padding: 0.4rem;
-    max-height: 25vh;
   }
 }
 </style>
