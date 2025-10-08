@@ -15,7 +15,7 @@ export const technologyRules = [
     forType: 'technology',
     shownInTooltip: true,
     getValue: data => {
-      const sciencePacks = data.unit?.ingredients?.map(unit => ({
+      const sciencePacks = data.technology.unit?.ingredients?.map(unit => ({
         name: unit[0],
         type: 'item',
         amount: unit[1]
@@ -23,12 +23,12 @@ export const technologyRules = [
       return {
         items: sciencePacks,
         statistics: [
-          { label: labels.technology_cost, value: data.unit?.count },
-          { label: labels.technology_time, value: data.unit?.time }
+          { label: labels.technology_cost, value: data.technology.unit?.count },
+          { label: labels.technology_time, value: data.technology.unit?.time }
         ]
       }
     },
-    condition: data => data.unit !== undefined
+    condition: data => data.technology.unit !== undefined
   },
   {
     name: sectionTypes.technology_effects,
@@ -36,8 +36,8 @@ export const technologyRules = [
     type: 'section',
     forType: 'technology',
     shownInTooltip: true,
-    getValue: data => ({ items: data.effects }),
-    condition: data => data.effects !== undefined
+    getValue: data => ({ items: data.technology.effects }),
+    condition: data => data.technology.effects !== undefined
   },
   {
     name: sectionTypes.technology_prerequisites,
@@ -48,11 +48,11 @@ export const technologyRules = [
     getValue: (data, context) => {
       const technologies = Object.values(context.factorioData.technology)
       const prerequisites = technologies
-        .filter(technology => data.prerequisites?.includes(technology.name))
+        .filter(technology => data.technology.prerequisites?.includes(technology.name))
         .map(technology => ({ name: technology.name, type: 'technology' }))
       return { items: prerequisites }
     },
-    condition: data => data.prerequisites !== undefined
+    postCondition: data => data.items?.length > 0
   },
   {
     name: sectionTypes.technology_descendants,
@@ -63,14 +63,10 @@ export const technologyRules = [
     getValue: (data, context) => {
       const technologies = Object.values(context.factorioData.technology)
       const descendants = technologies
-        .filter(technology => technology.prerequisites?.includes(data.name))
+        .filter(technology => technology.prerequisites?.includes(data.technology.name))
         .map(technology => ({ name: technology.name, type: 'technology' }))
       return { items: descendants }
     },
-    condition: data => data.name !== undefined
+    postCondition: data => data.items?.length > 0
   }
 ]
-
-// Legacy exports for backward compatibility
-export const technologyStatisticsRules = technologyRules.filter(rule => rule.type === 'statistics')
-export const technologySectionRules = technologyRules.filter(rule => rule.type === 'section')

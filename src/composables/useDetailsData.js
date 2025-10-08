@@ -103,7 +103,7 @@ function getDetailsData(types, unifiedObject, isTooltip, factorioData) {
   // Handle tooltip extras for recipes
   if (isTooltip && types.includes('recipe')) {
     const { recipe } = unifiedObject
-    recipe.products?.forEach(product => {
+    recipe.results?.forEach(product => {
       data.tooltipExtras.push({ type: product.type, name: product.name })
     })
   }

@@ -56,7 +56,7 @@ export const entityRules = [
     order: 2,
     type: 'statistics',
     forType: 'entity',
-    shownInTooltip: true,
+    shownInTooltip: false,
     getValue: data => {
       if (data.entity?.type !== 'inserter') return null
       // TODO: derive from research data
@@ -98,10 +98,10 @@ export const entityRules = [
     name: labels.belt_speed,
     order: 6,
     type: 'statistics',
-    forType: 'transport-belt',
+    forType: 'entity',
     shownInTooltip: true,
-    getValue: data => (data.entity?.type === 'transport-belt' ? data.entity?.speed * 60 * 8 : null),
-    condition: data => data.entity?.type === 'transport-belt' && data.entity?.speed !== undefined
+    getValue: data => data.entity?.speed * 60 * 8,
+    condition: data => data.entity?.type === 'transport-belt' && data.entity?.speed
   },
   {
     name: labels.storage_size,
@@ -245,7 +245,7 @@ export const entityRules = [
     shownInTooltip: true,
     getValue: data =>
       data.entity?.speed ? `${((data.entity?.speed * 60) / (1000 / 3600)).toFixed(1)}km/h` : null,
-    condition: data => data.entity?.speed !== undefined
+    condition: data => data.entity?.speed !== undefined && data.entity?.type !== 'transport-belt'
   },
   {
     name: labels.range,

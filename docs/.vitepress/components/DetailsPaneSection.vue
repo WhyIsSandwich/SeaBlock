@@ -2,7 +2,7 @@
   <template v-if="section.type === ''" />
   <template v-else>
     <div :class="$style.section">
-      <h4 :class="$style.sectionTitle">{{ section.type }}</h4>
+      <h4 :class="$style.sectionTitle">{{ section.label }}</h4>
 
       <!-- Statistics for this section -->
       <Statistics v-if="section.statistics?.length > 0" :statistics="section.statistics" />
@@ -33,6 +33,11 @@
 <script>
 import IconButton from './IconButton.vue'
 import Statistics from './Statistics.vue'
+import { withBase } from 'vitepress'
+
+const localizedData = await fetch(withBase('/data/locale-en.json')).then(response =>
+  response.json()
+)
 
 export default {
   name: 'DetailsPaneSection',
@@ -60,8 +65,11 @@ export default {
   },
   methods: {
     getItemLabel(item) {
-      const localisedName = item.name
-      return this.label?.replace(/{{item_name}}/g, localisedName)
+      const localisedName = localizedData?.[item.type]?.[item.name]?.n
+      if (!item.label) {
+        return localisedName
+      }
+      return item.label?.replace(/{{item_name}}/g, localisedName)
     },
     handleItemClick(item) {
       // Emit both events for compatibility

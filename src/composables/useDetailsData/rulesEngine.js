@@ -26,11 +26,6 @@
 export function applyRules(rules, data, context = {}) {
   return rules
     .filter(rule => {
-      // Check if rule should run based on conditions
-      if (!rule.condition(data, context)) {
-        return false
-      }
-
       // Check if rule is for the correct type
       if (rule.forType && !context.types?.includes(rule.forType)) {
         return false
@@ -41,30 +36,35 @@ export function applyRules(rules, data, context = {}) {
         return false
       }
 
+      // Check if rule should run based on conditions
+      if (rule.condition && !rule.condition(data, context)) {
+        return false
+      }
+
       return true
     })
     .map(rule => {
       const result = rule.getValue(data, context)
-      if (!result) return null
+      if (!result && !rule.condition) return null
 
-      // Transform the result based on rule type
-      if (rule.type === 'statistics') {
-        // For statistics rules, ensure they return { label, value }
+      if (rule.postCondition && !rule.postCondition(result, context)) {
+        return null
+      }
+
+      //Allow statistics rules to return a simple value
+      if (rule.type === 'statistics' && typeof result !== 'object') {
         return {
           label: rule.name,
           value: result,
           _ruleType: rule.type
         }
-      } else if (rule.type === 'section') {
-        // For section rules, ensure they return { type, ...sectionData }
-        return {
-          ...result,
-          type: rule.name,
-          _ruleType: rule.type
-        }
       }
 
-      return result
+      if (!result.label) {
+        result.label = rule.name
+      }
+
+      return { ...result, _ruleType: rule.type }
     })
     .filter(result => result !== null && result !== undefined)
 }

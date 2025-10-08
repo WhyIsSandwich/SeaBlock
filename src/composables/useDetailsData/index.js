@@ -5,18 +5,6 @@
 // Rules engine
 export { applyRules, applyRulesSorted, transforms } from './rulesEngine.js'
 
-// Individual rule types
-export { entityRules, entityStatisticsRules, entitySectionRules } from './entityRules.js'
-export { itemRules, itemStatisticsRules, itemSectionRules } from './itemRules.js'
-export { tileRules, tileStatisticsRules, tileSectionRules } from './tileRules.js'
-export { fluidRules, fluidStatisticsRules, fluidSectionRules } from './fluidRules.js'
-export { recipeRules, recipeStatisticsRules, recipeSectionRules } from './recipeRules.js'
-export {
-  technologyRules,
-  technologyStatisticsRules,
-  technologySectionRules
-} from './technologyRules.js'
-
 // Unified rules array - combines all rule types
 import { entityRules } from './entityRules.js'
 import { itemRules } from './itemRules.js'

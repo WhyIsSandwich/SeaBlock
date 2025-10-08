@@ -60,7 +60,7 @@ export const fluidRules = [
     order: 1,
     type: 'section',
     forType: 'fluid',
-    shownInTooltip: true,
+    shownInTooltip: false,
     getValue: (data, context) => {
       const recipes = Object.values(context.factorioData.recipe)
       const usedIn = recipes
@@ -81,7 +81,7 @@ export const fluidRules = [
     order: 2,
     type: 'section',
     forType: 'fluid',
-    shownInTooltip: true,
+    shownInTooltip: false,
     getValue: (data, context) => {
       const recipes = Object.values(context.factorioData.recipe)
 

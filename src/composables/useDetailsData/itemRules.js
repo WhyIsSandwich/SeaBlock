@@ -130,7 +130,7 @@ export const itemRules = [
     order: 1,
     type: 'section',
     forType: 'item',
-    shownInTooltip: true,
+    shownInTooltip: false,
     getValue: (data, context) => {
       const recipes = Object.values(context.factorioData.recipe)
       const alternativeRecipes = recipes
@@ -146,14 +146,14 @@ export const itemRules = [
 
       return alternativeRecipes.length > 0 ? { items: alternativeRecipes, itemsType: 'list' } : null
     },
-    condition: data => data.item?.name !== undefined
+    postCondition: data => data.items?.length > 0
   },
   {
     name: sectionTypes.used_in,
     order: 2,
     type: 'section',
     forType: 'item',
-    shownInTooltip: true,
+    shownInTooltip: false,
     getValue: (data, context) => {
       const recipes = Object.values(context.factorioData.recipe)
       const usedIn = recipes
@@ -166,7 +166,7 @@ export const itemRules = [
 
       return usedIn.length > 0 ? { items: usedIn, itemsType: 'grid' } : null
     },
-    condition: data => data.item?.name !== undefined
+    postCondition: data => data.items?.length > 0
   },
   {
     name: sectionTypes.burned_in,

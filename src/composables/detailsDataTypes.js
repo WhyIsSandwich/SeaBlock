@@ -27,6 +27,7 @@ export const sectionTypes = new Proxy(
     vehicle: 'Vehicle',
     burnable_fuel: 'Burnable fuel',
     generates_steam: 'Generates steam',
+    consumes_steam: 'Consumes steam',
     stores_electricity: 'Stores electricity',
     consumes_nuclear_fuel: 'Consumes nuclear fuel',
     generates_heat: 'Generates heat',
