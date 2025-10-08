@@ -24,7 +24,7 @@
           :style="tooltipStyle"
           role="tooltip"
           :aria-hidden="!isVisible"
-          :data-debug="`visible: ${isVisible}, data: ${!!tooltipData}`"
+          :data-debug="`visible: ${isVisible}, data: ${!!tooltipDatas}`"
           tabindex="0"
           @mouseenter="handleTooltipMouseEnter"
           @mouseleave="handleTooltipMouseLeave"
@@ -349,8 +349,15 @@ function showTooltip() {
       if (data) {
         tooltipDatas.value = [data]
 
-        for (const data of tooltipDatas.value?.extr) {
+        if (data.tooltipExtras) {
+          for (const extra of data.tooltipExtras) {
+            const extraData = getTooltipData(extra.type, extra.name)
+            if (extraData) {
+              tooltipDatas.value.push(extraData)
+            }
+          }
         }
+
         isVisible.value = true
         console.log('Setting tooltip visible, positioning...')
         positionTooltip()

@@ -12,6 +12,7 @@ export const technologyRules = [
     name: sectionTypes.technology_cost,
     order: 1,
     type: 'section',
+    forType: 'technology',
     shownInTooltip: true,
     getValue: data => {
       const sciencePacks = data.unit?.ingredients?.map(unit => ({
@@ -33,6 +34,7 @@ export const technologyRules = [
     name: sectionTypes.technology_effects,
     order: 2,
     type: 'section',
+    forType: 'technology',
     shownInTooltip: true,
     getValue: data => ({ items: data.effects }),
     condition: data => data.effects !== undefined
@@ -41,6 +43,7 @@ export const technologyRules = [
     name: sectionTypes.technology_prerequisites,
     order: 3,
     type: 'section',
+    forType: 'technology',
     shownInTooltip: true,
     getValue: (data, context) => {
       const technologies = Object.values(context.factorioData.technology)
@@ -55,6 +58,7 @@ export const technologyRules = [
     name: sectionTypes.technology_descendants,
     order: 4,
     type: 'section',
+    forType: 'technology',
     shownInTooltip: true,
     getValue: (data, context) => {
       const technologies = Object.values(context.factorioData.technology)

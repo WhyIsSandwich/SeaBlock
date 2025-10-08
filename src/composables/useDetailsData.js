@@ -36,89 +36,45 @@ factorioObjects type
 */
 
 import { labels, sectionTypes } from './detailsDataTypes.js'
-import {
-  applyRules,
-  entityRules,
-  itemRules,
-  tileRules,
-  fluidRules,
-  recipeRules,
-  technologyRules
-} from './useDetailsData/index.js'
+import { applyRules, allRules } from './useDetailsData/index.js'
 
 export { labels, sectionTypes }
 
-function setEntityDetails({ statistics, sections, entity, item, isTooltip, factorioData }) {
-  // Apply unified entity rules
-  const entityResults = applyRules(entityRules, { ...entity, item }, { isTooltip, factorioData })
+/**
+ * Apply all rules to the unified object and separate results into statistics and sections
+ * @param {Object} unifiedObject - The unified object containing all data types
+ * @param {string[]} types - The types present in the unified object
+ * @param {boolean} isTooltip - Whether this is for a tooltip
+ * @param {Object} factorioData - The factorio data context
+ * @returns {Object} Object containing statistics and sections arrays
+ */
+function applyAllRules(unifiedObject, types, isTooltip, factorioData) {
+  const statistics = []
+  const sections = []
 
-  // Separate statistics and sections
-  const entityStats = entityResults.filter(result => result.label)
-  const entitySections = entityResults.filter(result => result.type)
-
-  statistics.push(...entityStats)
-  sections.push(...entitySections)
-}
-function setItemDetails({ statistics, sections, item, factorioData }) {
-  // Apply unified item rules
-  const itemResults = applyRules(itemRules, item, { factorioData })
-
-  // Separate statistics and sections
-  const itemStats = itemResults.filter(result => result.label)
-  const itemSections = itemResults.filter(result => result.type)
-
-  statistics.push(...itemStats)
-  sections.push(...itemSections)
-}
-
-function setTileDetails({ statistics, sections, tile, factorioData }) {
-  // Apply unified tile rules
-  const tileResults = applyRules(tileRules, tile, { factorioData })
-
-  // Separate statistics and sections
-  const tileStats = tileResults.filter(result => result.label)
-  const tileSections = tileResults.filter(result => result.type)
-
-  statistics.push(...tileStats)
-  sections.push(...tileSections)
-}
-
-function setFluidDetails({ statistics, sections, fluid, factorioData }) {
-  // Apply unified fluid rules
-  const fluidResults = applyRules(fluidRules, fluid, { factorioData })
-
-  // Separate statistics and sections
-  const fluidStats = fluidResults.filter(result => result.label)
-  const fluidSections = fluidResults.filter(result => result.type)
-
-  statistics.push(...fluidStats)
-  sections.push(...fluidSections)
-}
-
-function setTechnologyDetails({ sections, technology, factorioData }) {
-  // Apply unified technology rules
-  const techResults = applyRules(technologyRules, technology, { factorioData })
-
-  // Separate statistics and sections
-  const techStats = techResults.filter(result => result.label)
-  const techSections = techResults.filter(result => result.type)
-
-  sections.push(...techSections)
-}
-
-function setRecipeDetails({ types, sections, recipe, isTooltip, factorioData }) {
-  // Apply unified recipe rules
-  const recipeResults = applyRules(recipeRules, recipe, {
-    types,
+  // Create a context object that includes all the data
+  const context = {
     isTooltip,
-    factorioData
+    factorioData,
+    types
+  }
+
+  // Apply all rules at once
+  const allResults = applyRules(allRules, unifiedObject, context)
+
+  // Separate results into statistics and sections based on rule type
+  allResults.forEach(result => {
+    // Remove the _ruleType field before adding to arrays
+    const { _ruleType, ...cleanResult } = result
+
+    if (_ruleType === 'statistics') {
+      statistics.push(cleanResult)
+    } else if (_ruleType === 'section') {
+      sections.push(cleanResult)
+    }
   })
 
-  // Separate statistics and sections
-  const recipeStats = recipeResults.filter(result => result.label)
-  const recipeSections = recipeResults.filter(result => result.type)
-
-  sections.push(...recipeSections)
+  return { statistics, sections }
 }
 
 /***
@@ -136,55 +92,22 @@ function getDetailsData(types, unifiedObject, isTooltip, factorioData) {
     sections: [],
     tooltipExtras: []
   }
-  /*
-    keys of statistics that have been used (in factoriopedia entities stats only appear once eg item/entity would have stack size twice and it's in a different order for item (after resistances))
-    view armour and note stack size is above resistances
-    */
 
-  const request = {
-    types,
-    isTooltip,
-    sections: data.sections,
-    statistics: data.statistics,
-    factorioData
-  }
+  // Apply all rules at once and get the results
+  const { statistics, sections } = applyAllRules(unifiedObject, types, isTooltip, factorioData)
 
-  if (types.includes('entity')) {
-    const { entity, item } = unifiedObject
-    setEntityDetails({ ...request, entity, item })
-  }
+  // Add the results to the data object
+  data.statistics.push(...statistics)
+  data.sections.push(...sections)
 
-  if (types.includes('item')) {
-    const { item } = unifiedObject
-    setItemDetails({ ...request, item })
-  }
-
-  if (types.includes('tile')) {
-    const { tile } = unifiedObject
-    setTileDetails({ ...request, tile })
-  }
-  if (types.includes('fluid')) {
-    const { fluid } = unifiedObject
-    setFluidDetails({ ...request, fluid })
-  }
-  if (types.includes('technology')) {
-    const { technology } = unifiedObject
-    setTechnologyDetails({ ...request, technology })
-  }
-
-  if (types.includes('recipe')) {
+  // Handle tooltip extras for recipes
+  if (isTooltip && types.includes('recipe')) {
     const { recipe } = unifiedObject
-    setRecipeDetails({ ...request, recipe })
+    recipe.products?.forEach(product => {
+      data.tooltipExtras.push({ type: product.type, name: product.name })
+    })
   }
 
-  if (isTooltip) {
-    if (types.includes('recipe')) {
-      const { recipe } = unifiedObject
-      recipe.products?.forEach(product => {
-        data.tooltipExtras.push({ type: product.type, name: product.name })
-      })
-    }
-  }
   return data
 }
 

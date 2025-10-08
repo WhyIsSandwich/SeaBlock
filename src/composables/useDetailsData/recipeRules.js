@@ -13,34 +13,37 @@ export const recipeRules = [
     name: sectionTypes.ingredients,
     order: 1,
     type: 'section',
+    forType: 'recipe',
     shownInTooltip: true,
     getValue: data => ({
-      items: data.ingredients?.map(ingredient => ({
+      items: data.recipe?.ingredients?.map(ingredient => ({
         name: ingredient.name,
         type: ingredient.type,
         label: `{{item_name}} x ${ingredient.amount}`
       })),
       itemsType: 'list'
     }),
-    condition: data => data.ingredients !== undefined
+    condition: data => data.recipe?.ingredients !== undefined
   },
   {
     name: sectionTypes.crafting_time,
     order: 2,
     type: 'section',
+    forType: 'recipe',
     shownInTooltip: true,
     getValue: data => ({
-      statistics: [{ label: labels.crafting_time, value: data.energy_required }]
+      statistics: [{ label: labels.crafting_time, value: data.recipe?.energy_required }]
     }),
-    condition: data => data.energy_required !== undefined
+    condition: data => data.recipe?.energy_required !== undefined
   },
   {
     name: sectionTypes.products,
     order: 3,
     type: 'section',
+    forType: 'recipe',
     shownInTooltip: true,
     getValue: data => ({
-      items: data.results?.map(result => ({
+      items: data.recipe?.results?.map(result => ({
         name: result.name,
         type: result.type,
         label: `{{item_name}} x ${result.amount}`
@@ -50,8 +53,9 @@ export const recipeRules = [
     condition: (data, _context) => {
       // Only show products if not redundant
       return (
-        (data.results && data.results.some(product => product.name !== data.name)) ||
-        data.always_show_products
+        (data.recipe?.results &&
+          data.recipe?.results.some(product => product.name !== data.recipe?.name)) ||
+        data.recipe?.always_show_products
       )
     }
   },
@@ -59,17 +63,18 @@ export const recipeRules = [
     name: sectionTypes.made_in,
     order: 4,
     type: 'section',
+    forType: 'recipe',
     shownInTooltip: true,
     getValue: (data, context) => {
       const entities = Object.values(context.factorioData.entity)
-        .filter(entity => entity.crafting_categories?.includes(data.category || 'crafting'))
+        .filter(entity => entity.crafting_categories?.includes(data.recipe?.category || 'crafting'))
         .map(entity => ({ name: entity.name, type: 'entity' }))
       return {
         items: entities,
         itemsType: 'grid' // Use grid layout for made_in section
       }
     },
-    condition: data => data.category !== undefined
+    condition: data => data.recipe?.category !== undefined
   },
   {
     name: sectionTypes.unlock_technologies,
@@ -83,14 +88,14 @@ export const recipeRules = [
           a =>
             a?.effects?.length > 0 &&
             a?.effects?.filter(
-              effect => effect.type === 'unlock-recipe' && effect.recipe === data.name
+              effect => effect.type === 'unlock-recipe' && effect.recipe === data.recipe?.name
             )?.length > 0
         )
         .map(technology => ({ name: technology.name, type: 'technology' }))
       console.log(unlockTechnologies)
       return { items: unlockTechnologies }
     },
-    condition: data => data.name !== undefined
+    condition: data => data.recipe?.name !== undefined
   }
 ]
 

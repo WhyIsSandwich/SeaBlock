@@ -32,7 +32,7 @@ export function applyRules(rules, data, context = {}) {
       }
 
       // Check if rule is for the correct type
-      if (rule.forType && data.type !== rule.forType) {
+      if (rule.forType && !context.types?.includes(rule.forType)) {
         return false
       }
 
@@ -44,23 +44,27 @@ export function applyRules(rules, data, context = {}) {
       return true
     })
     .map(rule => {
-      const value = rule.getValue(data, context)
+      const result = rule.getValue(data, context)
+      if (!result) return null
 
+      // Transform the result based on rule type
       if (rule.type === 'statistics') {
-        // For statistics, return { label, value } format
+        // For statistics rules, ensure they return { label, value }
         return {
           label: rule.name,
-          value: rule.transform ? rule.transform(value) : value
+          value: result,
+          _ruleType: rule.type
         }
       } else if (rule.type === 'section') {
-        // For sections, return the value with type
+        // For section rules, ensure they return { type, ...sectionData }
         return {
-          ...value,
-          type: rule.name
+          ...result,
+          type: rule.name,
+          _ruleType: rule.type
         }
       }
 
-      return value
+      return result
     })
     .filter(result => result !== null && result !== undefined)
 }

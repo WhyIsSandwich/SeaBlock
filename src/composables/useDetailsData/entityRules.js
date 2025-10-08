@@ -43,53 +43,56 @@ export const entityRules = [
     name: labels.rotation_speed,
     order: 1,
     type: 'statistics',
-    forType: 'inserter',
+    forType: 'entity',
     shownInTooltip: true,
     getValue: data => {
-      if (data.type !== 'inserter') return null
-      return (data.rotation_speed * 360 * 60).toFixed(0)
+      if (data.entity?.type !== 'inserter') return null
+      return (data.entity?.rotation_speed * 360 * 60).toFixed(0)
     },
-    condition: data => data.type === 'inserter' && data.rotation_speed !== undefined
+    condition: data => data.entity?.type === 'inserter' && data.entity?.rotation_speed !== undefined
   },
   {
     name: labels.hand_stack_size,
     order: 2,
     type: 'statistics',
-    forType: 'inserter',
+    forType: 'entity',
     shownInTooltip: true,
     getValue: data => {
-      if (data.type !== 'inserter') return null
+      if (data.entity?.type !== 'inserter') return null
       // TODO: derive from research data
-      return data.bulk ? '1 + 11' : '1 + 3'
+      return data.entity?.bulk ? '1 + 11' : '1 + 3'
     },
-    condition: data => data.type === 'inserter'
+    condition: data => data.entity?.type === 'inserter'
   },
   {
     name: labels.can_filter_items,
     order: 3,
     type: 'statistics',
+    forType: 'entity',
     shownInTooltip: true,
-    getValue: data => (data.filter_count ? '' : null),
-    condition: data => data.filter_count !== undefined
+    getValue: data => (data.entity?.filter_count ? '' : null),
+    condition: data => data.entity?.filter_count !== undefined
   },
   {
     name: labels.storage_volume,
     order: 4,
     type: 'statistics',
+    forType: 'entity',
     shownInTooltip: true,
-    getValue: data => data.fluid_box?.volume || data.capacity,
+    getValue: data => data.entity?.fluid_box?.volume || data.entity?.capacity,
     condition: data => {
-      const volume = data.fluid_box?.volume || data.capacity
-      return volume !== undefined && !data.fluid_box?.production_type
+      const volume = data.entity?.fluid_box?.volume || data.entity?.capacity
+      return volume !== undefined && !data.entity?.fluid_box?.production_type
     }
   },
   {
     name: labels.max_length,
     order: 5,
     type: 'statistics',
+    forType: 'entity',
     shownInTooltip: true,
-    getValue: data => data.max_distance?.toFixed(0),
-    condition: data => data.max_distance !== undefined
+    getValue: data => data.entity?.max_distance?.toFixed(0),
+    condition: data => data.entity?.max_distance !== undefined
   },
   {
     name: labels.belt_speed,
@@ -97,137 +100,152 @@ export const entityRules = [
     type: 'statistics',
     forType: 'transport-belt',
     shownInTooltip: true,
-    getValue: data => (data.type === 'transport-belt' ? data.speed * 60 * 8 : null),
-    condition: data => data.type === 'transport-belt' && data.speed !== undefined
+    getValue: data => (data.entity?.type === 'transport-belt' ? data.entity?.speed * 60 * 8 : null),
+    condition: data => data.entity?.type === 'transport-belt' && data.entity?.speed !== undefined
   },
   {
     name: labels.storage_size,
     order: 7,
     type: 'statistics',
+    forType: 'entity',
     shownInTooltip: true,
-    getValue: data => data.inventory_size,
-    condition: data => data.inventory_size !== undefined
+    getValue: data => data.entity?.inventory_size,
+    condition: data => data.entity?.inventory_size !== undefined
   },
   {
     name: labels.wire_reach,
     order: 8,
     type: 'statistics',
+    forType: 'entity',
     shownInTooltip: true,
-    getValue: data => data.maximum_wire_distance,
-    condition: data => data.maximum_wire_distance !== undefined
+    getValue: data => data.entity?.maximum_wire_distance,
+    condition: data => data.entity?.maximum_wire_distance !== undefined
   },
   {
     name: labels.supply_area,
     order: 9,
     type: 'statistics',
+    forType: 'entity',
     shownInTooltip: true,
     getValue: data => {
-      const distance = data.supply_area_distance || data.logistics_radius
+      const distance = data.entity?.supply_area_distance || data.entity?.logistics_radius
       return distance ? `${distance * 2}x${distance * 2}` : null
     },
     condition: data =>
-      data.supply_area_distance !== undefined || data.logistics_radius !== undefined
+      data.entity?.supply_area_distance !== undefined || data.entity?.logistics_radius !== undefined
   },
   {
     name: labels.construction_area,
     order: 10,
     type: 'statistics',
+    forType: 'entity',
     shownInTooltip: true,
     getValue: data =>
-      data.construction_radius
-        ? `${data.construction_radius * 2}x${data.construction_radius * 2}`
+      data.entity?.construction_radius
+        ? `${data.entity?.construction_radius * 2}x${data.entity?.construction_radius * 2}`
         : null,
-    condition: data => data.construction_radius !== undefined
+    condition: data => data.entity?.construction_radius !== undefined
   },
   {
     name: labels.radar_coverage_distance,
     order: 11,
     type: 'statistics',
+    forType: 'entity',
     shownInTooltip: true,
-    getValue: data => data.radar_coverage_distance,
+    getValue: data => data.entity?.radar_coverage_distance,
     transform: value => (typeof value === 'number' ? value.toFixed(2) : value),
-    condition: data => data.radar_coverage_distance !== undefined
+    condition: data => data.entity?.radar_coverage_distance !== undefined
   },
   {
     name: labels.pumping_speed,
     order: 12,
     type: 'statistics',
+    forType: 'entity',
     shownInTooltip: true,
-    getValue: data => (data.pumping_speed ? data.pumping_speed * 60 : null),
-    condition: data => data.pumping_speed !== undefined
+    getValue: data => (data.entity?.pumping_speed ? data.entity?.pumping_speed * 60 : null),
+    condition: data => data.entity?.pumping_speed !== undefined
   },
   {
     name: labels.mining_speed,
     order: 13,
     type: 'statistics',
+    forType: 'entity',
     shownInTooltip: true,
-    getValue: data => (data.mining_speed ? `${data.mining_speed}/s` : null),
-    condition: data => data.mining_speed !== undefined
+    getValue: data => (data.entity?.mining_speed ? `${data.entity?.mining_speed}/s` : null),
+    condition: data => data.entity?.mining_speed !== undefined
   },
   {
     name: labels.mining_area,
     order: 14,
     type: 'statistics',
+    forType: 'entity',
     shownInTooltip: true,
     getValue: data => {
-      if (!data.resource_searching_radius) return null
-      const value = Math.ceil(data.resource_searching_radius * 2)
+      if (!data.entity?.resource_searching_radius) return null
+      const value = Math.ceil(data.entity?.resource_searching_radius * 2)
       return isNaN(value) ? null : `${value}x${value}`
     },
-    condition: data => data.resource_searching_radius !== undefined
+    condition: data => data.entity?.resource_searching_radius !== undefined
   },
   {
     name: labels.crafting_speed,
     order: 15,
     type: 'statistics',
+    forType: 'entity',
     shownInTooltip: true,
-    getValue: data => data.crafting_speed,
+    getValue: data => data.entity?.crafting_speed,
     transform: value => (typeof value === 'number' ? value.toFixed(2) : value),
-    condition: data => data.crafting_speed !== undefined
+    condition: data => data.entity?.crafting_speed !== undefined
   },
   {
     name: labels.pollution,
     order: 16,
     type: 'statistics',
+    forType: 'entity',
     shownInTooltip: true,
     getValue: data => {
-      const pollution = data.energy_source?.emissions_per_minute?.pollution
+      const pollution = data.entity?.energy_source?.emissions_per_minute?.pollution
       return pollution !== undefined ? `${pollution}/m` : null
     },
-    condition: data => data.energy_source?.emissions_per_minute?.pollution !== undefined
+    condition: data => data.entity?.energy_source?.emissions_per_minute?.pollution !== undefined
   },
   {
     name: labels.research_speed,
     order: 17,
     type: 'statistics',
+    forType: 'entity',
     shownInTooltip: true,
-    getValue: data => data.researching_speed,
+    getValue: data => data.entity?.researching_speed,
     transform: value => (typeof value === 'number' ? value.toFixed(2) : value),
-    condition: data => data.researching_speed !== undefined
+    condition: data => data.entity?.researching_speed !== undefined
   },
   {
     name: labels.module_slots,
     order: 18,
     type: 'statistics',
+    forType: 'entity',
     shownInTooltip: true,
-    getValue: data => data.module_slots,
-    condition: data => data.module_slots !== undefined
+    getValue: data => data.entity?.module_slots,
+    condition: data => data.entity?.module_slots !== undefined
   },
   {
     name: labels.cargo_capacity,
     order: 19,
     type: 'statistics',
+    forType: 'entity',
     shownInTooltip: true,
-    getValue: data => data.cargo_capacity,
-    condition: data => data.cargo_capacity !== undefined
+    getValue: data => data.entity?.cargo_capacity,
+    condition: data => data.entity?.cargo_capacity !== undefined
   },
   {
     name: labels.speed,
     order: 20,
     type: 'statistics',
+    forType: 'entity',
     shownInTooltip: true,
-    getValue: data => (data.speed ? `${((data.speed * 60) / (1000 / 3600)).toFixed(1)}km/h` : null),
-    condition: data => data.speed !== undefined
+    getValue: data =>
+      data.entity?.speed ? `${((data.entity?.speed * 60) / (1000 / 3600)).toFixed(1)}km/h` : null,
+    condition: data => data.entity?.speed !== undefined
   },
   {
     name: labels.range,
@@ -235,8 +253,9 @@ export const entityRules = [
     type: 'statistics',
     forType: 'combat-robot',
     shownInTooltip: true,
-    getValue: data => data.attack_parameters?.range,
-    condition: data => data.type === 'combat-robot' && data.attack_parameters?.range !== undefined
+    getValue: data => data.entity?.attack_parameters?.range,
+    condition: data =>
+      data.entity?.type === 'combat-robot' && data.entity?.attack_parameters?.range !== undefined
   },
   {
     name: labels.shooting_speed,
@@ -244,89 +263,95 @@ export const entityRules = [
     type: 'statistics',
     forType: 'combat-robot',
     shownInTooltip: true,
-    getValue: data => data.attack_parameters?.cooldown,
+    getValue: data => data.entity?.attack_parameters?.cooldown,
     condition: data =>
-      data.type === 'combat-robot' && data.attack_parameters?.cooldown !== undefined
+      data.entity?.type === 'combat-robot' && data.entity?.attack_parameters?.cooldown !== undefined
   },
   {
     name: labels.max_consumption,
     order: 23,
     type: 'statistics',
+    forType: 'entity',
     shownInTooltip: true,
     getValue: data => {
       // Parse energy_per_tick (e.g., "1.5MW", "500kJ")
-      const energyPerTick = parseEnergyString(data.energy_per_tick)
+      const energyPerTick = parseEnergyString(data.entity?.energy_per_tick)
       if (!energyPerTick) return null
 
       // Parse energy_per_move (e.g., "0.5MJ", "100kJ")
-      const energyPerMove = parseEnergyString(data.energy_per_move)
+      const energyPerMove = parseEnergyString(data.entity?.energy_per_move)
       if (!energyPerMove) return null
 
       // Calculate max consumption: energy per tick + (energy per move * speed)
       // Both values are now normalized to MW
       const maxConsumption =
-        energyPerTick.normalizedValue + energyPerMove.normalizedValue * data.speed
+        energyPerTick.normalizedValue + energyPerMove.normalizedValue * data.entity?.speed
 
       // Convert to per-second consumption (multiply by 60 ticks per second)
       return `${(maxConsumption * 60).toFixed(2)}kW`
     },
-    condition: data => data.energy_per_tick && data.energy_per_move && data.speed
+    condition: data =>
+      data.entity?.energy_per_tick && data.entity?.energy_per_move && data.entity?.speed
   },
   {
     name: labels.distribution_efficiency,
     order: 24,
     type: 'statistics',
+    forType: 'entity',
     shownInTooltip: true,
-    getValue: data => data.distribution_efficiency,
+    getValue: data => data.entity?.distribution_efficiency,
     transform: value => (typeof value === 'number' ? `${(value * 100).toFixed(1)}%` : value),
-    condition: data => data.distribution_efficiency !== undefined
+    condition: data => data.entity?.distribution_efficiency !== undefined
   },
   {
     name: labels.continuous_coverage_distance,
     order: 25,
     type: 'statistics',
+    forType: 'entity',
     shownInTooltip: true,
-    getValue: data => data.continuous_coverage_distance,
+    getValue: data => data.entity?.continuous_coverage_distance,
     transform: value => (typeof value === 'number' ? value.toFixed(2) : value),
-    condition: data => data.continuous_coverage_distance !== undefined
+    condition: data => data.entity?.continuous_coverage_distance !== undefined
   },
   {
     name: labels.exploration_coverage_distance,
     order: 26,
     type: 'statistics',
+    forType: 'entity',
     shownInTooltip: true,
-    getValue: data => data.exploration_coverage_distance,
+    getValue: data => data.entity?.exploration_coverage_distance,
     transform: value => (typeof value === 'number' ? value.toFixed(2) : value),
-    condition: data => data.exploration_coverage_distance !== undefined
+    condition: data => data.entity?.exploration_coverage_distance !== undefined
   },
   {
     name: labels.base_health,
     order: 27,
     type: 'statistics',
     shownInTooltip: false,
-    getValue: data => data.max_health,
-    condition: data => data.max_health !== undefined
+    getValue: data => data.entity?.max_health,
+    condition: data => data.entity?.max_health !== undefined
   },
   {
     name: labels.healing,
     order: 28,
     type: 'statistics',
     shownInTooltip: false,
-    getValue: data => data.healing,
-    condition: data => data.healing !== undefined
+    getValue: data => data.entity?.healing,
+    condition: data => data.entity?.healing !== undefined
   },
   {
     name: labels.resistances,
     order: 29,
     type: 'statistics',
     shownInTooltip: false,
-    getValue: data => data.resistances,
-    condition: data => data.resistances !== undefined
+    getValue: data => data.entity?.resistances,
+    condition: data => data.entity?.resistances !== undefined
   },
   {
     name: labels.stack_size,
     order: 30,
     type: 'statistics',
+    forType: 'entity',
     shownInTooltip: true,
     getValue: data => data.item?.stack_size,
     condition: data => data.item?.stack_size !== undefined
@@ -337,75 +362,84 @@ export const entityRules = [
     name: sectionTypes.turret,
     order: 1,
     type: 'section',
+    forType: 'entity',
     shownInTooltip: true,
-    getValue: data => data.turret,
-    condition: data => data.turret !== undefined
+    getValue: data => data.entity?.turret,
+    condition: data => data.entity?.turret !== undefined
   },
   {
     name: sectionTypes.effect,
     order: 2,
     type: 'section',
+    forType: 'entity',
     shownInTooltip: true,
-    getValue: data => data.effect,
-    condition: data => data.effect !== undefined
+    getValue: data => data.entity?.effect,
+    condition: data => data.entity?.effect !== undefined
   },
   {
     name: sectionTypes.consumes_water,
     order: 3,
     type: 'section',
+    forType: 'entity',
     shownInTooltip: true,
-    getValue: data => data.consumes_water,
-    condition: data => data.consumes_water !== undefined
+    getValue: data => data.entity?.consumes_water,
+    condition: data => data.entity?.consumes_water !== undefined
   },
   {
     name: sectionTypes.equipment_grid,
     order: 4,
     type: 'section',
+    forType: 'entity',
     shownInTooltip: true,
-    getValue: data => data.equipment_grid,
-    condition: data => data.equipment_grid !== undefined
+    getValue: data => data.entity?.equipment_grid,
+    condition: data => data.entity?.equipment_grid !== undefined
   },
   {
     name: sectionTypes.vehicle_weapons,
     order: 5,
     type: 'section',
+    forType: 'entity',
     shownInTooltip: true,
-    getValue: data => data.vehicle_weapons,
-    condition: data => data.vehicle_weapons !== undefined
+    getValue: data => data.entity?.vehicle_weapons,
+    condition: data => data.entity?.vehicle_weapons !== undefined
   },
   {
     name: sectionTypes.vehicle,
     order: 6,
     type: 'section',
+    forType: 'entity',
     shownInTooltip: true,
-    getValue: data => data.vehicle,
-    condition: data => data.vehicle !== undefined
+    getValue: data => data.entity?.vehicle,
+    condition: data => data.entity?.vehicle !== undefined
   },
   {
     name: sectionTypes.burnable_fuel,
     order: 7,
     type: 'section',
+    forType: 'entity',
     shownInTooltip: true,
-    getValue: data => data.burnable_fuel,
-    condition: data => data.burnable_fuel !== undefined
+    getValue: data => data.entity?.burnable_fuel,
+    condition: data => data.entity?.burnable_fuel !== undefined
   },
   {
     name: sectionTypes.generates_steam,
     order: 8,
     type: 'section',
+    forType: 'entity',
     shownInTooltip: true,
-    getValue: data => data.generates_steam,
-    condition: data => data.generates_steam !== undefined
+    getValue: data => data.entity?.generates_steam,
+    condition: data => data.entity?.generates_steam !== undefined
   },
   {
     name: sectionTypes.consumes_steam,
     order: 9,
     type: 'section',
+    forType: 'entity',
     shownInTooltip: true,
     getValue: (data, context) => {
-      if (!data.fluid_usage_per_tick) return null
+      if (!data.entity?.fluid_usage_per_tick) return null
       const Fluids = context.factorioData.fluid
-      const filteredFluid = data.fluid_box?.filter
+      const filteredFluid = data.entity?.fluid_box?.filter
       const allowedFluid = Fluids[filteredFluid]
       if (!allowedFluid) return null
 
@@ -416,61 +450,67 @@ export const entityRules = [
 
       return {
         statistics: [
-          { label: labels.fluid_consumption, value: data?.fluid_usage_per_tick * 60 },
-          { label: labels.fluid_max_temperature, value: data?.maximum_temperature }
+          { label: labels.fluid_consumption, value: data.entity?.fluid_usage_per_tick * 60 },
+          { label: labels.fluid_max_temperature, value: data.entity?.maximum_temperature }
         ],
         items: [workingFluid]
       }
     },
-    condition: data => data.fluid_usage_per_tick !== undefined
+    condition: data => data.entity?.fluid_usage_per_tick !== undefined
   },
   {
     name: sectionTypes.stores_electricity,
     order: 10,
     type: 'section',
+    forType: 'entity',
     shownInTooltip: true,
-    getValue: data => data.stores_electricity,
-    condition: data => data.stores_electricity !== undefined
+    getValue: data => data.entity?.stores_electricity,
+    condition: data => data.entity?.stores_electricity !== undefined
   },
   {
     name: sectionTypes.consumes_nuclear_fuel,
     order: 11,
     type: 'section',
+    forType: 'entity',
     shownInTooltip: true,
-    getValue: data => data.consumes_nuclear_fuel,
-    condition: data => data.consumes_nuclear_fuel !== undefined
+    getValue: data => data.entity?.consumes_nuclear_fuel,
+    condition: data => data.entity?.consumes_nuclear_fuel !== undefined
   },
   {
     name: sectionTypes.generates_heat,
     order: 12,
     type: 'section',
+    forType: 'entity',
     shownInTooltip: true,
-    getValue: data => data.generates_heat,
-    condition: data => data.generates_heat !== undefined
+    getValue: data => data.entity?.generates_heat,
+    condition: data => data.entity?.generates_heat !== undefined
   },
   {
     name: sectionTypes.consumes_heat,
     order: 13,
     type: 'section',
+    forType: 'entity',
     shownInTooltip: true,
-    getValue: data => data.consumes_heat,
-    condition: data => data.consumes_heat !== undefined
+    getValue: data => data.entity?.consumes_heat,
+    condition: data => data.entity?.consumes_heat !== undefined
   },
   {
     name: sectionTypes.consumes_electricity,
     order: 14,
     type: 'section',
+    forType: 'entity',
     shownInTooltip: true,
-    getValue: data => data.consumes_electricity,
-    condition: data => data.consumes_electricity !== undefined
+    getValue: data => data.entity?.consumes_electricity,
+    condition: data => data.entity?.consumes_electricity !== undefined
   },
   {
     name: sectionTypes.generates_electricity,
     order: 15,
     type: 'section',
+    forType: 'entity',
     shownInTooltip: true,
-    getValue: data => data.generates_electricity,
-    condition: data => data.generates_electricity !== undefined
+    getValue: data => data.entity?.generates_electricity,
+    condition: data => data.entity?.generates_electricity !== undefined
   }
 ]
 

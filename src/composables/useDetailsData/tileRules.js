@@ -11,23 +11,25 @@ export const tileRules = [
     name: labels.walking_speed,
     order: 1,
     type: 'statistics',
+    forType: 'tile',
     shownInTooltip: true,
-    getValue: data => data.walking_speed_modifier,
+    getValue: data => data.tile?.walking_speed_modifier,
     transform: transforms.formatPercent,
-    condition: data => data.walking_speed_modifier !== undefined
+    condition: data => data.tile?.walking_speed_modifier !== undefined
   },
   {
     name: labels.pollution_absorption,
     order: 2,
     type: 'statistics',
+    forType: 'tile',
     shownInTooltip: true,
     getValue: data => {
       // 32x32 area, 60 seconds figure is /m per chunk
-      return data.absorptions_per_second?.pollution
-        ? `${(data.absorptions_per_second.pollution * 32 * 32 * 60)?.toFixed(2)}/m per chunk`
+      return data.tile?.absorptions_per_second?.pollution
+        ? `${(data.tile?.absorptions_per_second.pollution * 32 * 32 * 60)?.toFixed(2)}/m per chunk`
         : null
     },
-    condition: data => data.absorptions_per_second?.pollution !== undefined
+    condition: data => data.tile?.absorptions_per_second?.pollution !== undefined
   },
 
   // Section rules
@@ -35,6 +37,7 @@ export const tileRules = [
     name: sectionTypes.allows_placement,
     order: 1,
     type: 'section',
+    forType: 'tile',
     shownInTooltip: true,
     getValue: (data, context) => {
       const placeableAsTiles = Object.values(context.factorioData.item).filter(
@@ -46,7 +49,7 @@ export const tileRules = [
       for (const tile of placeableAsTiles) {
         const { place_as_tile } = tile
 
-        if (checkTilePlacementCondition(place_as_tile, data)) {
+        if (checkTilePlacementCondition(place_as_tile, data.tile)) {
           console.log('valid placeable as tile', tile.name)
           validPlaceableAsTiles.push({ name: tile.name, type: 'tile' })
         }
@@ -55,23 +58,27 @@ export const tileRules = [
       validPlaceableAsTiles = validPlaceableAsTiles.map(tile => ({ name: tile.name, type: 'tile' }))
       return validPlaceableAsTiles.length > 0 ? { items: validPlaceableAsTiles } : null
     },
-    condition: data => data.name !== undefined
+    condition: data => data.tile?.name !== undefined
   },
   {
     name: sectionTypes.source_of,
     order: 2,
     type: 'section',
+    forType: 'tile',
     shownInTooltip: true,
-    getValue: data => (data.fluid ? { items: [{ name: data.fluid, type: 'fluid' }] } : null),
-    condition: data => data.fluid !== undefined
+    getValue: data =>
+      data.tile?.fluid ? { items: [{ name: data.tile?.fluid, type: 'fluid' }] } : null,
+    condition: data => data.tile?.fluid !== undefined
   },
   {
     name: sectionTypes.extracted_by,
     order: 3,
     type: 'section',
+    forType: 'tile',
     shownInTooltip: true,
-    getValue: data => (data.fluid ? { items: [{ name: 'offshore-pump', type: 'entity' }] } : null),
-    condition: data => data.fluid !== undefined
+    getValue: data =>
+      data.tile?.fluid ? { items: [{ name: 'offshore-pump', type: 'entity' }] } : null,
+    condition: data => data.tile?.fluid !== undefined
   }
 ]
 
