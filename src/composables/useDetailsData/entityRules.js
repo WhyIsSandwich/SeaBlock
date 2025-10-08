@@ -364,7 +364,9 @@ export const entityRules = [
     type: 'section',
     forType: 'entity',
     shownInTooltip: true,
-    getValue: data => data.entity?.turret,
+    getValue: data => {
+      return { items: [data.entity?.turret] }
+    },
     condition: data => data.entity?.turret !== undefined
   },
   {
@@ -373,7 +375,9 @@ export const entityRules = [
     type: 'section',
     forType: 'entity',
     shownInTooltip: true,
-    getValue: data => data.entity?.effect,
+    getValue: data => {
+      return { items: [data.entity?.effect] }
+    },
     condition: data => data.entity?.effect !== undefined
   },
   {
@@ -382,7 +386,10 @@ export const entityRules = [
     type: 'section',
     forType: 'entity',
     shownInTooltip: true,
-    getValue: data => data.entity?.consumes_water,
+    getValue: data => {
+      return { items: [data.entity?.consumes_water] }
+      data.entity?.consumes_water
+    },
     condition: data => data.entity?.consumes_water !== undefined
   },
   {
@@ -391,7 +398,9 @@ export const entityRules = [
     type: 'section',
     forType: 'entity',
     shownInTooltip: true,
-    getValue: data => data.entity?.equipment_grid,
+    getValue: data => {
+      return { items: [data.entity?.equipment_grid] }
+    },
     condition: data => data.entity?.equipment_grid !== undefined
   },
   {
@@ -400,7 +409,9 @@ export const entityRules = [
     type: 'section',
     forType: 'entity',
     shownInTooltip: true,
-    getValue: data => data.entity?.vehicle_weapons,
+    getValue: data => {
+      return { items: [data.entity?.vehicle_weapons] }
+    },
     condition: data => data.entity?.vehicle_weapons !== undefined
   },
   {
@@ -409,7 +420,9 @@ export const entityRules = [
     type: 'section',
     forType: 'entity',
     shownInTooltip: true,
-    getValue: data => data.entity?.vehicle,
+    getValue: data => {
+      return { items: [data.entity?.vehicle] }
+    },
     condition: data => data.entity?.vehicle !== undefined
   },
   {
@@ -418,7 +431,9 @@ export const entityRules = [
     type: 'section',
     forType: 'entity',
     shownInTooltip: true,
-    getValue: data => data.entity?.burnable_fuel,
+    getValue: data => {
+      return { items: [data.entity?.burnable_fuel] }
+    },
     condition: data => data.entity?.burnable_fuel !== undefined
   },
   {
@@ -427,7 +442,9 @@ export const entityRules = [
     type: 'section',
     forType: 'entity',
     shownInTooltip: true,
-    getValue: data => data.entity?.generates_steam,
+    getValue: data => {
+      return { items: [data.entity?.generates_steam] }
+    },
     condition: data => data.entity?.generates_steam !== undefined
   },
   {
@@ -464,7 +481,9 @@ export const entityRules = [
     type: 'section',
     forType: 'entity',
     shownInTooltip: true,
-    getValue: data => data.entity?.stores_electricity,
+    getValue: data => {
+      return { items: [data.entity?.stores_electricity] }
+    },
     condition: data => data.entity?.stores_electricity !== undefined
   },
   {
@@ -473,7 +492,9 @@ export const entityRules = [
     type: 'section',
     forType: 'entity',
     shownInTooltip: true,
-    getValue: data => data.entity?.consumes_nuclear_fuel,
+    getValue: data => {
+      return { items: [data.entity?.consumes_nuclear_fuel] }
+    },
     condition: data => data.entity?.consumes_nuclear_fuel !== undefined
   },
   {
@@ -482,7 +503,9 @@ export const entityRules = [
     type: 'section',
     forType: 'entity',
     shownInTooltip: true,
-    getValue: data => data.entity?.generates_heat,
+    getValue: data => {
+      return { items: [data.entity?.generates_heat] }
+    },
     condition: data => data.entity?.generates_heat !== undefined
   },
   {
@@ -491,7 +514,9 @@ export const entityRules = [
     type: 'section',
     forType: 'entity',
     shownInTooltip: true,
-    getValue: data => data.entity?.consumes_heat,
+    getValue: data => {
+      return { items: [data.entity?.consumes_heat] }
+    },
     condition: data => data.entity?.consumes_heat !== undefined
   },
   {
@@ -500,7 +525,9 @@ export const entityRules = [
     type: 'section',
     forType: 'entity',
     shownInTooltip: true,
-    getValue: data => data.entity?.consumes_electricity,
+    getValue: data => {
+      return { items: [data.entity?.consumes_electricity] }
+    },
     condition: data => data.entity?.consumes_electricity !== undefined
   },
   {
@@ -509,7 +536,9 @@ export const entityRules = [
     type: 'section',
     forType: 'entity',
     shownInTooltip: true,
-    getValue: data => data.entity?.generates_electricity,
+    getValue: data => {
+      return { items: [data.entity?.generates_electricity] }
+    },
     condition: data => data.entity?.generates_electricity !== undefined
   }
 ]

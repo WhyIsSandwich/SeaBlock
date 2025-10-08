@@ -55,10 +55,10 @@ export const tileRules = [
         }
       }
 
-      validPlaceableAsTiles = validPlaceableAsTiles.map(tile => ({ name: tile.name, type: 'tile' }))
+      validPlaceableAsTiles = validPlaceableAsTiles.map(tile => ({ name: tile.name, type: 'item' }))
       return validPlaceableAsTiles.length > 0 ? { items: validPlaceableAsTiles } : null
     },
-    condition: data => data.tile?.name !== undefined
+    postCondition: data => data.items?.length > 0
   },
   {
     name: sectionTypes.source_of,
@@ -68,7 +68,7 @@ export const tileRules = [
     shownInTooltip: true,
     getValue: data =>
       data.tile?.fluid ? { items: [{ name: data.tile?.fluid, type: 'fluid' }] } : null,
-    condition: data => data.tile?.fluid !== undefined
+    postCondition: data => data.items?.length > 0
   },
   {
     name: sectionTypes.extracted_by,
@@ -78,7 +78,7 @@ export const tileRules = [
     shownInTooltip: true,
     getValue: data =>
       data.tile?.fluid ? { items: [{ name: 'offshore-pump', type: 'entity' }] } : null,
-    condition: data => data.tile?.fluid !== undefined
+    postCondition: data => data.items?.length > 0
   }
 ]
 
