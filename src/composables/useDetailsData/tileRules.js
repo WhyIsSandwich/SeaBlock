@@ -1,66 +1,78 @@
-import {
-  createSimpleStatisticsRule,
-  createCustomStatisticsRule,
-  createSectionRule,
-  transforms
-} from './rulesEngine.js'
 import { sectionTypes, labels } from '../detailsDataTypes.js'
 
+import { transforms } from './rulesEngine.js'
+
 /**
- * Tile statistics rules
+ * Tile rules - unified format for both statistics and sections
  */
-export const tileStatisticsRules = [
-  createSimpleStatisticsRule(
-    'walking_speed_modifier',
-    labels.walking_speed,
-    transforms.formatPercent
-  ),
-  createCustomStatisticsRule(
-    'absorptions_per_second.pollution',
-    labels.pollution_absorption,
-    // 32x32 area, 60 seconds figure is /m per chunk
-    data =>
-      data.absorptions_per_second?.pollution
+export const tileRules = [
+  // Statistics rules
+  {
+    name: labels.walking_speed,
+    order: 1,
+    type: 'statistics',
+    shownInTooltip: true,
+    getValue: data => data.walking_speed_modifier,
+    transform: transforms.formatPercent,
+    condition: data => data.walking_speed_modifier !== undefined
+  },
+  {
+    name: labels.pollution_absorption,
+    order: 2,
+    type: 'statistics',
+    shownInTooltip: true,
+    getValue: data => {
+      // 32x32 area, 60 seconds figure is /m per chunk
+      return data.absorptions_per_second?.pollution
         ? `${(data.absorptions_per_second.pollution * 32 * 32 * 60)?.toFixed(2)}/m per chunk`
         : null
-  )
-]
+    },
+    condition: data => data.absorptions_per_second?.pollution !== undefined
+  },
 
-/**
- * Tile section rules - tiles typically don't have sections
- */
-export const tileSectionRules = [
-  createSectionRule(sectionTypes.allows_placement, (data, context) => {
-    const placeableAsTiles = Object.values(context.factorioData.item).filter(
-      tile => tile.place_as_tile
-    )
+  // Section rules
+  {
+    name: sectionTypes.allows_placement,
+    order: 1,
+    type: 'section',
+    shownInTooltip: true,
+    getValue: (data, context) => {
+      const placeableAsTiles = Object.values(context.factorioData.item).filter(
+        tile => tile.place_as_tile
+      )
 
-    let validPlaceableAsTiles = []
+      let validPlaceableAsTiles = []
 
-    for (const tile of placeableAsTiles) {
-      const place_as_tile = tile.place_as_tile
+      for (const tile of placeableAsTiles) {
+        const { place_as_tile } = tile
 
-      if (checkTilePlacementCondition(place_as_tile, data)) {
-        console.log('valid placeable as tile', tile.name)
-        validPlaceableAsTiles.push({ name: tile.name, type: 'tile' })
+        if (checkTilePlacementCondition(place_as_tile, data)) {
+          console.log('valid placeable as tile', tile.name)
+          validPlaceableAsTiles.push({ name: tile.name, type: 'tile' })
+        }
       }
-    }
 
-    validPlaceableAsTiles = validPlaceableAsTiles.map(tile => ({ name: tile.name, type: 'tile' }))
-    if (validPlaceableAsTiles.length > 0) {
-      return { items: validPlaceableAsTiles }
-    }
-  }),
-  createSectionRule(sectionTypes.source_of, (data, context) => {
-    if (data.fluid) {
-      return { items: [{ name: data.fluid, type: 'fluid' }] }
-    }
-  }),
-  createSectionRule(sectionTypes.extracted_by, (data, context) => {
-    if (data.fluid) {
-      return { items: [{ name: 'offshore-pump', type: 'entity' }] }
-    }
-  })
+      validPlaceableAsTiles = validPlaceableAsTiles.map(tile => ({ name: tile.name, type: 'tile' }))
+      return validPlaceableAsTiles.length > 0 ? { items: validPlaceableAsTiles } : null
+    },
+    condition: data => data.name !== undefined
+  },
+  {
+    name: sectionTypes.source_of,
+    order: 2,
+    type: 'section',
+    shownInTooltip: true,
+    getValue: data => (data.fluid ? { items: [{ name: data.fluid, type: 'fluid' }] } : null),
+    condition: data => data.fluid !== undefined
+  },
+  {
+    name: sectionTypes.extracted_by,
+    order: 3,
+    type: 'section',
+    shownInTooltip: true,
+    getValue: data => (data.fluid ? { items: [{ name: 'offshore-pump', type: 'entity' }] } : null),
+    condition: data => data.fluid !== undefined
+  }
 ]
 
 export function checkTilePlacementCondition(placeAsTile, targetTile) {
@@ -103,3 +115,7 @@ export function checkTilePlacementCondition(placeAsTile, targetTile) {
 
   return true
 }
+
+// Legacy exports for backward compatibility
+export const tileStatisticsRules = tileRules.filter(rule => rule.type === 'statistics')
+export const tileSectionRules = tileRules.filter(rule => rule.type === 'section')

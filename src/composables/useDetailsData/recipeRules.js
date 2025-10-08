@@ -1,30 +1,45 @@
-import { createSectionRule } from './rulesEngine.js'
 import { labels } from '../useDetailsData.js'
 import { sectionTypes } from '../detailsDataTypes.js'
 
 /**
- * Recipe statistics rules - recipes typically don't have direct statistics
+ * Recipe rules - unified format for both statistics and sections
  */
-export const recipeStatisticsRules = []
+export const recipeRules = [
+  // Statistics rules - recipes typically don't have direct statistics
+  // (empty array for now, can be extended if needed)
 
-/**
- * Recipe section rules
- */
-export const recipeSectionRules = [
-  createSectionRule(sectionTypes.ingredients, data => ({
-    items: data.ingredients?.map(ingredient => ({
-      name: ingredient.name,
-      type: ingredient.type,
-      label: `{{item_name}} x ${ingredient.amount}`
-    })),
-    itemsType: 'list'
-  })),
-  createSectionRule(sectionTypes.crafting_time, data => ({
-    statistics: [{ label: labels.crafting_time, value: data.energy_required }]
-  })),
-  createSectionRule(
-    sectionTypes.products,
-    data => ({
+  // Section rules
+  {
+    name: sectionTypes.ingredients,
+    order: 1,
+    type: 'section',
+    shownInTooltip: true,
+    getValue: data => ({
+      items: data.ingredients?.map(ingredient => ({
+        name: ingredient.name,
+        type: ingredient.type,
+        label: `{{item_name}} x ${ingredient.amount}`
+      })),
+      itemsType: 'list'
+    }),
+    condition: data => data.ingredients !== undefined
+  },
+  {
+    name: sectionTypes.crafting_time,
+    order: 2,
+    type: 'section',
+    shownInTooltip: true,
+    getValue: data => ({
+      statistics: [{ label: labels.crafting_time, value: data.energy_required }]
+    }),
+    condition: data => data.energy_required !== undefined
+  },
+  {
+    name: sectionTypes.products,
+    order: 3,
+    type: 'section',
+    shownInTooltip: true,
+    getValue: data => ({
       items: data.results?.map(result => ({
         name: result.name,
         type: result.type,
@@ -32,28 +47,36 @@ export const recipeSectionRules = [
       })),
       itemsType: 'list'
     }),
-    {
-      customCondition: (data, context) => {
-        // Only show products if not redundant
-        return (
-          (data.results && data.results.some(product => product.name !== data.name)) ||
-          data.always_show_products
-        )
+    condition: (data, _context) => {
+      // Only show products if not redundant
+      return (
+        (data.results && data.results.some(product => product.name !== data.name)) ||
+        data.always_show_products
+      )
+    }
+  },
+  {
+    name: sectionTypes.made_in,
+    order: 4,
+    type: 'section',
+    shownInTooltip: true,
+    getValue: (data, context) => {
+      const entities = Object.values(context.factorioData.entity)
+        .filter(entity => entity.crafting_categories?.includes(data.category || 'crafting'))
+        .map(entity => ({ name: entity.name, type: 'entity' }))
+      return {
+        items: entities,
+        itemsType: 'grid' // Use grid layout for made_in section
       }
-    }
-  ),
-  createSectionRule(sectionTypes.made_in, (data, context) => {
-    const entities = Object.values(context.factorioData.entity)
-      .filter(entity => entity.crafting_categories?.includes(data.category || 'crafting'))
-      .map(entity => ({ name: entity.name, type: 'entity' }))
-    return {
-      items: entities,
-      itemsType: 'grid' // Use grid layout for made_in section
-    }
-  }),
-  createSectionRule(
-    sectionTypes.unlock_technologies,
-    (data, context) => {
+    },
+    condition: data => data.category !== undefined
+  },
+  {
+    name: sectionTypes.unlock_technologies,
+    order: 5,
+    type: 'section',
+    shownInTooltip: false, // TODO: add unlock technologies
+    getValue: (data, context) => {
       const technologies = Object.values(context.factorioData.technology)
       const unlockTechnologies = technologies
         .filter(
@@ -67,8 +90,10 @@ export const recipeSectionRules = [
       console.log(unlockTechnologies)
       return { items: unlockTechnologies }
     },
-    {
-      tooltip: false // TODO: add unlock technologies
-    }
-  )
+    condition: data => data.name !== undefined
+  }
 ]
+
+// Legacy exports for backward compatibility
+export const recipeStatisticsRules = recipeRules.filter(rule => rule.type === 'statistics')
+export const recipeSectionRules = recipeRules.filter(rule => rule.type === 'section')

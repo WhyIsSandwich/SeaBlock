@@ -35,50 +35,52 @@
           <div class="tooltip-content">
             <div v-if="isLoading" class="tooltip-loading">Loading...</div>
             <template v-else>
-              <div class="tooltip-header">
+              <template :key="index" v-for="(tooltipData, index) in tooltipDatas">
+                <div class="tooltip-header">
+                  <div
+                    v-if="tooltipData?.title"
+                    class="tooltip-title"
+                    :class="{
+                      'tooltip-error': hasError
+                    }"
+                  >
+                    {{ tooltipData.title }}
+                  </div>
+                  <button
+                    class="tooltip-close-button"
+                    title="Close tooltip"
+                    aria-label="Close tooltip"
+                    @click.stop="closeTooltip"
+                  >
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                      <path
+                        d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"
+                      />
+                    </svg>
+                  </button>
+                </div>
                 <div
-                  v-if="tooltipData?.title"
-                  class="tooltip-title"
+                  v-if="tooltipData?.description"
+                  class="tooltip-description"
                   :class="{
                     'tooltip-error': hasError
                   }"
                 >
-                  {{ tooltipData.title }}
+                  <p>{{ tooltipData.description }}</p>
                 </div>
-                <button
-                  class="tooltip-close-button"
-                  title="Close tooltip"
-                  aria-label="Close tooltip"
-                  @click.stop="closeTooltip"
-                >
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
-                    <path
-                      d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"
-                    />
-                  </svg>
-                </button>
-              </div>
-              <div
-                v-if="tooltipData?.description"
-                class="tooltip-description"
-                :class="{
-                  'tooltip-error': hasError
-                }"
-              >
-                <p>{{ tooltipData.description }}</p>
-              </div>
-              <Statistics
-                v-if="tooltipData.statistics?.length > 0"
-                :statistics="tooltipData.statistics"
-              />
-              <!-- Render sections using DetailsPaneSection components -->
-              <div v-if="tooltipData?.sections?.length" class="tooltip-sections">
-                <DetailsPaneSection
-                  v-for="(section, index) in tooltipData.sections"
-                  :key="`${section.type}-${index}`"
-                  :section="section"
+                <Statistics
+                  v-if="tooltipData.statistics?.length > 0"
+                  :statistics="tooltipData.statistics"
                 />
-              </div>
+                <!-- Render sections using DetailsPaneSection components -->
+                <div v-if="tooltipData?.sections?.length" class="tooltip-sections">
+                  <DetailsPaneSection
+                    v-for="(section, index) in tooltipData.sections"
+                    :key="`${section.type}-${index}`"
+                    :section="section"
+                  />
+                </div>
+              </template>
             </template>
           </div>
           <div class="tooltip-arrow" />
@@ -128,7 +130,7 @@ const props = defineProps({
 // Reactive state
 const isVisible = ref(false)
 const isPinned = ref(false)
-const tooltipData = ref(null)
+const tooltipDatas = ref(null)
 const tooltipStyle = ref({})
 const showTimeout = ref(null)
 const hideTimeout = ref(null)
@@ -161,24 +163,24 @@ const tooltipClasses = computed(() => ({
 const { organizedData } = useFactorioData()
 const { getDetailsData } = useDetailsData()
 
-// Get tooltip data for specific item using the new system
-function getTooltipData() {
+// Get tooltip data for specific item using the new system if not provided use props.category and props.itemId
+function getTooltipData(category = props.category, itemId = props.itemId) {
   try {
     // Get the item data from the factorio data
-    const itemData = organizedData.value[props.category][props.itemId]
+    const itemData = organizedData.value[category][itemId]
     if (!itemData) {
       return null
     }
 
     const unifiedObject = {
-      types: [props.category],
-      [props.category]: itemData,
+      types: [category],
+      [category]: itemData,
       displayName: itemData.displayName,
       description: itemData.description
     }
 
     if (props.category === 'entity') {
-      unifiedObject.item = organizedData.value.item[props.itemId]
+      unifiedObject.item = organizedData.value.item[itemId]
       if (unifiedObject.item) {
         unifiedObject.types.push('item')
       }
@@ -296,7 +298,7 @@ function startAutoPinTimer() {
 function closeTooltip() {
   isVisible.value = false
   isPinned.value = false
-  tooltipData.value = null
+  tooltipDatas.value = null
   isLoading.value = false
   hasError.value = false
 
@@ -345,7 +347,10 @@ function showTooltip() {
       console.log('Tooltip data loaded:', data)
 
       if (data) {
-        tooltipData.value = data
+        tooltipDatas.value = [data]
+
+        for (const data of tooltipDatas.value?.extr) {
+        }
         isVisible.value = true
         console.log('Setting tooltip visible, positioning...')
         positionTooltip()
@@ -357,11 +362,13 @@ function showTooltip() {
         startAutoPinTimer()
       } else {
         // Show fallback message when no data is found
-        tooltipData.value = {
-          title: props.itemId,
-          description: `No tooltip data available for ${props.category}`,
-          sections: []
-        }
+        tooltipDatas.value = [
+          {
+            title: props.itemId,
+            description: `No tooltip data available for ${props.category}`,
+            sections: []
+          }
+        ]
         isVisible.value = true
         console.log('No tooltip data found, showing fallback')
         positionTooltip()
@@ -372,11 +379,13 @@ function showTooltip() {
     } catch (error) {
       console.error('Error loading tooltip data:', error)
       hasError.value = true
-      tooltipData.value = {
-        title: 'Error',
-        description: 'Failed to load tooltip data',
-        sections: []
-      }
+      tooltipDatas.value = [
+        {
+          title: 'Error',
+          description: 'Failed to load tooltip data',
+          sections: []
+        }
+      ]
       isVisible.value = true
       positionTooltip()
 
@@ -409,7 +418,7 @@ function hideTooltip() {
 
   hideTimeout.value = setTimeout(() => {
     isVisible.value = false
-    tooltipData.value = null
+    tooltipDatas.value = null
     isLoading.value = false
     hasError.value = false
     isPinned.value = false // Reset pin state when hiding

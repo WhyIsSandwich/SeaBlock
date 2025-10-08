@@ -1,59 +1,97 @@
-import {
-  createSimpleStatisticsRule,
-  createCustomStatisticsRule,
-  createSectionRule,
-  transforms
-} from './rulesEngine.js'
 import { labels, sectionTypes } from '../useDetailsData.js'
 
-/**
- * Fluid statistics rules
- */
-export const fluidStatisticsRules = [
-  createSimpleStatisticsRule('fuel_value', labels.fuel_value),
-  createSimpleStatisticsRule(
-    'emissions_multiplier',
-    labels.fuel_pollution,
-    transforms.formatPercent
-  ),
-  createCustomStatisticsRule(
-    'default_temperature',
-    labels.min_temperature,
-    data => data.default_temperature,
-    data => data.max_temperature
-  ),
-  createSimpleStatisticsRule('max_temperature', labels.max_temperature),
-  createSimpleStatisticsRule('heat_capacity', labels.heat_capacity)
-]
+import { transforms } from './rulesEngine.js'
 
 /**
- * Fluid section rules - fluids typically don't have sections
+ * Fluid rules - unified format for both statistics and sections
  */
-export const fluidSectionRules = [
-  createSectionRule(sectionTypes.used_in, (data, context) => {
-    const recipes = Object.values(context.factorioData.recipe)
-    const usedIn = recipes
-      .filter(
-        recipe =>
-          recipe.ingredients?.length > 0 &&
-          recipe.ingredients?.some(
-            ingredient => ingredient.name === data.name && ingredient.type === 'fluid'
-          )
-      )
-      .map(recipe => ({ name: recipe.name, type: 'recipe' }))
-    return { items: usedIn, itemsType: 'grid' }
-  }),
-  createSectionRule(sectionTypes.alternative_recipes, (data, context) => {
-    const recipes = Object.values(context.factorioData.recipe)
+export const fluidRules = [
+  // Statistics rules
+  {
+    name: labels.fuel_value,
+    order: 1,
+    type: 'statistics',
+    shownInTooltip: true,
+    getValue: data => data.fuel_value,
+    condition: data => data.fuel_value !== undefined
+  },
+  {
+    name: labels.fuel_pollution,
+    order: 2,
+    type: 'statistics',
+    shownInTooltip: true,
+    getValue: data => data.emissions_multiplier,
+    transform: transforms.formatPercent,
+    condition: data => data.emissions_multiplier !== undefined
+  },
+  {
+    name: labels.min_temperature,
+    order: 3,
+    type: 'statistics',
+    shownInTooltip: true,
+    getValue: data => data.default_temperature,
+    condition: data => data.max_temperature !== undefined
+  },
+  {
+    name: labels.max_temperature,
+    order: 4,
+    type: 'statistics',
+    shownInTooltip: true,
+    getValue: data => data.max_temperature,
+    condition: data => data.max_temperature !== undefined
+  },
+  {
+    name: labels.heat_capacity,
+    order: 5,
+    type: 'statistics',
+    shownInTooltip: true,
+    getValue: data => data.heat_capacity,
+    condition: data => data.heat_capacity !== undefined
+  },
 
-    const alternativeRecipes = recipes
-      .filter(
-        recipe =>
-          recipe.name !== data.name &&
-          recipe.results?.length > 0 &&
-          recipe.results?.some(result => result.name === data.name)
-      )
-      .map(recipe => ({ name: recipe.name, type: 'recipe', label: recipe.displayName }))
-    return { items: alternativeRecipes, itemsType: 'list' }
-  })
+  // Section rules
+  {
+    name: sectionTypes.used_in,
+    order: 1,
+    type: 'section',
+    shownInTooltip: true,
+    getValue: (data, context) => {
+      const recipes = Object.values(context.factorioData.recipe)
+      const usedIn = recipes
+        .filter(
+          recipe =>
+            recipe.ingredients?.length > 0 &&
+            recipe.ingredients?.some(
+              ingredient => ingredient.name === data.name && ingredient.type === 'fluid'
+            )
+        )
+        .map(recipe => ({ name: recipe.name, type: 'recipe' }))
+      return { items: usedIn, itemsType: 'grid' }
+    },
+    condition: data => data.name !== undefined
+  },
+  {
+    name: sectionTypes.alternative_recipes,
+    order: 2,
+    type: 'section',
+    shownInTooltip: true,
+    getValue: (data, context) => {
+      const recipes = Object.values(context.factorioData.recipe)
+
+      const alternativeRecipes = recipes
+        .filter(
+          recipe =>
+            recipe.name !== data.name &&
+            recipe.results?.length > 0 &&
+            recipe.results?.some(result => result.name === data.name)
+        )
+        .map(recipe => ({ name: recipe.name, type: 'recipe', label: recipe.displayName }))
+      return { items: alternativeRecipes, itemsType: 'list' }
+    },
+    condition: data => data.name !== undefined
+  }
 ]
+
+// Legacy exports for backward compatibility
+export const fluidStatisticsRules = fluidRules.filter(rule => rule.type === 'statistics')
+export const fluidSectionRules = fluidRules.filter(rule => rule.type === 'section')

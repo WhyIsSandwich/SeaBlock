@@ -36,76 +36,88 @@ factorioObjects type
 */
 
 import { labels, sectionTypes } from './detailsDataTypes.js'
+import {
+  applyRules,
+  entityRules,
+  itemRules,
+  tileRules,
+  fluidRules,
+  recipeRules,
+  technologyRules
+} from './useDetailsData/index.js'
 
 export { labels, sectionTypes }
 
-import {
-  applyStatisticsRules,
-  applySectionRules,
-  entityStatisticsRules,
-  entitySectionRules,
-  itemStatisticsRules,
-  itemSectionRules,
-  tileStatisticsRules,
-  tileSectionRules,
-  fluidStatisticsRules,
-  fluidSectionRules,
-  recipeSectionRules,
-  technologySectionRules
-} from './useDetailsData/index.js'
-
 function setEntityDetails({ statistics, sections, entity, item, isTooltip, factorioData }) {
-  // Apply entity statistics rules
-  const entityStats = applyStatisticsRules(entityStatisticsRules, entity, { isTooltip, item })
-  statistics.push(...entityStats)
+  // Apply unified entity rules
+  const entityResults = applyRules(entityRules, { ...entity, item }, { isTooltip, factorioData })
 
-  // Apply entity section rules
-  const entitySections = applySectionRules(entitySectionRules, entity, { isTooltip, factorioData })
+  // Separate statistics and sections
+  const entityStats = entityResults.filter(result => result.label)
+  const entitySections = entityResults.filter(result => result.type)
+
+  statistics.push(...entityStats)
   sections.push(...entitySections)
 }
 function setItemDetails({ statistics, sections, item, factorioData }) {
-  // Apply item statistics rules
-  const itemStats = applyStatisticsRules(itemStatisticsRules, item, { factorioData })
-  statistics.push(...itemStats)
+  // Apply unified item rules
+  const itemResults = applyRules(itemRules, item, { factorioData })
 
-  // Apply item section rules
-  const itemSections = applySectionRules(itemSectionRules, item, { factorioData })
+  // Separate statistics and sections
+  const itemStats = itemResults.filter(result => result.label)
+  const itemSections = itemResults.filter(result => result.type)
+
+  statistics.push(...itemStats)
   sections.push(...itemSections)
 }
 
 function setTileDetails({ statistics, sections, tile, factorioData }) {
-  // Apply tile statistics rules
-  const tileStats = applyStatisticsRules(tileStatisticsRules, tile, { factorioData })
-  statistics.push(...tileStats)
+  // Apply unified tile rules
+  const tileResults = applyRules(tileRules, tile, { factorioData })
 
-  // Apply tile section rules
-  const tileSections = applySectionRules(tileSectionRules, tile, { factorioData })
+  // Separate statistics and sections
+  const tileStats = tileResults.filter(result => result.label)
+  const tileSections = tileResults.filter(result => result.type)
+
+  statistics.push(...tileStats)
   sections.push(...tileSections)
 }
 
 function setFluidDetails({ statistics, sections, fluid, factorioData }) {
-  // Apply fluid statistics rules
-  const fluidStats = applyStatisticsRules(fluidStatisticsRules, fluid, { factorioData })
-  statistics.push(...fluidStats)
+  // Apply unified fluid rules
+  const fluidResults = applyRules(fluidRules, fluid, { factorioData })
 
-  // Apply fluid section rules
-  const fluidSections = applySectionRules(fluidSectionRules, fluid, { factorioData })
+  // Separate statistics and sections
+  const fluidStats = fluidResults.filter(result => result.label)
+  const fluidSections = fluidResults.filter(result => result.type)
+
+  statistics.push(...fluidStats)
   sections.push(...fluidSections)
 }
 
 function setTechnologyDetails({ sections, technology, factorioData }) {
-  // Apply technology section rules
-  const techSections = applySectionRules(technologySectionRules, technology, { factorioData })
+  // Apply unified technology rules
+  const techResults = applyRules(technologyRules, technology, { factorioData })
+
+  // Separate statistics and sections
+  const techStats = techResults.filter(result => result.label)
+  const techSections = techResults.filter(result => result.type)
+
   sections.push(...techSections)
 }
 
 function setRecipeDetails({ types, sections, recipe, isTooltip, factorioData }) {
-  // Apply recipe section rules
-  const recipeSections = applySectionRules(recipeSectionRules, recipe, {
+  // Apply unified recipe rules
+  const recipeResults = applyRules(recipeRules, recipe, {
     types,
     isTooltip,
     factorioData
   })
+
+  // Separate statistics and sections
+  const recipeStats = recipeResults.filter(result => result.label)
+  const recipeSections = recipeResults.filter(result => result.type)
+
   sections.push(...recipeSections)
 }
 
