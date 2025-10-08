@@ -1,5 +1,31 @@
 <template>
   <template v-if="section.type === ''" />
+  <template v-else-if="section.type === 'technology_cost'">
+    <div :class="$style.section">
+      <h4 :class="$style.sectionTitle">{{ section.label }}</h4>
+      <div v-if="section.items?.length > 0" :class="getItemsContainerClass()">
+        <div
+          v-for="item in section.items"
+          :key="`${item.type}-${item.name}`"
+          :class="getItemEntryClass()"
+        >
+          <IconButton
+            :type="item.type"
+            :name="item.name"
+            :size="getIconSize()"
+            :clickable="true"
+            @click="handleItemClick(item)"
+          />
+        </div>
+        <div style="text-align: center; display: flex; vertical-align: middle; align-items: center">
+          🕛{{ section.statistics[1].value }}
+        </div>
+        <div style="text-align: center; display: flex; vertical-align: middle; align-items: center">
+          x {{ section.statistics[0].value }}
+        </div>
+      </div>
+    </div>
+  </template>
   <template v-else>
     <div :class="$style.section">
       <h4 :class="$style.sectionTitle">{{ section.label }}</h4>
