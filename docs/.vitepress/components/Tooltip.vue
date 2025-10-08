@@ -180,10 +180,8 @@ function getTooltipData(category = props.category, itemId = props.itemId) {
     }
 
     if (props.category === 'entity') {
+      // Include item data for entities for stack size
       unifiedObject.item = organizedData.value.item[itemId]
-      if (unifiedObject.item) {
-        unifiedObject.types.push('item')
-      }
     }
 
     const { types } = unifiedObject
