@@ -31,13 +31,10 @@
 </template>
 
 <script>
+import { useLocalizedData } from '../composables/useLocalizedData'
+
 import IconButton from './IconButton.vue'
 import Statistics from './Statistics.vue'
-import { withBase } from 'vitepress'
-
-const localizedData = await fetch(withBase('/data/locale-en.json')).then(response =>
-  response.json()
-)
 
 export default {
   name: 'DetailsPaneSection',
@@ -55,6 +52,14 @@ export default {
     }
   },
   emits: ['select-item', 'item-selected'],
+  setup() {
+    const { localizedData, loadLocalizedData } = useLocalizedData()
+
+    return {
+      localizedData,
+      loadLocalizedData
+    }
+  },
   computed: {
     isGridLayout() {
       return this.section.itemsType === 'grid'
@@ -63,9 +68,12 @@ export default {
       return !this.section.itemsType || this.section.itemsType === 'list'
     }
   },
+  async mounted() {
+    await this.loadLocalizedData()
+  },
   methods: {
     getItemLabel(item) {
-      const localisedName = localizedData?.[item.type]?.[item.name]?.n
+      const localisedName = this.localizedData?.[item.type]?.[item.name]?.n
       if (!item.label) {
         return localisedName
       }
