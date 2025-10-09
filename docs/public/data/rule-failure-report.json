@@ -1,0 +1,250 @@
+{
+  "generated": "2025-10-09T23:43:24.654Z",
+  "summary": {
+    "totalPrototypes": 3404,
+    "totalErrors": 0,
+    "totalRulesExecuted": 2691,
+    "totalRulesFailed": 0,
+    "successRate": "100.0"
+  },
+  "ruleTypeStats": {
+    "font": {
+      "executed": 0,
+      "failed": 0
+    },
+    "gui-style": {
+      "executed": 0,
+      "failed": 0
+    },
+    "utility-constants": {
+      "executed": 0,
+      "failed": 0
+    },
+    "utility-sounds": {
+      "executed": 0,
+      "failed": 0
+    },
+    "sprite": {
+      "executed": 0,
+      "failed": 0
+    },
+    "utility-sprites": {
+      "executed": 0,
+      "failed": 0
+    },
+    "god-controller": {
+      "executed": 0,
+      "failed": 0
+    },
+    "editor-controller": {
+      "executed": 0,
+      "failed": 0
+    },
+    "spectator-controller": {
+      "executed": 0,
+      "failed": 0
+    },
+    "remote-controller": {
+      "executed": 0,
+      "failed": 0
+    },
+    "noise-function": {
+      "executed": 0,
+      "failed": 0
+    },
+    "noise-expression": {
+      "executed": 0,
+      "failed": 0
+    },
+    "mouse-cursor": {
+      "executed": 0,
+      "failed": 0
+    },
+    "virtual-signal": {
+      "executed": 0,
+      "failed": 0
+    },
+    "entity": {
+      "executed": 243,
+      "failed": 0
+    },
+    "item": {
+      "executed": 455,
+      "failed": 0
+    },
+    "recipe": {
+      "executed": 1448,
+      "failed": 0
+    },
+    "quality": {
+      "executed": 0,
+      "failed": 0
+    },
+    "fluid": {
+      "executed": 72,
+      "failed": 0
+    },
+    "tile": {
+      "executed": 65,
+      "failed": 0
+    },
+    "space-location": {
+      "executed": 0,
+      "failed": 0
+    },
+    "asteroid-chunk": {
+      "executed": 0,
+      "failed": 0
+    },
+    "recipe-category": {
+      "executed": 0,
+      "failed": 0
+    },
+    "burner-usage": {
+      "executed": 0,
+      "failed": 0
+    },
+    "damage-type": {
+      "executed": 0,
+      "failed": 0
+    },
+    "ambient-sound": {
+      "executed": 0,
+      "failed": 0
+    },
+    "collision-layer": {
+      "executed": 0,
+      "failed": 0
+    },
+    "deliver-impact-combination": {
+      "executed": 0,
+      "failed": 0
+    },
+    "optimized-particle": {
+      "executed": 0,
+      "failed": 0
+    },
+    "activetrigger": {
+      "executed": 0,
+      "failed": 0
+    },
+    "custom-input": {
+      "executed": 0,
+      "failed": 0
+    },
+    "trivial-smoke": {
+      "executed": 0,
+      "failed": 0
+    },
+    "item-group": {
+      "executed": 0,
+      "failed": 0
+    },
+    "item-subgroup": {
+      "executed": 0,
+      "failed": 0
+    },
+    "autoplace-control": {
+      "executed": 0,
+      "failed": 0
+    },
+    "map-settings": {
+      "executed": 0,
+      "failed": 0
+    },
+    "map-gen-presets": {
+      "executed": 0,
+      "failed": 0
+    },
+    "tile-effect": {
+      "executed": 0,
+      "failed": 0
+    },
+    "optimized-decorative": {
+      "executed": 0,
+      "failed": 0
+    },
+    "ammo-category": {
+      "executed": 0,
+      "failed": 0
+    },
+    "fuel-category": {
+      "executed": 0,
+      "failed": 0
+    },
+    "resource-category": {
+      "executed": 0,
+      "failed": 0
+    },
+    "module-category": {
+      "executed": 0,
+      "failed": 0
+    },
+    "equipment-grid": {
+      "executed": 0,
+      "failed": 0
+    },
+    "equipment-category": {
+      "executed": 0,
+      "failed": 0
+    },
+    "shortcut": {
+      "executed": 0,
+      "failed": 0
+    },
+    "trigger-target-type": {
+      "executed": 0,
+      "failed": 0
+    },
+    "technology": {
+      "executed": 408,
+      "failed": 0
+    },
+    "tips-and-tricks-item-category": {
+      "executed": 0,
+      "failed": 0
+    },
+    "tips-and-tricks-item": {
+      "executed": 0,
+      "failed": 0
+    },
+    "achievement": {
+      "executed": 0,
+      "failed": 0
+    },
+    "airborne-pollutant": {
+      "executed": 0,
+      "failed": 0
+    },
+    "tutorial": {
+      "executed": 0,
+      "failed": 0
+    },
+    "equipment": {
+      "executed": 0,
+      "failed": 0
+    },
+    "surface-property": {
+      "executed": 0,
+      "failed": 0
+    },
+    "procession-layer-inheritance-group": {
+      "executed": 0,
+      "failed": 0
+    },
+    "procession": {
+      "executed": 0,
+      "failed": 0
+    },
+    "impact-category": {
+      "executed": 0,
+      "failed": 0
+    },
+    "deliver-category": {
+      "executed": 0,
+      "failed": 0
+    }
+  },
+  "prototypeFailures": {},
+  "recommendations": []
+}

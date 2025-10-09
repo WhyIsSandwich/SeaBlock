@@ -8,8 +8,8 @@
         </div>
 
         <!-- Category Filters -->
-        <div :class="$style.categoryFilters">
-          <div :class="$style.filterRow">
+        <div :style="{ ...categoryGrid.containerStyles, overflowY: 'visible' }">
+          <div :style="categoryGrid.subgroupStyles">
             <button
               v-for="category in primaryCategories"
               :key="category.key"
@@ -22,6 +22,7 @@
               ]"
               :disabled="disabledFilters.has(category.key)"
               @click="!disabledFilters.has(category.key) && selectCategory(category.key)"
+              :style="categoryGrid.itemStyles"
             >
               <SpriteIcon v-if="category.icon" :sprite-key="category.icon" :title="category.name" />
             </button>
@@ -39,20 +40,25 @@
         </div>
 
         <!-- Recipe Grid -->
-        <div ref="gridContainer" :class="$style.itemGrid">
+        <div ref="gridContainer" :style="{ ...itemGrid.containerStyles, overflowY: 'scroll' }">
           <template v-for="subgroup in groupedRecipes" :key="subgroup.subgroup">
             <!-- Subgroup wrapper -->
-            <div v-if="subgroup.recipes.length > 0" :class="$style.subgroupGrid">
+            <div
+              v-if="subgroup.recipes.length > 0"
+              :class="$style.subgroupGrid"
+              :style="itemGrid.subgroupStyles"
+            >
               <template :key="item.name" v-for="item in subgroup.recipes">
                 <IconButton
                   :type="getPrimaryType(item)"
                   :name="item.name"
-                  :size="buttonSize"
+                  :size="itemGrid.buttonSize"
                   :is-selected="
                     selectedItem?.name === item.name &&
                     getPrimaryType(selectedItem) === getPrimaryType(item)
                   "
                   @click="selectItem(getPrimaryType(item), item.name, item)"
+                  style="itemGrid.itemStyles"
                 />
               </template>
             </div>
@@ -88,6 +94,7 @@
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 
 import { useUnifiedObjects, useFactorioData } from '../../../src/index.js'
+import { useFactorioGrid } from '../../../src/composables/useFactorioGrid.js'
 
 import SpriteIcon from './SpriteIcon.vue'
 import IconButton from './IconButton.vue'
@@ -120,39 +127,25 @@ const categoryStructure = ref({})
 const primaryCategories = ref([])
 const secondaryCategories = ref([])
 
-// Dynamic grid columns and button size based on actual grid container width
-const gridColumns = computed(() => {
-  if (gridContainerWidth.value === 0) return 10 // Default fallback
+const itemGrid = computed(() =>
+  useFactorioGrid({
+    containerWidth: gridContainerWidth.value,
+    minButtonSize: 44,
+    maxColumns: 10,
+    gap: 4,
+    padding: 16
+  })
+)
 
-  const gap = 4 // Fixed gap between buttons
-  const availableWidth = gridContainerWidth.value - 16 // Account for padding
-  const minButtonSize = 44 // Minimum touch target size per accessibility guidelines (Apple, Google, WCAG)
-
-  // Calculate maximum columns that still maintain minimum button size
-  const maxColumnsWithMinSize = Math.floor((availableWidth + gap) / (minButtonSize + gap))
-
-  // Use the maximum columns that maintain minimum button size, capped at 10
-  const optimalColumns = Math.min(maxColumnsWithMinSize, 10)
-  return Math.max(optimalColumns, 1) // At least 1 column
-})
-
-// Calculate button size to fit exactly in the available width
-const buttonSize = computed(() => {
-  if (gridContainerWidth.value === 0) return 64 // Default fallback
-
-  const gap = 4
-  const availableWidth = gridContainerWidth.value - 16 // Account for padding
-  const columns = gridColumns.value
-  const totalGapWidth = (columns - 1) * gap
-  const buttonWidth = (availableWidth - totalGapWidth) / columns
-  return Math.floor(buttonWidth) // Round down to ensure buttons fit
-})
-
-// Calculate grid cell size (button + gap) for background alignment
-const gridCellSize = computed(() => {
-  console.log('buttonSize.value', buttonSize.value)
-  return buttonSize.value + 4 // Button size + gap
-})
+const categoryGrid = computed(() =>
+  useFactorioGrid({
+    containerWidth: gridContainerWidth.value,
+    minButtonSize: 44,
+    maxColumns: 6,
+    gap: 4,
+    padding: 16
+  })
+)
 
 // Computed property for filtered and grouped recipes
 const groupedRecipes = computed(() => {
@@ -184,11 +177,6 @@ const groupedRecipes = computed(() => {
   }
 
   return categoryData.subgroups
-})
-
-// Flattened list of all recipes for the grid (currently unused but kept for potential future use)
-const _allRecipes = computed(() => {
-  return groupedRecipes.value.flatMap(subgroup => subgroup.recipes)
 })
 
 // Computed property to determine which filters have no items when searching
@@ -416,21 +404,6 @@ function handleKeydown(event) {
   }
 }
 
-// Handle click outside to close MRU dropdown
-function handleClickOutside(event) {
-  // Add a small delay to prevent immediate closing when opening
-  setTimeout(() => {
-    console.log('handleClickOutside called, showMRUDropdown:', showMRUDropdown.value)
-    console.log('event.target:', event.target)
-    console.log('closest historyContainer:', event.target.closest('.historyContainer'))
-
-    if (showMRUDropdown.value && !event.target.closest('.historyContainer')) {
-      console.log('Closing dropdown due to click outside')
-      showMRUDropdown.value = false
-    }
-  }, 10)
-}
-
 onMounted(() => {
   window.addEventListener('keydown', handleKeydown)
   // Temporarily disable click outside handler to debug
@@ -465,87 +438,13 @@ onUnmounted(() => {
     window._factoriopediaResizeObserver.disconnect()
   }
 })
-
-// Parametrized SVG generation function
-function generateGridPattern(cellSize, filterId = '') {
-  return `url(data:image/svg+xml;base64,${btoa(`
-<svg xmlns="http://www.w3.org/2000/svg" width="${cellSize}" height="${cellSize}">
-  <defs>
-    <filter id="blur${filterId}" x="-20%" y="-20%" width="140%" height="140%">
-      <feGaussianBlur stdDeviation="0.5"/>
-    </filter>
-    <filter id="shadow${filterId}" x="-20%" y="-20%" width="140%" height="140%">
-      <feGaussianBlur stdDeviation="0.3"/>
-    </filter>
-  </defs>
-  
-  <!-- Main grid cell background -->
-  <rect x="0" y="0" width="${cellSize}" height="${cellSize}" fill="#1f1f1f"/>
-  
-  <!-- Inner debossed square (75% of cell size) -->
-  <g transform="translate(${cellSize * 0.125}, ${cellSize * 0.125})">
-    <!-- Drop shadow behind the square -->
-    <rect x="1" y="1" width="${cellSize * 0.75}" height="${cellSize * 0.75}" fill="rgba(0,0,0,0.4)" filter="url(#shadow${filterId})"/>
-    
-    <!-- Main square background -->
-    <rect x="0" y="0" width="${cellSize * 0.75}" height="${cellSize * 0.75}" fill="rgba(255,255,255,0.02)"/>
-    
-    <!-- Top highlight -->
-    <rect x="0" y="0" width="${cellSize * 0.75}" height="2" fill="rgba(255,255,255,0.18)" filter="url(#blur${filterId})"/>
-    <!-- Left highlight -->
-    <rect x="0" y="0" width="2" height="${cellSize * 0.75}" fill="rgba(255,255,255,0.18)" filter="url(#blur${filterId})"/>
-    
-    <!-- Bottom shadow -->
-    <rect x="0" y="${cellSize * 0.75 - 2}" width="${cellSize * 0.75}" height="2" fill="rgba(0,0,0,0.35)" filter="url(#shadow${filterId})"/>
-    <!-- Right shadow -->
-    <rect x="${cellSize * 0.75 - 2}" y="0" width="2" height="${cellSize * 0.75}" fill="rgba(0,0,0,0.35)" filter="url(#shadow${filterId})"/>
-  </g>
-</svg>`)})`
-}
-
-// Grid background for item subgroups
-const base64Svg = computed(() => {
-  return generateGridPattern(gridCellSize.value)
-})
-
-// Filter grid columns calculation - simple arithmetic: max columns that fit with minimum button size, capped at 6
-const filterColumns = computed(() => {
-  if (gridContainerWidth.value === 0) return 6 // Default fallback
-
-  const gap = 4
-  const availableWidth = gridContainerWidth.value - 16 // Account for padding
-  const minButtonWidth = 44 // Minimum filter button width (same as item grid)
-  const totalFilters = primaryCategories.value?.length || 1
-
-  // Calculate maximum columns that can fit with minimum button size
-  const maxColumnsWithMinSize = Math.floor((availableWidth + gap) / (minButtonWidth + gap))
-
-  // Cap at 6 columns maximum, and don't exceed total number of filters
-  return Math.min(6, maxColumnsWithMinSize, totalFilters)
-})
-
-// Filter button size calculation - same approach as item grid
-const filterButtonSize = computed(() => {
-  console.log('gridContainerWidth.value', gridContainerWidth.value)
-  if (gridContainerWidth.value === 0) return 72 // Default fallback
-
-  const gap = 4
-  const availableWidth = gridContainerWidth.value - 16 // Account for padding
-  const columns = filterColumns.value
-  const totalGapWidth = (columns - 1) * gap
-  const buttonWidth = (availableWidth - totalGapWidth) / columns
-  console.log('filter.buttonWidth', buttonWidth)
-  return Math.floor(buttonWidth) // Round down to ensure buttons fit
-})
-
-// Filter cell size calculation (button + gap) for background alignment
-const filterCellSize = computed(() => {
-  return filterButtonSize.value + 4 // Button size + gap
-})
-
-// Filter background for filter buttons
-const filterBase64Svg = computed(() => {
-  return generateGridPattern(filterCellSize.value, '-filter')
+const filterGrid = useFactorioGrid({
+  containerWidth: gridContainerWidth,
+  minButtonSize: 44,
+  maxColumns: 6,
+  gap: 4,
+  padding: 16,
+  filterId: '-filter'
 })
 </script>
 
@@ -593,35 +492,7 @@ const filterBase64Svg = computed(() => {
   font-weight: 600;
 }
 
-.categoryFilters {
-  display: grid;
-  padding: 8px;
-  grid-template-columns: repeat(v-bind(filterColumns), v-bind(filterButtonSize + 'px'));
-  gap: 4px;
-  background: #1f1f1f;
-  border-bottom: 1px solid #4a4a4a;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
-}
-
-.filterRow {
-  display: grid;
-  grid-template-columns: subgrid;
-  grid-column: 1 / -1;
-  column-gap: inherit;
-  row-gap: inherit;
-  background-image: v-bind(filterBase64Svg);
-  background-size: v-bind(filterCellSize + 'px') v-bind(filterCellSize + 'px');
-  background-repeat: repeat;
-  background-attachment: local;
-}
-
 .filterButton {
-  width: v-bind(filterButtonSize + 'px');
-  height: v-bind(filterButtonSize + 'px');
-  min-width: v-bind(filterButtonSize + 'px');
-  min-height: v-bind(filterButtonSize + 'px');
-  max-width: v-bind(filterButtonSize + 'px');
-  max-height: v-bind(filterButtonSize + 'px');
   background: linear-gradient(to bottom, #4a4a4a, #3a3a3a);
   border: 1px solid #5a5a5a;
   border-radius: 2px;
@@ -707,10 +578,8 @@ const filterBase64Svg = computed(() => {
 }
 
 .itemGrid {
-  display: grid;
+  /* Grid properties handled by composable inline styles */
   padding: 8px;
-  gap: 4px;
-  grid-template-columns: repeat(v-bind(gridColumns), v-bind(buttonSize + 'px'));
   overflow-y: scroll;
   background: #1f1f1f;
   border: 1px solid #4a4a4a;
@@ -718,17 +587,7 @@ const filterBase64Svg = computed(() => {
   box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 
-.subgroupGrid {
-  display: grid;
-  grid-template-columns: subgrid;
-  grid-column: 1 / -1;
-  column-gap: inherit;
-  row-gap: inherit;
-  background-image: v-bind(base64Svg);
-  background-size: v-bind(gridCellSize + 'px') v-bind(gridCellSize + 'px');
-  background-repeat: repeat;
-  background-attachment: local;
-}
+/* Subgroup styling handled by composable */
 
 .itemSlot {
   width: 40px;

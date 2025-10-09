@@ -94,6 +94,7 @@ import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 
 import DetailsPaneSection from './DetailsPaneSection.vue'
 import Statistics from './Statistics.vue'
+import { useTooltipData } from '../../../src/composables/useTooltipData.js'
 
 // Emits
 const emit = defineEmits(['select-item', 'item-selected'])
@@ -155,55 +156,19 @@ const tooltipClasses = computed(() => ({
   'tooltip-pinned': isPinned.value
 }))
 
-// Load tooltips data
-const tooltipsData = ref(null)
-const isLoadingTooltips = ref(true)
+// Use shared tooltip data composable
+const {
+  tooltipsData,
+  isLoadingTooltips,
+  hasLoadError,
+  hasTooltipsData,
+  loadTooltipsData,
+  getTooltipData
+} = useTooltipData()
 
-// Load tooltips data on component mount
-async function loadTooltipsData() {
-  try {
-    isLoadingTooltips.value = true
-    const response = await fetch('/data/en-tooltips.json')
-    if (!response.ok) {
-      throw new Error(`Failed to load tooltips: ${response.status}`)
-    }
-    tooltipsData.value = await response.json()
-    console.log('Tooltips data loaded:', tooltipsData.value)
-  } catch (error) {
-    console.error('Failed to load tooltips data:', error)
-    tooltipsData.value = null
-  } finally {
-    isLoadingTooltips.value = false
-  }
-}
-
-// Get tooltip data from pre-generated tooltips file
-function getTooltipData(category = props.category, itemId = props.itemId) {
-  try {
-    if (!tooltipsData.value || !tooltipsData.value.tooltips) {
-      return null
-    }
-
-    // Map category names to tooltip types
-    const categoryMap = {
-      item: 'item',
-      recipe: 'recipe',
-      entity: 'entity',
-      fluid: 'fluid',
-      technology: 'technology'
-    }
-
-    const tooltipType = categoryMap[category]
-    if (!tooltipType || !tooltipsData.value.tooltips[tooltipType]) {
-      return null
-    }
-
-    const tooltipData = tooltipsData.value.tooltips[tooltipType][itemId]
-    return tooltipData || null
-  } catch (error) {
-    console.error('Failed to get tooltip data:', error)
-    return null
-  }
+// Get tooltip data using the composable
+function getTooltipDataForItem(category = props.category, itemId = props.itemId) {
+  return getTooltipData(category, itemId)
 }
 
 // Position tooltip relative to trigger element
@@ -345,12 +310,18 @@ function showTooltip() {
     pinTimeout.value = null
   }
 
-  showTimeout.value = setTimeout(() => {
+  showTimeout.value = setTimeout(async () => {
     console.log('Loading tooltip data for', props.itemId, props.category)
     isLoading.value = true
     hasError.value = false
 
     try {
+      // Load tooltip data if not already loaded
+      if (!hasTooltipsData.value && !isLoadingTooltips.value) {
+        console.log('Loading tooltip data for the first time')
+        await loadTooltipsData()
+      }
+
       // Check if tooltips data is still loading
       if (isLoadingTooltips.value) {
         tooltipDatas.value = [
@@ -365,7 +336,7 @@ function showTooltip() {
         return
       }
 
-      const data = getTooltipData()
+      const data = getTooltipDataForItem()
       console.log('Tooltip data loaded:', data)
 
       if (data) {
@@ -373,7 +344,7 @@ function showTooltip() {
 
         if (data.tooltipExtras) {
           for (const extra of data.tooltipExtras) {
-            const extraData = getTooltipData(extra.type, extra.name)
+            const extraData = getTooltipDataForItem(extra.type, extra.name)
             if (extraData) {
               tooltipDatas.value.push(extraData)
             }
@@ -631,8 +602,7 @@ function handleKeydown(event) {
 onMounted(() => {
   window.addEventListener('resize', handleResize)
   document.addEventListener('keydown', handleKeydown)
-  // Load tooltips data on mount
-  loadTooltipsData()
+  // Don't load tooltips data on mount - only load when tooltip is shown
 })
 
 onUnmounted(() => {
@@ -667,28 +637,6 @@ onUnmounted(() => {
 .tooltip:focus {
   outline: 2px solid var(--vp-c-brand-1);
   outline-offset: 2px;
-}
-
-/* Touch device improvements */
-@media (hover: none) and (pointer: coarse) {
-  .tooltip-trigger {
-    /* Increase touch target size on touch devices */
-    min-width: 44px;
-    min-height: 44px;
-    padding: 8px;
-  }
-
-  .tooltip {
-    /* Larger touch targets in tooltip */
-    min-width: 200px;
-  }
-
-  .tooltip-close-button {
-    /* Larger close button for touch */
-    min-width: 44px;
-    min-height: 44px;
-    padding: 8px;
-  }
 }
 
 .tooltip {

@@ -39,31 +39,56 @@
 
       <!-- Items for this section -->
       {{ section.items?.length > 0 && section.itemsLabel ? section.itemsLabel + ':' : null }}
-      <div v-if="section.items?.length > 0" :class="getItemsContainerClass()">
-        <div
-          v-for="item in section.items"
-          :key="`${item.type}-${item.name}`"
-          :class="getItemEntryClass()"
-        >
+      <div
+        v-if="section.items?.length > 0"
+        :class="getItemsContainerClass()"
+        :style="isGridLayout ? sectionGrid.containerStyles : {}"
+        ref="gridContainer"
+      >
+        <!-- Use composable's grid structure -->
+        <div v-if="isGridLayout" :style="sectionGrid.subgroupStyles">
           <IconButton
+            v-for="item in section.items"
+            :key="`${item.type}-${item.name}`"
+            :style="sectionGrid.itemStyles"
+            :size="sectionGrid.buttonSize"
             :type="item.type"
             :name="item.name"
-            :size="getIconSize()"
             :clickable="true"
             :show-tooltip="showTooltip"
             @click="handleItemClick(item)"
           />
-          <span v-if="shouldShowLabel()" :class="$style.itemLabel">{{
-            getItemLabel(item) || item.name
-          }}</span>
         </div>
+        <!-- List layout without subgroup wrapper -->
+        <template v-else>
+          <div
+            v-for="item in section.items"
+            :key="`${item.type}-${item.name}`"
+            :class="getItemEntryClass()"
+          >
+            <IconButton
+              :type="item.type"
+              :name="item.name"
+              :size="40"
+              :clickable="true"
+              :show-tooltip="showTooltip"
+              @click="handleItemClick(item)"
+            />
+            <span v-if="shouldShowLabel()" :class="$style.itemLabel">{{
+              getItemLabel(item) || item.name
+            }}</span>
+          </div>
+        </template>
       </div>
     </div>
   </template>
 </template>
 
 <script>
+import { ref, computed } from 'vue'
+
 import { useLocalizedData } from '../composables/useLocalizedData'
+import { useFactorioGrid } from '../../../src/composables/useFactorioGrid.js'
 
 import IconButton from './IconButton.vue'
 import Statistics from './Statistics.vue'
@@ -91,9 +116,30 @@ export default {
   setup() {
     const { localizedData, loadLocalizedData } = useLocalizedData()
 
+    // Grid container width tracking
+    const gridContainerWidth = ref(0)
+    const gridContainer = ref(null)
+
+    // Use the grid composable for section grids
+    const itemCount = ref(0)
+
+    const sectionGrid = computed(() =>
+      useFactorioGrid({
+        containerWidth: gridContainerWidth.value,
+        minButtonSize: 32,
+        maxColumns: 10,
+        gap: 2,
+        padding: 4,
+        filterId: '-section'
+      })
+    )
+
     return {
       localizedData,
-      loadLocalizedData
+      loadLocalizedData,
+      gridContainerWidth,
+      gridContainer,
+      sectionGrid
     }
   },
   computed: {
@@ -104,8 +150,34 @@ export default {
       return !this.section.itemsType || this.section.itemsType === 'list'
     }
   },
+  watch: {
+    section: {
+      handler() {
+        this.updateItemCount()
+      },
+      deep: true
+    }
+  },
   async mounted() {
     await this.loadLocalizedData()
+    this.updateItemCount()
+    this.setupGridResizeObserver()
+
+    // Initialize grid container width if not set
+    if (this.gridContainer && this.gridContainerWidth === 0) {
+      this.gridContainerWidth = this.gridContainer.offsetWidth
+    }
+
+    // Fallback: Set initial width after a short delay (like Factoriopedia)
+    setTimeout(() => {
+      if (this.gridContainer && this.gridContainerWidth === 0) {
+        const width = this.gridContainer.offsetWidth
+        this.gridContainerWidth = width
+      }
+    }, 100)
+  },
+  beforeUnmount() {
+    this.cleanupGridResizeObserver()
   },
   methods: {
     getItemLabel(item) {
@@ -139,7 +211,7 @@ export default {
       return this.$style.itemEntry
     },
     getIconSize() {
-      return this.isGridLayout ? 32 : 24
+      return this.isGridLayout ? this.sectionGrid.buttonSize.value : 24
     },
     shouldShowLabel() {
       // In grid layout, only show labels if explicitly requested
@@ -148,6 +220,42 @@ export default {
       }
       // In list layout, always show labels
       return true
+    },
+    updateItemCount() {
+      this.itemCount = this.section?.items?.length || 0
+      // Force grid recalculation when item count changes
+      this.$nextTick(() => {
+        if (this.gridContainer && this.gridContainerWidth === 0) {
+          this.gridContainerWidth = this.gridContainer.offsetWidth
+        }
+      })
+    },
+    setupGridResizeObserver() {
+      // Set up ResizeObserver to track grid container width (like Factoriopedia)
+      if (this.gridContainer && typeof ResizeObserver !== 'undefined') {
+        this.resizeObserver = new ResizeObserver(entries => {
+          for (const entry of entries) {
+            this.gridContainerWidth = entry.contentRect.width
+          }
+        })
+        this.resizeObserver.observe(this.gridContainer)
+      } else if (this.gridContainer) {
+        // Fallback: set initial width and use a simple interval to check for changes
+        this.gridContainerWidth = this.gridContainer.offsetWidth
+        this.widthCheckInterval = setInterval(() => {
+          if (this.gridContainer && this.gridContainer.offsetWidth !== this.gridContainerWidth) {
+            this.gridContainerWidth = this.gridContainer.offsetWidth
+          }
+        }, 100)
+      }
+    },
+    cleanupGridResizeObserver() {
+      if (this.resizeObserver) {
+        this.resizeObserver.disconnect()
+      }
+      if (this.widthCheckInterval) {
+        clearInterval(this.widthCheckInterval)
+      }
     }
   }
 }
@@ -178,8 +286,7 @@ export default {
 
 .itemsGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
-  gap: 2px;
+  /* Grid properties are handled by composable inline styles */
   max-height: 200px;
   overflow-y: auto;
   background: #1f1f1f;
@@ -187,6 +294,17 @@ export default {
   border-radius: 2px;
   padding: 2px;
   box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+/* Fallback grid layout if JavaScript calculations fail */
+.itemsGrid:not([style*='grid-template-columns']) {
+  display: grid;
+  grid-template-columns: repeat(
+    v-bind('sectionGrid.columns.value'),
+    v-bind('sectionGrid.buttonSize.value + "px"')
+  );
+  gap: 2px;
+  justify-content: start;
 }
 
 .itemEntry {
@@ -204,8 +322,7 @@ export default {
 }
 
 .gridItem {
-  width: 40px;
-  height: 40px;
+  /* Sizing handled by composable's gridItemClasses */
   background: #4a4a4a;
   border: 1px solid #5a5a5a;
   border-radius: 2px;

@@ -60,7 +60,7 @@ export function applyRules(rules, data, context = {}) {
         }
       }
 
-      if (!result.label) {
+      if (result && !result.label) {
         result.label = rule.name
       }
 

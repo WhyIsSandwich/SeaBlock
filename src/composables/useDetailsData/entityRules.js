@@ -349,7 +349,7 @@ export const entityRules = [
         children: data.entity?.resistances.map(a => ({ label: a.type, value: `${a.percent}%` }))
       }
     },
-    condition: data => data.entity?.resistances !== undefined
+    condition: data => data.entity?.resistances?.length > 0
   },
   {
     name: labels.stack_size,

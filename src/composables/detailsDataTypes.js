@@ -40,7 +40,11 @@ export const sectionTypes = new Proxy(
     stores_equipment_grid_electricity: 'Stores equipment grid electricity',
     alternative_recipes: 'Alternative recipes',
     technology_prerequisites: 'Prerequisites',
-    technology_descendants: 'Descendants'
+    technology_descendants: 'Descendants',
+    extracted_by: 'Extracted by',
+    source_of: 'Source of',
+    allows_placement: 'Allows placement',
+    burned_in: 'Burned in'
   },
   {
     get(target, prop) {
@@ -95,6 +99,14 @@ export const labels = new Proxy(
     base_health: 'Base Health',
     healing: 'Healing',
     resistances: 'Resistances',
+    min_consumption: 'Min Consumption',
+    neighbour_bonus: 'Neighbour Bonus',
+    fluid_consumption: 'Fluid Consumption',
+    fluid_output: 'Fluid Output',
+    fluid_max_temperature: 'Fluid Max Temperature',
+    equipment_grid_size: 'Equipment Grid Size',
+    max_input: 'Max Input',
+    max_output: 'Max Output',
 
     // Item labels
     nuclear_fuel: 'Nuclear Fuel',
@@ -119,7 +131,15 @@ export const labels = new Proxy(
     heat_capacity: 'Heat Capacity',
 
     // Recipe labels
-    crafting_time: 'Crafting time'
+    crafting_time: 'Crafting time',
+
+    // Technology labels
+    technology_time: 'Technology Time',
+    technology_cost: 'Technology Cost',
+    energy_consumption: 'Energy Consumption',
+    energy_capacity: 'Energy Capacity',
+    nuclear_fuel_consumption: 'Constant Consumption',
+    heat_generation: 'Heat Generation'
   },
   {
     get(target, prop) {
