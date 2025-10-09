@@ -7,12 +7,8 @@
       :aria-describedby="tooltipId"
       @mouseenter="showTooltip"
       @mouseleave="hideTooltip"
-      @click="handleTriggerClick"
       @focus="showTooltip"
       @blur="hideTooltip"
-      @keydown="handleTriggerKeydown"
-      @touchstart="handleTouchStart"
-      @touchend="handleTouchEnd"
     >
       <slot />
       <Teleport to="body">
@@ -28,9 +24,6 @@
           tabindex="0"
           @mouseenter="handleTooltipMouseEnter"
           @mouseleave="handleTooltipMouseLeave"
-          @keydown="handleTooltipKeydown"
-          @touchstart="handleTooltipTouchStart"
-          @touchend="handleTooltipTouchEnd"
         >
           <div class="tooltip-content">
             <div v-if="isLoading" class="tooltip-loading">Loading...</div>
