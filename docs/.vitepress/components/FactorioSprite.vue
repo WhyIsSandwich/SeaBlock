@@ -156,16 +156,23 @@ export default {
         return { width: 64, height: 64 } // Default fallback
       }
 
-      let minWidth = 16
-      let minHeight = 16
+      let minWidth = 0.5
+      let minHeight = 0.5
 
-      const { selection_box } = animationData.value
+      const { selection_box, drawing_box_vertical_extension } = animationData.value
       if (selection_box) {
-        const entityWidth = (1 + selection_box[1][0] - selection_box[0][0]) * 32
-        const entityHeight = (1 + selection_box[1][1] - selection_box[0][1]) * 32
+        const entityWidth = selection_box[1][0] - selection_box[0][0]
+        const entityHeight = selection_box[1][1] - selection_box[0][1]
         minWidth = Math.max(minWidth, entityWidth)
         minHeight = Math.max(minHeight, entityHeight)
       }
+
+      if (drawing_box_vertical_extension) {
+        minHeight = minHeight + drawing_box_vertical_extension
+      }
+
+      minWidth = minWidth * 32 * 2
+      minHeight = minHeight * 32 * 2
 
       return { width: minWidth, height: minHeight }
     })

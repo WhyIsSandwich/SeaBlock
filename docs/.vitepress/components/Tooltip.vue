@@ -92,9 +92,6 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 
-import { useFactorioData } from '../../../src/index.js'
-import { useDetailsData } from '../../../src/composables/useDetailsData.js'
-
 import DetailsPaneSection from './DetailsPaneSection.vue'
 import Statistics from './Statistics.vue'
 
@@ -158,37 +155,51 @@ const tooltipClasses = computed(() => ({
   'tooltip-pinned': isPinned.value
 }))
 
-// Initialize composables
-const { organizedData } = useFactorioData()
-const { getDetailsData } = useDetailsData()
+// Load tooltips data
+const tooltipsData = ref(null)
+const isLoadingTooltips = ref(true)
 
-// Get tooltip data for specific item using the new system if not provided use props.category and props.itemId
+// Load tooltips data on component mount
+async function loadTooltipsData() {
+  try {
+    isLoadingTooltips.value = true
+    const response = await fetch('/data/en-tooltips.json')
+    if (!response.ok) {
+      throw new Error(`Failed to load tooltips: ${response.status}`)
+    }
+    tooltipsData.value = await response.json()
+    console.log('Tooltips data loaded:', tooltipsData.value)
+  } catch (error) {
+    console.error('Failed to load tooltips data:', error)
+    tooltipsData.value = null
+  } finally {
+    isLoadingTooltips.value = false
+  }
+}
+
+// Get tooltip data from pre-generated tooltips file
 function getTooltipData(category = props.category, itemId = props.itemId) {
   try {
-    // Get the item data from the factorio data
-    const itemData = organizedData.value[category][itemId]
-    if (!itemData) {
+    if (!tooltipsData.value || !tooltipsData.value.tooltips) {
       return null
     }
 
-    const unifiedObject = {
-      types: [category],
-      [category]: itemData,
-      displayName: itemData.displayName,
-      description: itemData.description
+    // Map category names to tooltip types
+    const categoryMap = {
+      item: 'item',
+      recipe: 'recipe',
+      entity: 'entity',
+      fluid: 'fluid',
+      technology: 'technology'
     }
 
-    if (props.category === 'entity') {
-      // Include item data for entities for stack size
-      unifiedObject.item = organizedData.value.item[itemId]
+    const tooltipType = categoryMap[category]
+    if (!tooltipType || !tooltipsData.value.tooltips[tooltipType]) {
+      return null
     }
 
-    const { types } = unifiedObject
-
-    // Generate details data for tooltip
-    const detailsData = getDetailsData(types, unifiedObject, true, organizedData.value)
-
-    return detailsData
+    const tooltipData = tooltipsData.value.tooltips[tooltipType][itemId]
+    return tooltipData || null
   } catch (error) {
     console.error('Failed to get tooltip data:', error)
     return null
@@ -277,18 +288,18 @@ function startAutoPinTimer() {
   if (pinTimeout.value) {
     clearTimeout(pinTimeout.value)
   }
-  return //temporarily disabled
-  pinTimeout.value = setTimeout(() => {
-    if (isVisible.value && !isPinned.value) {
-      console.log('Auto-pinning tooltip after', props.autoPinDelay, 'ms')
-      isPinned.value = true
-      // Clear any hide timeout when auto-pinning
-      if (hideTimeout.value) {
-        clearTimeout(hideTimeout.value)
-        hideTimeout.value = null
-      }
-    }
-  }, props.autoPinDelay)
+  // Temporarily disabled auto-pin functionality
+  // pinTimeout.value = setTimeout(() => {
+  //   if (isVisible.value && !isPinned.value) {
+  //     console.log('Auto-pinning tooltip after', props.autoPinDelay, 'ms')
+  //     isPinned.value = true
+  //     // Clear any hide timeout when auto-pinning
+  //     if (hideTimeout.value) {
+  //       clearTimeout(hideTimeout.value)
+  //       hideTimeout.value = null
+  //     }
+  //   }
+  // }, props.autoPinDelay)
 }
 
 // Close tooltip
@@ -340,6 +351,20 @@ function showTooltip() {
     hasError.value = false
 
     try {
+      // Check if tooltips data is still loading
+      if (isLoadingTooltips.value) {
+        tooltipDatas.value = [
+          {
+            title: 'Loading...',
+            description: 'Loading tooltip data...',
+            sections: []
+          }
+        ]
+        isVisible.value = true
+        positionTooltip()
+        return
+      }
+
       const data = getTooltipData()
       console.log('Tooltip data loaded:', data)
 
@@ -606,6 +631,8 @@ function handleKeydown(event) {
 onMounted(() => {
   window.addEventListener('resize', handleResize)
   document.addEventListener('keydown', handleKeydown)
+  // Load tooltips data on mount
+  loadTooltipsData()
 })
 
 onUnmounted(() => {
