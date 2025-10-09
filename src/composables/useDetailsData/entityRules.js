@@ -619,6 +619,7 @@ export const entityRules = [
     shownInTooltip: true,
     getValue: data => {
       const energyUsage = parseEnergyString(data.entity?.energy_usage)
+      if (!energyUsage) return null
       const minConsumption = Math.ceil(energyUsage.normalizedValue * 0.03) //afaik 3% is min consumption
       const maxConsumption = Math.ceil(energyUsage.normalizedValue * 1.03)
       return {
@@ -653,7 +654,7 @@ export const entityRules = [
         return { statistics: [{ label: labels.max_output, value: power }] }
       }
     },
-    condition: data => data.entity?.energy_source && data.entity?.energy_source.type === 'electric'
+    condition: data => data.entity.type === 'steam-engine' || data.entity.type === 'solar-panel'
   }
 ]
 
