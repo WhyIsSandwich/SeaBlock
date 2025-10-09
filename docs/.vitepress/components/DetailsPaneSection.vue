@@ -26,6 +26,9 @@
       </div>
     </div>
   </template>
+  <template v-else-if="section.type === 'crafting_time'">
+    <div :class="$style.section">🕛{{ section.statistics[0]?.value }} s Crafting time</div>
+  </template>
   <template v-else>
     <div :class="$style.section">
       <h4 :class="$style.sectionTitle">{{ section.label }}</h4>
@@ -34,6 +37,7 @@
       <Statistics v-if="section.statistics?.length > 0" :statistics="section.statistics" />
 
       <!-- Items for this section -->
+      {{ section.items?.length > 0 && section.itemsLabel ? section.itemsLabel + ':' : null }}
       <div v-if="section.items?.length > 0" :class="getItemsContainerClass()">
         <div
           v-for="item in section.items"

@@ -32,7 +32,8 @@ export const recipeRules = [
     forType: 'recipe',
     shownInTooltip: true,
     getValue: data => ({
-      statistics: [{ label: labels.crafting_time, value: data.recipe?.energy_required }]
+      statistics: [{ label: labels.crafting_time, value: data.recipe?.energy_required }],
+      type: 'crafting_time'
     }),
     condition: data => data.recipe?.energy_required !== undefined
   },

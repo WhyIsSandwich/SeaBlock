@@ -20,8 +20,8 @@ function parseEnergyString(energyString) {
 
   const unitMultipliers = {
     K: 1, // Kilowatts to MW
-    M: 0.001, // Megawatts (base unit)
-    G: 0.000001 // Gigawatts to MW
+    M: 1000, // Megawatts (base unit)
+    G: 1000000 // Gigawatts to MW
   }
 
   const multiplier = unitMultipliers[unit[0]] || 1
@@ -344,7 +344,11 @@ export const entityRules = [
     order: 29,
     type: 'statistics',
     shownInTooltip: false,
-    getValue: data => data.entity?.resistances,
+    getValue: data => {
+      return {
+        children: data.entity?.resistances.map(a => ({ label: a.type, value: `${a.percent}%` }))
+      }
+    },
     condition: data => data.entity?.resistances !== undefined
   },
   {
@@ -386,11 +390,24 @@ export const entityRules = [
     type: 'section',
     forType: 'entity',
     shownInTooltip: true,
-    getValue: data => {
-      return { items: [data.entity?.consumes_water] }
-      data.entity?.consumes_water
+    getValue: (data, context) => {
+      //fluid usage = ratio of output to input heat capacity * different between input and output temperature
+      const fluidName = data.entity?.fluid_box?.filter
+      const inputFluid = context.factorioData.fluid[fluidName]
+
+      const inputHeatCapacity = parseEnergyString(inputFluid?.heat_capacity)
+      const temperatureDifference = data.entity?.target_temperature - 15 //might be min temperature of the input
+      const power = parseEnergyString(data.entity?.energy_consumption)
+      const fluidUsage =
+        power.normalizedValue / (inputHeatCapacity.normalizedValue * temperatureDifference)
+      return {
+        statistics: [{ label: labels.fluid_consumption, value: fluidUsage }],
+        items: [{ name: fluidName, type: 'fluid' }],
+        itemsLabel: 'Accepted fluid',
+        itemsType: 'grid'
+      }
     },
-    condition: data => data.entity?.consumes_water !== undefined
+    condition: data => data.entity?.type === 'boiler'
   },
   {
     name: sectionTypes.equipment_grid,
@@ -398,8 +415,28 @@ export const entityRules = [
     type: 'section',
     forType: 'entity',
     shownInTooltip: true,
-    getValue: data => {
-      return { items: [data.entity?.equipment_grid] }
+    getValue: (data, context) => {
+      const equipmentGridName = data.entity?.equipment_grid
+      const equipmentGrid = context.factorioData['equipment-grid'][equipmentGridName]
+      //is array
+      const equipment_categories = equipmentGrid?.equipment_categories
+
+      const equipmentItems = Object.values(context.factorioData.equipment)
+      const equipmentGridItems = equipmentItems
+        .filter(equipment =>
+          equipment?.categories?.some(category => equipment_categories.includes(category))
+        )
+        .map(equipment => ({ name: equipment.name, type: 'equipment' }))
+      return {
+        statistics: [
+          {
+            label: labels.equipment_grid_size,
+            value: `${equipmentGrid.width}x${equipmentGrid.height}`
+          }
+        ],
+        items: equipmentGridItems,
+        itemsType: 'grid'
+      }
     },
     condition: data => data.entity?.equipment_grid !== undefined
   },
@@ -431,10 +468,25 @@ export const entityRules = [
     type: 'section',
     forType: 'entity',
     shownInTooltip: true,
-    getValue: data => {
-      return { items: [data.entity?.burnable_fuel] }
+    getValue: (data, context) => {
+      const chemicalFuels = Object.values(context.factorioData.item)
+        .filter(item => item.fuel_category === 'chemical')
+        .map(item => ({ name: item.name, type: 'item' }))
+      return {
+        statistics: [
+          {
+            label: labels.max_consumption,
+            value: data.entity?.energy_consumption || data.entity?.consumption
+          }
+        ],
+        items: chemicalFuels,
+        itemsLabel: 'Accepted fuel',
+        itemsType: 'grid'
+      }
     },
-    condition: data => data.entity?.burnable_fuel !== undefined
+    condition: data =>
+      data.entity?.energy_source?.type === 'burner' &&
+      data.entity?.energy_source?.fuel_categories?.includes('chemical')
   },
   {
     name: sectionTypes.generates_steam,
@@ -442,10 +494,24 @@ export const entityRules = [
     type: 'section',
     forType: 'entity',
     shownInTooltip: true,
-    getValue: data => {
-      return { items: [data.entity?.generates_steam] }
+    getValue: (data, context) => {
+      //fluid usage = ratio of output to input heat capacity * different between input and output temperature
+      const fluidName = data.entity?.output_fluid_box?.filter
+      const outputFluid = context.factorioData.fluid[fluidName]
+
+      const outputHeatCapacity = parseEnergyString(outputFluid?.heat_capacity)
+      const temperatureDifference = data.entity?.target_temperature - 15 //15 might be min temperature of the input
+      const power = parseEnergyString(data.entity?.energy_consumption)
+      const fluidUsage =
+        power.normalizedValue / (outputHeatCapacity.normalizedValue * temperatureDifference)
+      return {
+        statistics: [{ label: labels.fluid_output, value: fluidUsage }],
+        items: [{ name: fluidName, type: 'fluid' }],
+        itemsLabel: 'Result fluid',
+        itemsType: 'grid'
+      }
     },
-    condition: data => data.entity?.generates_steam !== undefined
+    condition: data => data.entity?.type === 'boiler'
   },
   {
     name: sectionTypes.consumes_steam,
@@ -470,7 +536,8 @@ export const entityRules = [
           { label: labels.fluid_consumption, value: data.entity?.fluid_usage_per_tick * 60 },
           { label: labels.fluid_max_temperature, value: data.entity?.maximum_temperature }
         ],
-        items: [workingFluid]
+        items: [workingFluid],
+        itemsLabel: 'Accepted fluid'
       }
     },
     condition: data => data.entity?.fluid_usage_per_tick !== undefined
@@ -482,9 +549,15 @@ export const entityRules = [
     forType: 'entity',
     shownInTooltip: true,
     getValue: data => {
-      return { items: [data.entity?.stores_electricity] }
+      return {
+        statistics: [
+          { label: labels.energy_capacity, value: data.entity?.energy_source?.buffer_capacity },
+          { label: labels.max_input, value: data.entity?.energy_source?.input_flow_limit },
+          { label: labels.max_output, value: data.entity?.energy_source?.output_flow_limit }
+        ]
+      }
     },
-    condition: data => data.entity?.stores_electricity !== undefined
+    condition: data => data.entity?.type === 'accumulator'
   },
   {
     name: sectionTypes.consumes_nuclear_fuel,
@@ -493,9 +566,18 @@ export const entityRules = [
     forType: 'entity',
     shownInTooltip: true,
     getValue: data => {
-      return { items: [data.entity?.consumes_nuclear_fuel] }
+      return {
+        statistics: [
+          {
+            label: labels.nuclear_fuel_consumption,
+            value: data.entity?.consumption
+          }
+        ]
+      }
     },
-    condition: data => data.entity?.consumes_nuclear_fuel !== undefined
+    condition: data =>
+      data.entity?.energy_source?.type === 'burner' &&
+      data.entity?.energy_source?.fuel_categories?.includes('nuclear')
   },
   {
     name: sectionTypes.generates_heat,
@@ -504,9 +586,14 @@ export const entityRules = [
     forType: 'entity',
     shownInTooltip: true,
     getValue: data => {
-      return { items: [data.entity?.generates_heat] }
+      return {
+        statistics: [
+          { label: labels.heat_generation, value: data.entity?.consumption },
+          { label: labels.neighbour_bonus, value: data.entity?.neighbour_bonus }
+        ]
+      }
     },
-    condition: data => data.entity?.generates_heat !== undefined
+    condition: data => data.entity.type === 'reactor'
   },
   {
     name: sectionTypes.consumes_heat,
@@ -515,9 +602,14 @@ export const entityRules = [
     forType: 'entity',
     shownInTooltip: true,
     getValue: data => {
-      return { items: [data.entity?.consumes_heat] }
+      return {
+        statistics: [
+          { label: labels.energy_consumption, value: data.entity?.energy_consumption },
+          { label: labels.min_temperature, value: data.entity?.energy_source?.min_temperature }
+        ]
+      }
     },
-    condition: data => data.entity?.consumes_heat !== undefined
+    condition: data => data.entity?.energy_source && data.entity?.energy_source.type === 'heat'
   },
   {
     name: sectionTypes.consumes_electricity,
@@ -526,9 +618,20 @@ export const entityRules = [
     forType: 'entity',
     shownInTooltip: true,
     getValue: data => {
-      return { items: [data.entity?.consumes_electricity] }
+      const energyUsage = parseEnergyString(data.entity?.energy_usage)
+      const minConsumption = Math.ceil(energyUsage.normalizedValue * 0.03) //afaik 3% is min consumption
+      const maxConsumption = Math.ceil(energyUsage.normalizedValue * 1.03)
+      return {
+        statistics: [
+          { label: labels.max_consumption, value: maxConsumption },
+          { label: labels.min_consumption, value: minConsumption }
+        ]
+      }
     },
-    condition: data => data.entity?.consumes_electricity !== undefined
+    condition: data =>
+      data.entity?.energy_source &&
+      data.entity?.energy_source.type === 'electric' &&
+      data.entity.energy_usage
   },
   {
     name: sectionTypes.generates_electricity,
@@ -536,10 +639,21 @@ export const entityRules = [
     type: 'section',
     forType: 'entity',
     shownInTooltip: true,
-    getValue: data => {
-      return { items: [data.entity?.generates_electricity] }
+    getValue: (data, context) => {
+      if (data.entity?.type === 'solar-panel')
+        return { statistics: [{ label: labels.max_output, value: data.entity?.production }] }
+      else {
+        const fluidName = data.entity?.fluid_box?.filter
+        const fluid = context.factorioData.fluid[fluidName]
+        const fluidAmount = data.entity?.fluid_usage_per_tick
+        const fluidTemperature = data.entity?.maximum_temperature
+        const fluidHeatCapacity = parseEnergyString(fluid?.heat_capacity)
+
+        const power = fluidAmount * (fluidTemperature - 15) * fluidHeatCapacity.normalizedValue * 60
+        return { statistics: [{ label: labels.max_output, value: power }] }
+      }
     },
-    condition: data => data.entity?.generates_electricity !== undefined
+    condition: data => data.entity?.energy_source && data.entity?.energy_source.type === 'electric'
   }
 ]
 
