@@ -1,11 +1,15 @@
 <template>
-  <Tooltip
+  <!--dynamically make it a tooltip or not using showTooltip prop ie pass in compl-->
+  <component
+    :is="showTooltip ? Tooltip : 'div'"
     v-if="!isEmpty && type && name"
     :item-id="name"
     :category="type"
     position="top"
     :delay="300"
     :auto-pin-delay="2000"
+    @select-item="emit('click', $event)"
+    @item-selected="emit('click', $event)"
   >
     <div
       :class="[
@@ -29,7 +33,7 @@
         {{ label }}
       </span>
     </div>
-  </Tooltip>
+  </component>
   <div
     v-else
     :class="[
@@ -98,6 +102,10 @@ const props = defineProps({
   label: {
     type: String,
     default: ''
+  },
+  showTooltip: {
+    type: Boolean,
+    default: true
   }
 })
 

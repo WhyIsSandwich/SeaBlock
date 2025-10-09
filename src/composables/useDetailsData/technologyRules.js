@@ -53,6 +53,7 @@ export const technologyRules = [
         }
       return { items: transformedEffects, itemsType: 'grid' }
     },
+    condition: data => data.technology.effects?.length > 0,
     postCondition: data => data.items?.length > 0
   },
   {

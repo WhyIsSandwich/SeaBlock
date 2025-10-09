@@ -15,6 +15,7 @@
             :size="getIconSize()"
             :clickable="true"
             @click="handleItemClick(item)"
+            :show-tooltip="showTooltip"
           />
         </div>
         <div style="text-align: center; display: flex; vertical-align: middle; align-items: center">
@@ -49,6 +50,7 @@
             :name="item.name"
             :size="getIconSize()"
             :clickable="true"
+            :show-tooltip="showTooltip"
             @click="handleItemClick(item)"
           />
           <span v-if="shouldShowLabel()" :class="$style.itemLabel">{{
@@ -79,6 +81,10 @@ export default {
       validator: value => {
         return value && typeof value.type === 'string'
       }
+    },
+    showTooltip: {
+      type: Boolean,
+      default: true
     }
   },
   emits: ['select-item', 'item-selected'],

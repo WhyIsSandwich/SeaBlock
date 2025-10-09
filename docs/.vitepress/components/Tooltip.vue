@@ -76,8 +76,11 @@
                 <div v-if="tooltipData?.sections?.length" class="tooltip-sections">
                   <DetailsPaneSection
                     v-for="(section, index) in tooltipData.sections"
+                    :show-tooltip="false"
                     :key="`${section.type}-${index}`"
                     :section="section"
+                    @select-item="emit('select-item', $event)"
+                    @item-selected="emit('item-selected', $event)"
                   />
                 </div>
               </template>
@@ -101,6 +104,9 @@ import { useDetailsData } from '../../../src/composables/useDetailsData.js'
 
 import DetailsPaneSection from './DetailsPaneSection.vue'
 import Statistics from './Statistics.vue'
+
+// Emits
+const emit = defineEmits(['select-item', 'item-selected'])
 
 // Props
 const props = defineProps({
