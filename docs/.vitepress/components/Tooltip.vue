@@ -278,7 +278,7 @@ function startAutoPinTimer() {
   if (pinTimeout.value) {
     clearTimeout(pinTimeout.value)
   }
-
+  return //temporarily disabled
   pinTimeout.value = setTimeout(() => {
     if (isVisible.value && !isPinned.value) {
       console.log('Auto-pinning tooltip after', props.autoPinDelay, 'ms')

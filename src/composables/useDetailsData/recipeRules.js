@@ -15,15 +15,18 @@ export const recipeRules = [
     type: 'section',
     forType: 'recipe',
     shownInTooltip: true,
-    getValue: data => ({
-      items: data.recipe?.ingredients?.map(ingredient => ({
-        name: ingredient.name,
-        type: ingredient.type,
-        label: `{{item_name}} x ${ingredient.amount}`
-      })),
-      itemsType: 'list'
-    }),
-    condition: data => data.recipe?.ingredients !== undefined
+    getValue: data => {
+      return {
+        items: data.recipe?.ingredients?.map(ingredient => ({
+          name: ingredient.name,
+          type: ingredient.type,
+          label: `{{item_name}} x ${ingredient.amount}`
+        })),
+        itemsType: 'list'
+      }
+    },
+    condition: data => data.recipe?.ingredients?.length > 0,
+    postCondition: data => data?.items?.length > 0
   },
   {
     name: sectionTypes.crafting_time,
@@ -55,6 +58,7 @@ export const recipeRules = [
       // Only show products if not redundant
       return (
         (data.recipe?.results &&
+          data.recipe?.results.length > 0 &&
           data.recipe?.results.some(product => product.name !== data.recipe?.name)) ||
         data.recipe?.always_show_products
       )
