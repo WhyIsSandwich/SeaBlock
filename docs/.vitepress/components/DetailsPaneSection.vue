@@ -42,11 +42,11 @@
       <div
         v-if="section.items?.length > 0"
         :class="getItemsContainerClass()"
-        :style="isGridLayout ? getGridContainerStyles() : {}"
+        :style="isGridLayout ? sectionGrid.containerStyles : {}"
         ref="gridContainer"
       >
         <!-- Use composable's grid structure -->
-        <div v-if="isGridLayout && showTooltip" :style="sectionGrid.subgroupStyles">
+        <div v-if="isGridLayout" :style="sectionGrid.subgroupStyles">
           <IconButton
             v-for="item in section.items"
             :key="`${item.type}-${item.name}`"
@@ -113,7 +113,7 @@ export default {
     }
   },
   emits: ['select-item', 'item-selected'],
-  setup(props) {
+  setup() {
     const { localizedData, loadLocalizedData } = useLocalizedData()
 
     // Grid container width tracking
@@ -123,20 +123,16 @@ export default {
     // Use the grid composable for section grids
     const itemCount = ref(0)
 
-    const sectionGrid = computed(() => {
-      // In tooltip context (showTooltip = false), use content-based sizing
-      // In normal context, use container-based sizing
-      const isInTooltip = !props.showTooltip
-
-      return useFactorioGrid({
-        containerWidth: isInTooltip ? 0 : gridContainerWidth.value, // 0 forces content-based sizing
+    const sectionGrid = computed(() =>
+      useFactorioGrid({
+        containerWidth: gridContainerWidth.value,
         minButtonSize: 32,
-        maxColumns: isInTooltip ? 6 : 10, // Fewer columns in tooltips
+        maxColumns: 10,
         gap: 2,
         padding: 4,
         filterId: '-section'
       })
-    })
+    )
 
     return {
       localizedData,
@@ -214,21 +210,6 @@ export default {
       }
       return this.$style.itemEntry
     },
-    getGridContainerStyles() {
-      if (!this.isGridLayout) return {}
-
-      // In tooltip context, use content-based sizing
-      if (!this.showTooltip) {
-        return {
-          ...this.sectionGrid.containerStyles,
-          width: 'fit-content', // Let grid size to content
-          maxWidth: '100%' // But don't exceed container
-        }
-      }
-
-      // In normal context, use container-based sizing
-      return this.sectionGrid.containerStyles
-    },
     getIconSize() {
       return this.isGridLayout ? this.sectionGrid.buttonSize.value : 24
     },
@@ -250,11 +231,6 @@ export default {
       })
     },
     setupGridResizeObserver() {
-      // Don't set up resize observer in tooltip context - we want content-based sizing
-      if (!this.showTooltip) {
-        return
-      }
-
       // Set up ResizeObserver to track grid container width (like Factoriopedia)
       if (this.gridContainer && typeof ResizeObserver !== 'undefined') {
         this.resizeObserver = new ResizeObserver(entries => {

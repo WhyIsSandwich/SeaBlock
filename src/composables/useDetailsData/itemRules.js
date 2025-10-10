@@ -30,7 +30,7 @@ export const itemRules = [
     type: 'statistics',
     forType: 'item',
     shownInTooltip: true,
-    getValue: data => data.item?.burnt_result,
+    getValue: data => '[item=' + data.item?.burnt_result + ']',
     condition: data => data.item?.burnt_result !== undefined
   },
   {

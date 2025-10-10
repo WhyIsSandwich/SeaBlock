@@ -1,19 +1,19 @@
 <template>
   <div :class="$style.statistics">
     <div v-for="stat in statistics" :key="stat.label" :class="$style.statItem">
-      <strong>{{ stat.label }}{{ stat.value ? `: ${stat.value}` : '' }}</strong>
+      <strong>{{ stat.label }}<FactorioRichText v-if="stat.value" :text="stat.value" /></strong>
       <template v-if="stat.children">
         <ul v-if="stat.children.length > 0" :class="$style.resistanceList">
           <li v-for="child in stat.children" :key="child.label">
-            <template v-if="child.children">
-              <strong>{{ child.label }}:</strong>
-              <ul v-if="child.children.length > 0" :class="$style.resistanceList">
-                <li v-for="grandchild in child.children" :key="grandchild.label">
-                  {{ grandchild.label }}: {{ grandchild.value }}
-                </li>
-              </ul>
-            </template>
-            <template v-else> {{ child.label }}: {{ child.value }} </template>
+            <strong
+              >{{ child.label }}:<FactorioRichText v-if="child.value" :text="child.value"
+            /></strong>
+            <ul v-if="child?.children?.length > 0" :class="$style.resistanceList">
+              <li v-for="grandchild in child.children" :key="grandchild.label">
+                {{ grandchild.label }}:
+                <FactorioRichText v-if="grandchild.value" :text="grandchild.value" />
+              </li>
+            </ul>
           </li>
         </ul>
       </template>
@@ -22,8 +22,12 @@
 </template>
 
 <script>
+import FactorioRichText from './FactorioRichText.vue'
 export default {
   name: 'Statistics',
+  components: {
+    FactorioRichText
+  },
   props: {
     statistics: {
       type: Array,

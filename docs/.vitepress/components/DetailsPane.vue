@@ -92,7 +92,7 @@
       </div>
       <!-- Details Tab Content -->
       <div v-if="activeTab === 'details'">
-        <p>{{ selectedItem.description }}</p>
+        <FactorioRichText :text="selectedItem.description" />
         <!-- Statistics -->
         <Statistics
           v-if="detailsData.statistics?.length > 0"
@@ -198,6 +198,7 @@ import IconButton from './IconButton.vue'
 import FactorioSprite from './FactorioSprite.vue'
 import Statistics from './Statistics.vue'
 import DetailsPaneSection from './DetailsPaneSection.vue'
+import FactorioRichText from './FactorioRichText.vue'
 import RawSection from './RawSection.vue'
 // Use the data composable
 const { organizedData, createUnifiedSelectionObject } = useFactorioData()
