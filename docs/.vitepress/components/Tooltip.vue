@@ -163,66 +163,82 @@ function positionTooltip() {
       return
     }
 
-    const tooltipRect = tooltip.getBoundingClientRect()
-    const viewport = {
-      width: window.innerWidth,
-      height: window.innerHeight
-    }
+    // Hide tooltip while positioning to prevent visual shrinking
+    tooltip.style.opacity = '0'
+    tooltip.style.visibility = 'hidden'
 
-    // Determine which quadrant the cursor is in
-    const cursorX = mousePosition.value.x
-    const cursorY = mousePosition.value.y
-    const centerX = viewport.width / 2
-    const centerY = viewport.height / 2
+    // Allow natural sizing but ensure content is rendered first
+    // Force a reflow to get accurate dimensions after content loads
+    tooltip.offsetHeight
 
-    const isRightHalf = cursorX > centerX
-    const isBottomHalf = cursorY > centerY
+    // Wait for content to fully render and get final dimensions
+    setTimeout(() => {
+      const tooltipRect = tooltip.getBoundingClientRect()
+      const viewport = {
+        width: window.innerWidth,
+        height: window.innerHeight
+      }
 
-    // Default positioning: 36px right, 24px down (top-left corner of tooltip)
-    let top = cursorY + 24
-    let left = cursorX + 36
+      // Determine which quadrant the cursor is in
+      const cursorX = mousePosition.value.x
+      const cursorY = mousePosition.value.y
+      const centerX = viewport.width / 2
+      const centerY = viewport.height / 2
 
-    // Check if tooltip would go offscreen and adjust accordingly
-    let needsHorizontalFlip = false
-    let needsVerticalFlip = false
+      const isRightHalf = cursorX > centerX
+      const isBottomHalf = cursorY > centerY
 
-    // Check right edge
-    if (left + tooltipRect.width > viewport.width - 8) {
-      needsHorizontalFlip = true
-    }
+      // Default positioning: 36px right, 24px down (top-left corner of tooltip)
+      let top = cursorY + 24
+      let left = cursorX + 36
 
-    // Check bottom edge
-    if (top + tooltipRect.height > viewport.height - 8) {
-      needsVerticalFlip = true
-    }
+      // Check if tooltip would go offscreen and adjust accordingly
+      let needsHorizontalFlip = false
+      let needsVerticalFlip = false
 
-    // Apply flips based on which edges would be exceeded
-    if (needsHorizontalFlip) {
-      // Move to left side: 36px left of cursor
-      left = cursorX - tooltipRect.width - 36
-    }
+      // Check right edge
+      if (left + tooltipRect.width > viewport.width - 8) {
+        needsHorizontalFlip = true
+      }
 
-    if (needsVerticalFlip) {
-      // Move to top side: 24px up from cursor
-      top = cursorY - tooltipRect.height - 24
-    }
+      // Check bottom edge
+      if (top + tooltipRect.height > viewport.height - 8) {
+        needsVerticalFlip = true
+      }
 
-    // Final boundary check to ensure tooltip stays within viewport
-    if (left < 8) left = 8
-    if (left + tooltipRect.width > viewport.width - 8) {
-      left = viewport.width - tooltipRect.width - 8
-    }
-    if (top < 8) top = 8
-    if (top + tooltipRect.height > viewport.height - 8) {
-      top = viewport.height - tooltipRect.height - 8
-    }
+      // Apply flips based on which edges would be exceeded
+      if (needsHorizontalFlip) {
+        // Move to left side: 36px left of cursor
+        left = cursorX - tooltipRect.width - 36
+      }
 
-    tooltipStyle.value = {
-      position: 'fixed',
-      top: `${top}px`,
-      left: `${left}px`,
-      zIndex: 9999
-    }
+      if (needsVerticalFlip) {
+        // Move to top side: 24px up from cursor
+        top = cursorY - tooltipRect.height - 24
+      }
+
+      // Final boundary check to ensure tooltip stays within viewport
+      if (left < 8) left = 8
+      if (left + tooltipRect.width > viewport.width - 8) {
+        left = viewport.width - tooltipRect.width - 8
+      }
+      if (top < 8) top = 8
+      if (top + tooltipRect.height > viewport.height - 8) {
+        top = viewport.height - tooltipRect.height - 8
+      }
+
+      // Set the final position
+      tooltipStyle.value = {
+        position: 'fixed',
+        top: `${top}px`,
+        left: `${left}px`,
+        zIndex: 9999
+      }
+
+      // Show tooltip after positioning is complete
+      tooltip.style.opacity = ''
+      tooltip.style.visibility = ''
+    }, 0) // Use setTimeout to ensure content is fully rendered
   })
 }
 
