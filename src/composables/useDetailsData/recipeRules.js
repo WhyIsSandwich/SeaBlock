@@ -98,7 +98,7 @@ export const recipeRules = [
         )
         .map(technology => ({ name: technology.name, type: 'technology' }))
       console.log(unlockTechnologies)
-      return { items: unlockTechnologies }
+      return { items: unlockTechnologies, type: 'unlock_technologies' }
     },
     condition: data => data.recipe?.name !== undefined
   }

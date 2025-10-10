@@ -27,6 +27,11 @@
       </div>
     </div>
   </template>
+  <template v-else-if="section.type === 'unlock_technologies'">
+    <div :class="$style.section">
+      <h4 :class="$style.sectionTitle">{{ section.label }}</h4>
+    </div>
+  </template>
   <template v-else-if="section.type === 'crafting_time'">
     <div :class="$style.section">🕛{{ section.statistics[0]?.value }} s Crafting time</div>
   </template>
