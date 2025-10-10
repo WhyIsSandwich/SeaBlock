@@ -187,16 +187,8 @@ export default {
       }
       return item.label?.replace(/{{item_name}}/g, localisedName)
     },
-    handleItemClick(item) {
-      // Emit both events for compatibility
-      this.$emit('select-item', {
-        type: item.type,
-        name: item.name
-      })
-      this.$emit('item-selected', {
-        type: item.type,
-        name: item.name
-      })
+    handleItemClick(_item) {
+      // No need to emit - IconButton handles this directly via provide/inject
     },
     getItemsContainerClass() {
       if (this.isGridLayout) {

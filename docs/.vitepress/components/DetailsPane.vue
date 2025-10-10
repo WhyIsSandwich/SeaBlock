@@ -282,9 +282,7 @@ const props = defineProps({
 
 // Emits
 const emit = defineEmits([
-  'select-item',
   'toggle-animation-pause',
-  'item-selected',
   'navigate-back',
   'navigate-forward',
   'toggle-history',
@@ -298,10 +296,6 @@ const selectedItem = computed(() => {
   }
   return createUnifiedSelectionObject(props.type, props.name)
 })
-
-function handleItemSelection(item) {
-  emit('select-item', item.type, item.name)
-}
 
 const itemTypeLabel = computed(() => {
   // todo sort the ordering to match in game ordering

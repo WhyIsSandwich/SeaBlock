@@ -8,8 +8,8 @@
     position="top"
     :delay="300"
     :auto-pin-delay="2000"
-    @select-item="emit('click', $event)"
-    @item-selected="emit('click', $event)"
+    @select-item="onSelectItem"
+    @item-selected="onItemSelected"
   >
     <div
       :class="[
@@ -60,10 +60,14 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, inject } from 'vue'
 
 import SpriteIcon from './SpriteIcon.vue'
 import Tooltip from './Tooltip.vue'
+
+// Inject event handlers from parent components
+const onSelectItem = inject('onSelectItem', null)
+const onItemSelected = inject('onItemSelected', null)
 
 // Props
 const props = defineProps({
@@ -152,7 +156,12 @@ const resolvedTitle = computed(() => {
 // Methods
 function handleClick() {
   if (props.clickable && !props.isEmpty) {
-    emit('click')
+    // Use injected handlers if available, otherwise emit for backward compatibility
+    if (onSelectItem) {
+      onSelectItem(props.type, props.name)
+    } else {
+      emit('click')
+    }
   }
 }
 </script>

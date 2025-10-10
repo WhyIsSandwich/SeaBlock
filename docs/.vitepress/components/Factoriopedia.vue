@@ -91,7 +91,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, nextTick, provide } from 'vue'
 
 import { useUnifiedObjects, useFactorioData } from '../../../src/index.js'
 import { useFactorioGrid } from '../../../src/composables/useFactorioGrid.js'
@@ -391,6 +391,10 @@ function selectItem(type, name, data = null) {
     addToMRU(unifiedObject)
   }
 }
+
+// Provide event handlers to child components
+provide('onSelectItem', selectItem)
+provide('onItemSelected', selectItem)
 
 // Handle keyboard navigation
 function handleKeydown(event) {

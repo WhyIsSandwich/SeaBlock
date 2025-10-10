@@ -72,8 +72,6 @@
                     :key="`${section.type}-${sectionIndex}`"
                     :show-tooltip="false"
                     :section="section"
-                    @select-item="emit('select-item', $event)"
-                    @item-selected="emit('item-selected', $event)"
                   />
                 </div>
               </template>
@@ -96,9 +94,6 @@ import { useTooltipData } from '../../../src/composables/useTooltipData.js'
 
 import DetailsPaneSection from './DetailsPaneSection.vue'
 import Statistics from './Statistics.vue'
-
-// Emits
-const emit = defineEmits(['select-item', 'item-selected'])
 
 // Props
 const props = defineProps({
@@ -169,7 +164,7 @@ function positionTooltip() {
 
     // Allow natural sizing but ensure content is rendered first
     // Force a reflow to get accurate dimensions after content loads
-    tooltip.offsetHeight
+    void tooltip.offsetHeight
 
     // Wait for content to fully render and get final dimensions
     setTimeout(() => {
