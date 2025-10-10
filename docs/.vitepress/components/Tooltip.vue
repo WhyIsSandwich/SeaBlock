@@ -28,7 +28,7 @@
           <div class="tooltip-content">
             <div v-if="isLoading" class="tooltip-loading">Loading...</div>
             <template v-else>
-              <template :key="index" v-for="(tooltipData, index) in tooltipDatas">
+              <template v-for="(tooltipData, index) in tooltipDatas" :key="index">
                 <div class="tooltip-header">
                   <div
                     v-if="tooltipData?.title"
@@ -68,9 +68,9 @@
                 <!-- Render sections using DetailsPaneSection components -->
                 <div v-if="tooltipData?.sections?.length" class="tooltip-sections">
                   <DetailsPaneSection
-                    v-for="(section, index) in tooltipData.sections"
+                    v-for="(section, sectionIndex) in tooltipData.sections"
+                    :key="`${section.type}-${sectionIndex}`"
                     :show-tooltip="false"
-                    :key="`${section.type}-${index}`"
                     :section="section"
                     @select-item="emit('select-item', $event)"
                     @item-selected="emit('item-selected', $event)"
@@ -92,9 +92,10 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 
+import { useTooltipData } from '../../../src/composables/useTooltipData.js'
+
 import DetailsPaneSection from './DetailsPaneSection.vue'
 import Statistics from './Statistics.vue'
-import { useTooltipData } from '../../../src/composables/useTooltipData.js'
 
 // Emits
 const emit = defineEmits(['select-item', 'item-selected'])
@@ -109,31 +110,21 @@ const props = defineProps({
     type: String,
     default: 'item' // 'items', 'recipes', 'fluids', 'buildings', etc.
   },
-  position: {
-    type: String,
-    default: 'top',
-    validator: value => ['top', 'bottom', 'left', 'right'].includes(value)
-  },
   delay: {
     type: Number,
     default: 300
-  },
-  autoPinDelay: {
-    type: Number,
-    default: 10000 // Auto-pin after 2 seconds of hovering
   }
 })
 
 // Reactive state
 const isVisible = ref(false)
-const isPinned = ref(false)
 const tooltipDatas = ref(null)
 const tooltipStyle = ref({})
 const showTimeout = ref(null)
 const hideTimeout = ref(null)
-const pinTimeout = ref(null)
 const isLoading = ref(false)
 const hasError = ref(false)
+const mousePosition = ref({ x: 0, y: 0 })
 
 // Generate unique tooltip ID
 const tooltipId = computed(
@@ -151,69 +142,72 @@ const shouldShowTooltips = computed(() => {
 
 // Tooltip classes
 const tooltipClasses = computed(() => ({
-  [`tooltip-${props.position}`]: true,
-  'tooltip-visible': isVisible.value,
-  'tooltip-pinned': isPinned.value
+  'tooltip-visible': isVisible.value
 }))
 
 // Use shared tooltip data composable
-const {
-  tooltipsData,
-  isLoadingTooltips,
-  hasLoadError,
-  hasTooltipsData,
-  loadTooltipsData,
-  getTooltipData
-} = useTooltipData()
+const { isLoadingTooltips, hasTooltipsData, loadTooltipsData, getTooltipData } = useTooltipData()
 
 // Get tooltip data using the composable
 function getTooltipDataForItem(category = props.category, itemId = props.itemId) {
   return getTooltipData(category, itemId)
 }
 
-// Position tooltip relative to trigger element
+// Position tooltip relative to cursor (Factorio-style)
 function positionTooltip() {
   nextTick(() => {
-    const trigger = document.querySelector(`[aria-describedby="${tooltipId.value}"]`)
     const tooltip = document.getElementById(tooltipId.value)
 
-    console.log('Positioning tooltip:', { trigger, tooltip, tooltipId: tooltipId.value })
-
-    if (!trigger || !tooltip) {
-      console.log('Missing trigger or tooltip element')
+    if (!tooltip) {
+      console.log('Missing tooltip element')
       return
     }
 
-    const triggerRect = trigger.getBoundingClientRect()
     const tooltipRect = tooltip.getBoundingClientRect()
     const viewport = {
       width: window.innerWidth,
       height: window.innerHeight
     }
 
-    let top = 0
-    let left = 0
+    // Determine which quadrant the cursor is in
+    const cursorX = mousePosition.value.x
+    const cursorY = mousePosition.value.y
+    const centerX = viewport.width / 2
+    const centerY = viewport.height / 2
 
-    switch (props.position) {
-      case 'top':
-        top = triggerRect.top - tooltipRect.height - 8
-        left = triggerRect.left + (triggerRect.width - tooltipRect.width) / 2
-        break
-      case 'bottom':
-        top = triggerRect.bottom + 8
-        left = triggerRect.left + (triggerRect.width - tooltipRect.width) / 2
-        break
-      case 'left':
-        top = triggerRect.top + (triggerRect.height - tooltipRect.height) / 2
-        left = triggerRect.left - tooltipRect.width - 8
-        break
-      case 'right':
-        top = triggerRect.top + (triggerRect.height - tooltipRect.height) / 2
-        left = triggerRect.right + 8
-        break
+    const isRightHalf = cursorX > centerX
+    const isBottomHalf = cursorY > centerY
+
+    // Default positioning: 36px right, 24px down (top-left corner of tooltip)
+    let top = cursorY + 24
+    let left = cursorX + 36
+
+    // Check if tooltip would go offscreen and adjust accordingly
+    let needsHorizontalFlip = false
+    let needsVerticalFlip = false
+
+    // Check right edge
+    if (left + tooltipRect.width > viewport.width - 8) {
+      needsHorizontalFlip = true
     }
 
-    // Keep tooltip within viewport
+    // Check bottom edge
+    if (top + tooltipRect.height > viewport.height - 8) {
+      needsVerticalFlip = true
+    }
+
+    // Apply flips based on which edges would be exceeded
+    if (needsHorizontalFlip) {
+      // Move to left side: 36px left of cursor
+      left = cursorX - tooltipRect.width - 36
+    }
+
+    if (needsVerticalFlip) {
+      // Move to top side: 24px up from cursor
+      top = cursorY - tooltipRect.height - 24
+    }
+
+    // Final boundary check to ensure tooltip stays within viewport
     if (left < 8) left = 8
     if (left + tooltipRect.width > viewport.width - 8) {
       left = viewport.width - tooltipRect.width - 8
@@ -221,22 +215,6 @@ function positionTooltip() {
     if (top < 8) top = 8
     if (top + tooltipRect.height > viewport.height - 8) {
       top = viewport.height - tooltipRect.height - 8
-    }
-
-    // Adjust positioning for touch devices
-    if (isTouchDevice()) {
-      // On touch devices, prefer positioning that doesn't cover the trigger
-      const touchOffset = 20
-      if (props.position === 'top' && top < triggerRect.bottom + touchOffset) {
-        // Move to bottom if top would cover trigger
-        top = triggerRect.bottom + touchOffset
-      } else if (
-        props.position === 'bottom' &&
-        top + tooltipRect.height > triggerRect.top - touchOffset
-      ) {
-        // Move to top if bottom would cover trigger
-        top = triggerRect.top - tooltipRect.height - touchOffset
-      }
     }
 
     tooltipStyle.value = {
@@ -248,29 +226,9 @@ function positionTooltip() {
   })
 }
 
-// Start auto-pin timer
-function startAutoPinTimer() {
-  if (pinTimeout.value) {
-    clearTimeout(pinTimeout.value)
-  }
-  // Temporarily disabled auto-pin functionality
-  // pinTimeout.value = setTimeout(() => {
-  //   if (isVisible.value && !isPinned.value) {
-  //     console.log('Auto-pinning tooltip after', props.autoPinDelay, 'ms')
-  //     isPinned.value = true
-  //     // Clear any hide timeout when auto-pinning
-  //     if (hideTimeout.value) {
-  //       clearTimeout(hideTimeout.value)
-  //       hideTimeout.value = null
-  //     }
-  //   }
-  // }, props.autoPinDelay)
-}
-
 // Close tooltip
 function closeTooltip() {
   isVisible.value = false
-  isPinned.value = false
   tooltipDatas.value = null
   isLoading.value = false
   hasError.value = false
@@ -283,10 +241,6 @@ function closeTooltip() {
   if (hideTimeout.value) {
     clearTimeout(hideTimeout.value)
     hideTimeout.value = null
-  }
-  if (pinTimeout.value) {
-    clearTimeout(pinTimeout.value)
-    pinTimeout.value = null
   }
 }
 
@@ -304,10 +258,6 @@ function showTooltip() {
   if (hideTimeout.value) {
     clearTimeout(hideTimeout.value)
     hideTimeout.value = null
-  }
-  if (pinTimeout.value) {
-    clearTimeout(pinTimeout.value)
-    pinTimeout.value = null
   }
 
   showTimeout.value = setTimeout(async () => {
@@ -357,9 +307,6 @@ function showTooltip() {
 
         // Announce to screen readers
         announceTooltip(data?.title || props.itemId)
-
-        // Start auto-pin timer
-        startAutoPinTimer()
       } else {
         // Show fallback message when no data is found
         tooltipDatas.value = [
@@ -372,9 +319,6 @@ function showTooltip() {
         isVisible.value = true
         console.log('No tooltip data found, showing fallback')
         positionTooltip()
-
-        // Start auto-pin timer
-        startAutoPinTimer()
       }
     } catch (error) {
       console.error('Error loading tooltip data:', error)
@@ -388,9 +332,6 @@ function showTooltip() {
       ]
       isVisible.value = true
       positionTooltip()
-
-      // Start auto-pin timer
-      startAutoPinTimer()
     } finally {
       isLoading.value = false
     }
@@ -406,22 +347,12 @@ function hideTooltip() {
   if (hideTimeout.value) {
     clearTimeout(hideTimeout.value)
   }
-  if (pinTimeout.value) {
-    clearTimeout(pinTimeout.value)
-    pinTimeout.value = null
-  }
-
-  // Don't hide if pinned
-  if (isPinned.value) {
-    return
-  }
 
   hideTimeout.value = setTimeout(() => {
     isVisible.value = false
     tooltipDatas.value = null
     isLoading.value = false
     hasError.value = false
-    isPinned.value = false // Reset pin state when hiding
   }, 100)
 }
 
@@ -436,43 +367,7 @@ function handleTooltipMouseEnter() {
 
 // Handle mouse leave on tooltip itself
 function handleTooltipMouseLeave() {
-  // Only hide if not pinned
-  if (!isPinned.value) {
-    hideTooltip()
-  }
-}
-
-// Handle keyboard events on tooltip itself
-function handleTooltipKeydown(event) {
-  // Escape to close tooltip
-  if (event.key === 'Escape') {
-    event.preventDefault()
-    closeTooltip()
-  }
-  // Tab to move focus back to trigger
-  else if (event.key === 'Tab') {
-    // Let the browser handle tab navigation naturally
-    // The tooltip will close on blur
-  }
-}
-
-// Handle touch start on tooltip
-function handleTooltipTouchStart(_event) {
-  // Don't prevent default - let interactions work normally
-  // Just keep tooltip pinned on touch
-  if (hideTimeout.value) {
-    clearTimeout(hideTimeout.value)
-    hideTimeout.value = null
-  }
-}
-
-// Handle touch end on tooltip
-function handleTooltipTouchEnd(_event) {
-  // Don't prevent default - let interactions work normally
-  // Just keep tooltip pinned on touch devices
-  if (!isPinned.value) {
-    isPinned.value = true
-  }
+  hideTooltip()
 }
 
 // Announce tooltip to screen readers
@@ -503,86 +398,11 @@ function handleResize() {
   }
 }
 
-// Handle click events on trigger element
-function handleTriggerClick(event) {
-  // Don't interfere with mobile devices
-  if (!shouldShowTooltips.value) {
-    return
-  }
-
-  // If tooltip is visible and pinned, close it
-  if (isVisible.value && isPinned.value) {
-    event.preventDefault()
-    closeTooltip()
-  }
-  // If tooltip is visible but not pinned, pin it
-  else if (isVisible.value && !isPinned.value) {
-    event.preventDefault()
-    isPinned.value = true
-    // Clear any hide timeout when pinning
-    if (hideTimeout.value) {
-      clearTimeout(hideTimeout.value)
-      hideTimeout.value = null
-    }
-  }
-  // If tooltip is not visible, show it (but don't prevent default to allow button clicks)
-  else if (!isVisible.value) {
-    showTooltip()
-  }
-}
-
-// Handle keyboard events on trigger element
-function handleTriggerKeydown(event) {
-  // Don't interfere with mobile devices
-  if (!shouldShowTooltips.value) {
-    return
-  }
-
-  // Enter or Space to show tooltip if not visible
-  if ((event.key === 'Enter' || event.key === ' ') && !isVisible.value) {
-    event.preventDefault()
-    showTooltip()
-  }
-  // Escape to close tooltip if visible
-  else if (event.key === 'Escape' && isVisible.value) {
-    event.preventDefault()
-    closeTooltip()
-  }
-}
-
-// Handle touch start
-function handleTouchStart(_event) {
-  // Don't show tooltips on mobile devices
-  if (!shouldShowTooltips.value) {
-    return
-  }
-
-  // Just show tooltip if not visible
-  if (!isVisible.value) {
-    showTooltip()
-  }
-}
-
-// Handle touch end
-function handleTouchEnd(_event) {
-  // Don't show tooltips on mobile devices
-  if (!shouldShowTooltips.value) {
-    return
-  }
-
-  // Just pin tooltip on touch devices after a short delay
-  if (isVisible.value && !isPinned.value) {
-    // Use a small delay to allow the button click to process first
-    setTimeout(() => {
-      if (isVisible.value && !isPinned.value) {
-        isPinned.value = true
-        // Clear any hide timeout when pinning
-        if (hideTimeout.value) {
-          clearTimeout(hideTimeout.value)
-          hideTimeout.value = null
-        }
-      }
-    }, 100)
+// Handle mouse move to track cursor position
+function handleMouseMove(event) {
+  mousePosition.value = {
+    x: event.clientX,
+    y: event.clientY
   }
 }
 
@@ -602,6 +422,7 @@ function handleKeydown(event) {
 onMounted(() => {
   window.addEventListener('resize', handleResize)
   document.addEventListener('keydown', handleKeydown)
+  document.addEventListener('mousemove', handleMouseMove)
   // Don't load tooltips data on mount - only load when tooltip is shown
 })
 
@@ -612,11 +433,9 @@ onUnmounted(() => {
   if (hideTimeout.value) {
     clearTimeout(hideTimeout.value)
   }
-  if (pinTimeout.value) {
-    clearTimeout(pinTimeout.value)
-  }
   window.removeEventListener('resize', handleResize)
   document.removeEventListener('keydown', handleKeydown)
+  document.removeEventListener('mousemove', handleMouseMove)
 })
 </script>
 
@@ -661,17 +480,6 @@ onUnmounted(() => {
 .tooltip-visible {
   opacity: 1;
   transform: translateY(0);
-}
-
-.tooltip-pinned {
-  border-color: var(--vp-c-brand-1);
-  box-shadow:
-    0 4px 12px rgba(0, 0, 0, 0.15),
-    0 0 0 1px var(--vp-c-brand-1);
-}
-
-.tooltip-pinned .tooltip-close-button {
-  color: var(--vp-c-brand-1);
 }
 
 .tooltip-content {
@@ -811,53 +619,6 @@ onUnmounted(() => {
   flex: 1;
   word-wrap: break-word;
   overflow-wrap: break-word;
-}
-
-.tooltip-arrow {
-  position: absolute;
-  width: 0;
-  height: 0;
-  border: 6px solid transparent;
-}
-
-.tooltip-top .tooltip-arrow {
-  bottom: -6px;
-  left: 50%;
-  transform: translateX(-50%);
-  border-top-color: #444444;
-}
-
-.tooltip-bottom .tooltip-arrow {
-  top: -6px;
-  left: 50%;
-  transform: translateX(-50%);
-  border-bottom-color: #444444;
-}
-
-.tooltip-left .tooltip-arrow {
-  right: -6px;
-  top: 50%;
-  transform: translateY(-50%);
-  border-left-color: #444444;
-}
-
-.tooltip-right .tooltip-arrow {
-  left: -6px;
-  top: 50%;
-  transform: translateY(-50%);
-  border-right-color: #444444;
-}
-
-/* Pinned tooltip styling */
-.tooltip-pinned {
-  border-color: #666666;
-  box-shadow:
-    0 4px 12px rgba(0, 0, 0, 0.6),
-    0 0 0 1px #666666;
-}
-
-.tooltip-pinned .tooltip-close-button {
-  color: #cccccc;
 }
 
 .tooltip-loading {
