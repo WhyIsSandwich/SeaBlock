@@ -524,7 +524,6 @@ onUnmounted(() => {
 .tooltip-trigger {
   display: inline;
   cursor: help;
-  border-bottom: 1px dotted currentColor;
   text-decoration: none;
 }
 
