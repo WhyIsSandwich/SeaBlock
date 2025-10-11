@@ -15,12 +15,10 @@
         <div
           v-if="isVisible && shouldShowTooltips"
           :id="tooltipId"
-          class="tooltip"
           :class="tooltipClasses"
           :style="tooltipStyle"
           role="tooltip"
           :aria-hidden="!isVisible"
-          :data-debug="`visible: ${isVisible}, data: ${!!tooltipDatas}`"
           tabindex="0"
           @mouseenter="handleTooltipMouseEnter"
           @mouseleave="handleTooltipMouseLeave"
@@ -137,7 +135,8 @@ const shouldShowTooltips = computed(() => {
 
 // Tooltip classes
 const tooltipClasses = computed(() => ({
-  'tooltip-visible': isVisible.value
+  'tooltip-visible': isVisible.value,
+  tooltip: true
 }))
 
 // Use shared tooltip data composable
