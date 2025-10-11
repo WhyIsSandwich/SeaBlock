@@ -26,7 +26,7 @@ export const itemRules = [
     shownInTooltip: true,
     getValue: (data, context) => {
       const items = Object.values(context.factorioData.item).filter(item =>
-        item.rocket_launch_products?.some(product => product.name === data.item?.name)
+        item.rocket_launch_products?.some(product => product.name === data.iteem?.name)
       )
       const products = items.map(item => item.name)
       return products.map(product => `[item=${product}] `).join(', ')
@@ -56,7 +56,7 @@ export const itemRules = [
     type: 'statistics',
     forType: 'item',
     shownInTooltip: true,
-    getValue: data => '[item=' + data.item?.burnt_result + ']',
+    getValue: data => `[item=${data.item?.burnt_result}]`,
     condition: data => data.item?.burnt_result !== undefined
   },
   {
@@ -74,8 +74,23 @@ export const itemRules = [
     type: 'statistics',
     forType: 'item',
     shownInTooltip: true,
-    getValue: data => data.item?.resistances,
-    condition: data => data.item?.resistances !== undefined
+    getValue: (data, context) => {
+      const damageTypes = Object.values(context.factorioData['damage-type'])
+      return {
+        children: data.item?.resistances.map(resistance => {
+          const damageType = damageTypes.find(dt => dt.name === resistance.type)
+          const damageTypeLabel = damageType?.displayName || resistance.type
+          let value = ''
+          if (resistance.percent !== undefined) {
+            value = `${resistance.percent}%`
+          } else if (resistance.decrease !== undefined) {
+            value = `${resistance.decrease}`
+          }
+          return { label: damageTypeLabel, value }
+        })
+      }
+    },
+    condition: data => data.item?.resistances?.length > 0
   },
   {
     name: labels.inventory_size_bonus,

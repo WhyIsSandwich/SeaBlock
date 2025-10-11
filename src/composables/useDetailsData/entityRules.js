@@ -317,9 +317,20 @@ export const entityRules = [
     order: 29,
     type: 'statistics',
     shownInTooltip: false,
-    getValue: data => {
+    getValue: (data, context) => {
+      const damageTypes = Object.values(context.factorioData['damage-type'])
       return {
-        children: data.entity?.resistances.map(a => ({ label: a.type, value: `${a.percent}%` }))
+        children: data.entity?.resistances.map(resistance => {
+          const damageType = damageTypes.find(dt => dt.name === resistance.type)
+          const damageTypeLabel = damageType?.displayName || resistance.type
+          let value = ''
+          if (resistance.percent !== undefined) {
+            value = `${resistance.percent}%`
+          } else if (resistance.decrease !== undefined) {
+            value = `${resistance.decrease}`
+          }
+          return { label: damageTypeLabel, value }
+        })
       }
     },
     condition: data => data.entity?.resistances?.length > 0
