@@ -30,6 +30,44 @@
   <template v-else-if="section.type === 'unlock_technologies'">
     <div :class="$style.section">
       <h4 :class="$style.sectionTitle">{{ section.label }}</h4>
+      <div v-if="section.items?.length > 0" :class="$style.unlockTechnologies">
+        <div
+          v-for="item in section.items"
+          :key="`${item.type}-${item.name}`"
+          :class="$style.technologyEntry"
+        >
+          <!-- Technology Icon with Tooltip (3 boxes high) -->
+          <div :class="$style.technologyIcon" @click="handleItemClick(item)">
+            <IconButton
+              :type="item.type"
+              :name="item.name"
+              :size="32"
+              :clickable="true"
+              :show-tooltip="showTooltip"
+              @click="handleItemClick(item)"
+            />
+          </div>
+
+          <!-- Technology Level (if prototype name ends with a number) -->
+          <div :class="$style.technologyLevel">
+            {{ getTechnologyLevel(item.name) }}
+          </div>
+
+          <!-- Science Pack Icons / Unlock Requirements -->
+          <div :class="$style.sciencePacks">
+            <IconButton
+              v-for="pack in getSciencePacks(item.name)"
+              :key="pack.name"
+              :type="'item'"
+              :name="pack.name"
+              :size="16"
+              :clickable="true"
+              :show-tooltip="showTooltip"
+              @click="handleItemClick(pack)"
+            />
+          </div>
+        </div>
+      </div>
     </div>
   </template>
   <template v-else-if="section.type === 'crafting_time'">
@@ -253,6 +291,16 @@ export default {
       if (this.widthCheckInterval) {
         clearInterval(this.widthCheckInterval)
       }
+    },
+    getTechnologyLevel(techName) {
+      // Check if technology name ends with a number (multi-level research)
+      const match = techName.match(/(\d+)$/)
+      return match ? match[1] : ''
+    },
+    getSciencePacks(techName) {
+      // This would need to be implemented based on your data structure
+      // For now, return empty array - you'll need to implement this based on your technology data
+      return []
     }
   }
 }
@@ -343,5 +391,66 @@ export default {
   color: #ffffff;
   font-size: 13px;
   flex: 1;
+}
+
+/* Unlock Technologies Styles */
+.unlockTechnologies {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.technologyEntry {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px;
+  background: #1f1f1f;
+  border: 1px solid #3a3a3a;
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+}
+
+.technologyEntry:hover {
+  background: #2a2a2a;
+}
+
+.technologyIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  background: #3a3a3a;
+  border: 1px solid #4a4a4a;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.technologyIcon:hover {
+  background: #4a4a4a;
+  border-color: #6a6a6a;
+  box-shadow: 0 0 8px rgba(255, 200, 100, 0.3);
+}
+
+.technologyLevel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 24px;
+  background: #2a2a2a;
+  border: 1px solid #4a4a4a;
+  border-radius: 2px;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.sciencePacks {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
 }
 </style>
