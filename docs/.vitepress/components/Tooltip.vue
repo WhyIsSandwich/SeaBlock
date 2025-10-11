@@ -107,7 +107,7 @@ const props = defineProps({
   },
   delay: {
     type: Number,
-    default: 300
+    default: 0
   }
 })
 
@@ -174,14 +174,9 @@ function positionTooltip() {
         height: window.innerHeight
       }
 
-      // Determine which quadrant the cursor is in
+      // Always position relative to current cursor position
       const cursorX = mousePosition.value.x
       const cursorY = mousePosition.value.y
-      const centerX = viewport.width / 2
-      const centerY = viewport.height / 2
-
-      const isRightHalf = cursorX > centerX
-      const isBottomHalf = cursorY > centerY
 
       // Default positioning: 36px right, 24px down (top-left corner of tooltip)
       let top = cursorY + 24
@@ -235,6 +230,72 @@ function positionTooltip() {
       tooltip.style.visibility = ''
     }, 0) // Use setTimeout to ensure content is fully rendered
   })
+}
+
+// Update tooltip position without hiding/showing (for cursor following)
+function updateTooltipPosition() {
+  const tooltip = document.getElementById(tooltipId.value)
+
+  if (!tooltip || !isVisible.value) {
+    return
+  }
+
+  const tooltipRect = tooltip.getBoundingClientRect()
+  const viewport = {
+    width: window.innerWidth,
+    height: window.innerHeight
+  }
+
+  // Always position relative to current cursor position
+  const cursorX = mousePosition.value.x
+  const cursorY = mousePosition.value.y
+
+  // Default positioning: 36px right, 24px down (top-left corner of tooltip)
+  let top = cursorY + 24
+  let left = cursorX + 36
+
+  // Check if tooltip would go offscreen and adjust accordingly
+  let needsHorizontalFlip = false
+  let needsVerticalFlip = false
+
+  // Check right edge
+  if (left + tooltipRect.width > viewport.width - 8) {
+    needsHorizontalFlip = true
+  }
+
+  // Check bottom edge
+  if (top + tooltipRect.height > viewport.height - 8) {
+    needsVerticalFlip = true
+  }
+
+  // Apply flips based on which edges would be exceeded
+  if (needsHorizontalFlip) {
+    // Move to left side: 36px left of cursor
+    left = cursorX - tooltipRect.width - 36
+  }
+
+  if (needsVerticalFlip) {
+    // Move to top side: 24px up from cursor
+    top = cursorY - tooltipRect.height - 24
+  }
+
+  // Final boundary check to ensure tooltip stays within viewport
+  if (left < 8) left = 8
+  if (left + tooltipRect.width > viewport.width - 8) {
+    left = viewport.width - tooltipRect.width - 8
+  }
+  if (top < 8) top = 8
+  if (top + tooltipRect.height > viewport.height - 8) {
+    top = viewport.height - tooltipRect.height - 8
+  }
+
+  // Update position smoothly without hiding
+  tooltipStyle.value = {
+    position: 'fixed',
+    top: `${top}px`,
+    left: `${left}px`,
+    zIndex: 9999
+  }
 }
 
 // Close tooltip
@@ -414,6 +475,11 @@ function handleMouseMove(event) {
   mousePosition.value = {
     x: event.clientX,
     y: event.clientY
+  }
+
+  // Reposition tooltip if it's visible (without hiding/showing)
+  if (isVisible.value) {
+    updateTooltipPosition()
   }
 }
 

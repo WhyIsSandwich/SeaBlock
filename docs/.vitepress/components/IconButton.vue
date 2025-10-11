@@ -5,11 +5,6 @@
     v-if="!isEmpty && type && name"
     :item-id="name"
     :category="type"
-    position="top"
-    :delay="300"
-    :auto-pin-delay="2000"
-    @select-item="onSelectItem"
-    @item-selected="onItemSelected"
   >
     <!-- Use slot if provided, otherwise use default container -->
     <slot
