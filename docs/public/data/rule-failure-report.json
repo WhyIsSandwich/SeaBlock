@@ -1,9 +1,9 @@
 {
-  "generated": "2025-10-11T10:12:22.370Z",
+  "generated": "2025-10-11T16:57:33.316Z",
   "summary": {
     "totalPrototypes": 3404,
     "totalErrors": 0,
-    "totalRulesExecuted": 2821,
+    "totalRulesExecuted": 2845,
     "totalRulesFailed": 0,
     "successRate": "100.0"
   },
@@ -65,11 +65,11 @@
       "failed": 0
     },
     "entity": {
-      "executed": 404,
+      "executed": 426,
       "failed": 0
     },
     "item": {
-      "executed": 442,
+      "executed": 444,
       "failed": 0
     },
     "recipe": {

@@ -46,7 +46,14 @@ export const sectionTypes = new Proxy(
     allows_placement: 'Allows placement',
     burned_in: 'Burned in',
     can_mine: 'Can mine',
-    can_extract: 'Can extract from'
+    can_extract: 'Can extract from',
+    mined_by: 'Mined by',
+    launches: 'Launches',
+    launched_by: 'Launched by',
+    received_by: 'Received by',
+    spawns_container: 'Spawns container',
+    container_spawned_by: 'Container spawned by',
+    gathered_from: 'Gathered from'
   },
   {
     get(target, prop) {
@@ -109,6 +116,12 @@ export const labels = new Proxy(
     equipment_grid_size: 'Equipment Grid Size',
     max_input: 'Max Input',
     max_output: 'Max Output',
+    rocket_launch_product: 'Rocket Launch Product',
+    obtained_from_rocket_launch: 'Obtained from Rocket Launch',
+    weight: 'Weight',
+    energy_capacty: 'Energy Capacity',
+    minimum_operational_time: 'Minimum Operational Time',
+    maximum_flying_reach: 'Maximum Flying Reach',
 
     // Item labels
     nuclear_fuel: 'Nuclear Fuel',

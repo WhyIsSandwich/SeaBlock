@@ -557,8 +557,49 @@ export const entityRules = [
       const chemicalFuels = Object.values(context.factorioData.item)
         .filter(item => item.fuel_category === 'chemical')
         .map(item => ({ name: item.name, type: 'item' }))
+      const { energy_per_movement, energy_per_rotation, extension_speed, rotation_speed } =
+        data.entity
+
+      const energyPerMovement = parseEnergyString(energy_per_movement)
+      const energyPerRotation = parseEnergyString(energy_per_rotation)
+
+      const energyUsage =
+        (energyPerMovement.normalizedValue * extension_speed +
+          energyPerRotation.normalizedValue * rotation_speed) *
+        60
+      const formattedEnergyConsumption = formatEnergyValue(energyUsage, 'W')
+      return {
+        statistics: [
+          {
+            label: labels.max_consumption,
+            value: formattedEnergyConsumption
+          }
+        ],
+        items: chemicalFuels,
+        itemsLabel: 'Accepted fuel',
+        itemsType: 'grid'
+      }
+    },
+    condition: data =>
+      data.entity?.type === 'inserter' &&
+      data.entity?.energy_source?.type === 'burner' &&
+      data.entity?.energy_source?.fuel_categories?.includes('chemical')
+  },
+  {
+    name: sectionTypes.burnable_fuel,
+    order: 7,
+    type: 'section',
+    forType: 'entity',
+    shownInTooltip: true,
+    getValue: (data, context) => {
+      const chemicalFuels = Object.values(context.factorioData.item)
+        .filter(item => item.fuel_category === 'chemical')
+        .map(item => ({ name: item.name, type: 'item' }))
       const energyConsumption = parseEnergyString(
-        data.entity?.energy_consumption || data.entity?.consumption || data.entity?.max_power
+        data.entity?.energy_consumption ||
+          data.entity?.consumption ||
+          data.entity?.max_power ||
+          data.entity?.energy_usage
       )
       const formattedEnergyConsumption = formatEnergyValue(energyConsumption.normalizedValue, 'W')
       return {
@@ -574,6 +615,7 @@ export const entityRules = [
       }
     },
     condition: data =>
+      data.entity.type != 'inserter' &&
       data.entity?.energy_source?.type === 'burner' &&
       data.entity?.energy_source?.fuel_categories?.includes('chemical')
   },
