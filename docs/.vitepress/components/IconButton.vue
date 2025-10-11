@@ -11,7 +11,9 @@
     @select-item="onSelectItem"
     @item-selected="onItemSelected"
   >
-    <div
+    <!-- Use slot if provided, otherwise use default container -->
+    <slot
+      name="container"
       :class="[
         $style.iconButton,
         {
@@ -21,42 +23,34 @@
         }
       ]"
       :title="resolvedTitle"
-      @click="handleClick"
-    >
-      <SpriteIcon
-        v-if="!isEmpty && resolvedSpriteKey"
-        :sprite-key="resolvedSpriteKey"
-        :size="size"
-        :title="resolvedTitle"
-      />
-      <span v-if="label" :class="$style.iconLabel">
-        {{ label }}
-      </span>
-    </div>
-  </component>
-  <div
-    v-else
-    :class="[
-      $style.iconButton,
-      {
-        [$style.selected]: isSelected,
-        [$style.clickable]: clickable,
-        [$style.emptyCell]: isEmpty
-      }
-    ]"
-    :title="resolvedTitle"
-    @click="handleClick"
-  >
-    <SpriteIcon
-      v-if="!isEmpty && resolvedSpriteKey"
+      :click="handleClick"
       :sprite-key="resolvedSpriteKey"
-      :size="size"
-      :title="resolvedTitle"
-    />
-    <span v-if="label" :class="$style.iconLabel">
-      {{ label }}
-    </span>
-  </div>
+      :label="label"
+    >
+      <div
+        :class="[
+          $style.iconButton,
+          {
+            [$style.selected]: isSelected,
+            [$style.clickable]: clickable,
+            [$style.emptyCell]: isEmpty
+          }
+        ]"
+        :title="resolvedTitle"
+        @click="handleClick"
+      >
+        <SpriteIcon
+          v-if="!isEmpty && resolvedSpriteKey"
+          :sprite-key="resolvedSpriteKey"
+          :size="size"
+          :title="resolvedTitle"
+        />
+        <span v-if="label" :class="$style.iconLabel">
+          {{ label }}
+        </span>
+      </div>
+    </slot>
+  </component>
 </template>
 
 <script setup>

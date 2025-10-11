@@ -96,7 +96,14 @@ export const recipeRules = [
               effect => effect.type === 'unlock-recipe' && effect.recipe === data.recipe?.name
             )?.length > 0
         )
-        .map(technology => ({ name: technology.name, type: 'technology' }))
+        .map(technology => {
+          const items = technology.unit?.ingredients?.map(ingredient => ({
+            name: ingredient[0],
+            type: 'item',
+            amount: ingredient[1]
+          }))
+          return { name: technology.name, type: 'technology', items: (technology.name, items) }
+        })
       console.log(unlockTechnologies)
       return { items: unlockTechnologies, type: 'unlock_technologies' }
     },

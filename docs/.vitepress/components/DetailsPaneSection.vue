@@ -36,35 +36,46 @@
           :key="`${item.type}-${item.name}`"
           :class="$style.technologyEntry"
         >
-          <!-- Technology Icon with Tooltip (3 boxes high) -->
-          <div :class="$style.technologyIcon" @click="handleItemClick(item)">
-            <IconButton
-              :type="item.type"
-              :name="item.name"
-              :size="32"
-              :clickable="true"
-              :show-tooltip="showTooltip"
-              @click="handleItemClick(item)"
-            />
-          </div>
+          <!-- Left side: Green technology panel -->
+          <IconButton
+            :type="item.type"
+            :name="item.name"
+            :size="128"
+            :clickable="true"
+            :show-tooltip="showTooltip"
+            @click="handleItemClick(item)"
+          >
+            <template #container="{ title, click, spriteKey, containerClass }">
+              <div :class="[containerClass, $style.technologyPanel]" :title="title" @click="click">
+                <!-- Technology Icon (large, centered) -->
+                <div class="$style.technologyIconContainer">
+                  <SpriteIcon v-if="spriteKey" :sprite-key="spriteKey" :size="128" />
+                </div>
 
-          <!-- Technology Level (if prototype name ends with a number) -->
-          <div :class="$style.technologyLevel">
-            {{ getTechnologyLevel(item.name) }}
-          </div>
+                <!-- Technology Level (if prototype name ends with a number) -->
+                <div :class="$style.technologyLevel">
+                  {{ getTechnologyLevel(item.name) }}
+                </div>
+                <!-- Science Pack Icons (bottom of green panel) -->
+                <div :class="$style.sciencePacksContainer">
+                  <IconButton
+                    v-for="pack in item.items"
+                    :key="pack.name"
+                    :is="'div'"
+                    :size="16"
+                    :show-tooltip="false"
+                    :clickable="false"
+                    :name="pack.name"
+                    :type="pack.type || 'item'"
+                  />
+                </div>
+              </div>
+            </template>
+          </IconButton>
 
-          <!-- Science Pack Icons / Unlock Requirements -->
-          <div :class="$style.sciencePacks">
-            <IconButton
-              v-for="pack in getSciencePacks(item.name)"
-              :key="pack.name"
-              :type="'item'"
-              :name="pack.name"
-              :size="16"
-              :clickable="true"
-              :show-tooltip="showTooltip"
-              @click="handleItemClick(pack)"
-            />
+          <!-- Right side: Technology name -->
+          <div :class="$style.technologyName">
+            {{ getItemLabel(item) || item.name }}
           </div>
         </div>
       </div>
@@ -135,12 +146,14 @@ import { useFactorioGrid } from '../../../src/composables/useFactorioGrid.js'
 
 import IconButton from './IconButton.vue'
 import Statistics from './Statistics.vue'
+import SpriteIcon from './SpriteIcon.vue'
 
 export default {
   name: 'DetailsPaneSection',
   components: {
     IconButton,
-    Statistics
+    Statistics,
+    SpriteIcon
   },
   props: {
     section: {
@@ -296,11 +309,6 @@ export default {
       // Check if technology name ends with a number (multi-level research)
       const match = techName.match(/(\d+)$/)
       return match ? match[1] : ''
-    },
-    getSciencePacks(techName) {
-      // This would need to be implemented based on your data structure
-      // For now, return empty array - you'll need to implement this based on your technology data
-      return []
     }
   }
 }
@@ -415,42 +423,86 @@ export default {
   background: #2a2a2a;
 }
 
-.technologyIcon {
+.technologyPanel {
+  display: flex;
+  flex-direction: column;
+  padding-top: 10px;
+  width: 128px;
+  height: 180px;
+  border: 2px solid #333;
+  background: linear-gradient(135deg, #00c659 0%, #00a84d 50%, #008f41 100%);
+  border-radius: 6px;
+  box-shadow:
+    0 4px 8px rgba(0, 0, 0, 0.4),
+    0 2px 4px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+  position: relative;
+  cursor: pointer;
+}
+
+.technologyPanel:hover {
+  filter: brightness(1.2);
+}
+.technologyIconContainer {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 48px;
-  height: 48px;
-  background: #3a3a3a;
-  border: 1px solid #4a4a4a;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.technologyIcon:hover {
-  background: #4a4a4a;
-  border-color: #6a6a6a;
-  box-shadow: 0 0 8px rgba(255, 200, 100, 0.3);
+  height: 128px;
+  min-width: 128px;
+  background: #00c659;
+  border-bottom: 1px solid #333;
 }
 
 .technologyLevel {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 24px;
-  height: 24px;
-  background: #2a2a2a;
-  border: 1px solid #4a4a4a;
-  border-radius: 2px;
+  align-items: left;
+  justify-content: left;
+  min-height: 16px;
+  height: 16px;
+  width: 128px;
+  background: #24d07f;
   color: #ffffff;
   font-size: 12px;
   font-weight: 600;
+  border-bottom: 1px solid #333;
 }
 
-.sciencePacks {
+.sciencePacksContainer {
   display: flex;
-  gap: 4px;
+  gap: 1px;
+  justify-content: left;
+  align-items: left;
+  height: 26px;
+  width: 128px;
+  background: #01711f;
+  padding: 4px;
   flex-wrap: wrap;
+}
+
+.sciencePackIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.sciencePackIcon:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+}
+
+.technologyName {
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 500;
+  flex: 1;
+  padding-left: 8px;
 }
 </style>
