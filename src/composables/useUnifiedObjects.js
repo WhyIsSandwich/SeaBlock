@@ -144,9 +144,11 @@ export function useUnifiedObjects() {
       }
       if (entity) {
         //Check if the entity is compatible with the item
+        const results = entity?.minable?.results
         if (
           item.place_result === key ||
-          entity?.minable?.results?.every(item => item.name === key)
+          results == key ||
+          results?.every(item => item.name === key)
         ) {
           unifiedObject.entity = entity
           unifiedObject.types.push('entity')

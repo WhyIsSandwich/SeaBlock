@@ -173,7 +173,7 @@ export const itemRules = [
     order: 3,
     type: 'section',
     forType: 'item',
-    shownInTooltip: true,
+    shownInTooltip: false,
     getValue: (data, context) => {
       const entities = Object.values(context.factorioData.entity)
       const burnedIn = entities
@@ -249,6 +249,25 @@ export const itemRules = [
     shownInTooltip: true,
     getValue: data => data.item?.stores_equipment_grid_electricity,
     condition: data => data.item?.stores_equipment_grid_electricity !== undefined
+  },
+  {
+    name: sectionTypes.gathered_from,
+    order: 2,
+    type: 'section',
+    forType: 'item',
+    shownInTooltip: false,
+    getValue: (data, context) => {
+      const resources = Object.values(context.factorioData.entity)
+        .filter(
+          entity =>
+            (entity.name !== data.item?.name && entity.minable?.results == data.item?.name) ||
+            (entity.minable?.results?.length > 0 &&
+              entity.minable?.results?.some(result => result.name === data.item?.name))
+        )
+        .map(resource => ({ name: resource.name, type: 'entity' }))
+      return { items: resources, itemsType: 'grid' }
+    },
+    postCondition: data => data.items?.length > 0
   }
 ]
 

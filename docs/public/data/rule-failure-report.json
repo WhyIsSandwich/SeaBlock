@@ -1,9 +1,9 @@
 {
-  "generated": "2025-10-11T08:57:48.952Z",
+  "generated": "2025-10-11T10:12:22.370Z",
   "summary": {
     "totalPrototypes": 3404,
     "totalErrors": 0,
-    "totalRulesExecuted": 2852,
+    "totalRulesExecuted": 2821,
     "totalRulesFailed": 0,
     "successRate": "100.0"
   },
@@ -69,7 +69,7 @@
       "failed": 0
     },
     "item": {
-      "executed": 455,
+      "executed": 442,
       "failed": 0
     },
     "recipe": {
@@ -85,7 +85,7 @@
       "failed": 0
     },
     "tile": {
-      "executed": 65,
+      "executed": 47,
       "failed": 0
     },
     "space-location": {

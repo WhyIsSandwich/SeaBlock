@@ -44,7 +44,9 @@ export const sectionTypes = new Proxy(
     extracted_by: 'Extracted by',
     source_of: 'Source of',
     allows_placement: 'Allows placement',
-    burned_in: 'Burned in'
+    burned_in: 'Burned in',
+    can_mine: 'Can mine',
+    can_extract: 'Can extract from'
   },
   {
     get(target, prop) {

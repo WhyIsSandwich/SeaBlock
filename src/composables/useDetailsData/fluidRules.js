@@ -77,6 +77,27 @@ export const fluidRules = [
     condition: data => data.fluid?.name !== undefined
   },
   {
+    name: sectionTypes.gathered_from,
+    order: 2,
+    type: 'section',
+    forType: 'fluid',
+    shownInTooltip: false,
+    getValue: (data, context) => {
+      const resources = Object.values(context.factorioData.entity)
+        .filter(
+          entity =>
+            entity.type === 'resource' &&
+            entity.minable?.results?.some(result => result.name === data.fluid?.name)
+        )
+        .map(resource => ({ name: resource.name, type: 'entity' }))
+      const tiles = Object.values(context.factorioData.tile)
+        .filter(tile => tile.fluid === data.fluid?.name)
+        .map(tile => ({ name: tile.name, type: 'tile' }))
+      return { items: [...resources, ...tiles], itemsType: 'grid' }
+    },
+    condition: data => data.fluid?.name !== undefined
+  },
+  {
     name: sectionTypes.alternative_recipes,
     order: 2,
     type: 'section',

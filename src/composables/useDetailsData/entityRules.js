@@ -374,6 +374,60 @@ export const entityRules = [
     condition: data => data.entity?.turret !== undefined
   },
   {
+    name: sectionTypes.mined_by,
+    order: 2,
+    type: 'section',
+    forType: 'entity',
+    shownInTooltip: false,
+    getValue: (data, context) => {
+      const miningDrills = Object.values(context.factorioData.entity).filter(
+        entity => entity.type === 'mining-drill'
+      )
+      const filteredMiningDrills = miningDrills
+        .filter(drill =>
+          drill?.resource_categories?.includes(data?.entity?.category || 'basic-solid')
+        )
+        .map(drill => ({ name: drill.name, type: 'entity' }))
+      return { items: filteredMiningDrills, itemsType: 'grid' }
+    },
+    condition: data => data.entity?.type === 'resource'
+  },
+  {
+    name: sectionTypes.can_mine,
+    order: 2,
+    type: 'section',
+    forType: 'entity',
+    shownInTooltip: false,
+    getValue: (data, context) => {
+      const resources = Object.values(context.factorioData.entity).filter(
+        entity => entity.type === 'resource'
+      )
+      const filteredResources = resources
+        .filter(resource =>
+          data.entity?.resource_categories?.includes(resource.category || 'basic-solid')
+        )
+        .map(resource => ({ name: resource.name, type: 'entity' }))
+      return { items: filteredResources, itemsType: 'grid' }
+    },
+    condition: data => data.entity?.type === 'mining-drill'
+  },
+  {
+    name: sectionTypes.can_extract,
+    order: 3,
+    type: 'section',
+    forType: 'entity',
+    shownInTooltip: false,
+    getValue: (data, context) => {
+      const tiles = Object.values(context.factorioData.tile)
+      const fluid = tiles
+        .filter(tile => tile.fluid)
+        .map(tile => ({ name: tile.name, type: 'tile' }))
+
+      return { items: fluid, itemsType: 'grid' }
+    },
+    condition: data => data.entity?.type === 'offshore-pump'
+  },
+  {
     name: sectionTypes.effect,
     order: 2,
     type: 'section',

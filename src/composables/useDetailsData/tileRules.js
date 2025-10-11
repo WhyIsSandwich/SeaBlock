@@ -38,7 +38,7 @@ export const tileRules = [
     order: 1,
     type: 'section',
     forType: 'tile',
-    shownInTooltip: true,
+    shownInTooltip: false,
     getValue: (data, context) => {
       const placeableAsTiles = Object.values(context.factorioData.item).filter(
         tile => tile.place_as_tile
@@ -65,7 +65,7 @@ export const tileRules = [
     order: 2,
     type: 'section',
     forType: 'tile',
-    shownInTooltip: true,
+    shownInTooltip: false,
     getValue: data =>
       data.tile?.fluid ? { items: [{ name: data.tile?.fluid, type: 'fluid' }] } : null,
     postCondition: data => data.items?.length > 0
@@ -75,7 +75,7 @@ export const tileRules = [
     order: 3,
     type: 'section',
     forType: 'tile',
-    shownInTooltip: true,
+    shownInTooltip: false,
     getValue: data =>
       data.tile?.fluid ? { items: [{ name: 'offshore-pump', type: 'entity' }] } : null,
     postCondition: data => data.items?.length > 0
