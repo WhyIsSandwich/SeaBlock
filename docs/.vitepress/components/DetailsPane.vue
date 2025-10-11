@@ -10,7 +10,7 @@
             :size="36"
             :clickable="false"
           />
-          <h3>{{ selectedItem.displayName }} ({{ itemTypeLabel }})</h3>
+          <h3>{{ formattedDisplayName }} ({{ itemTypeLabel }})</h3>
         </div>
         <div :class="$style.headerControls">
           <div :class="$style.headerTabs">
@@ -313,6 +313,34 @@ const detailsData = computed(() => {
     getDetailsData(selectedItem.value.types, selectedItem.value, false, organizedData.value)
   console.log('detailsData', data)
   return data
+})
+
+// Format display name with product amount if recipe has show_amount_in_title
+const formattedDisplayName = computed(() => {
+  if (!selectedItem.value?.displayName) return ''
+
+  const { displayName, recipe, types } = selectedItem.value
+  const isRecipe = types?.includes('recipe')
+
+  if (!isRecipe || recipe?.show_amount_in_title === false || !recipe.results?.length) {
+    return displayName
+  }
+
+  // Don't show amount if recipe has multiple products
+  if (recipe.results.length > 1) {
+    return displayName
+  }
+
+  // Get the amount from the first (and only) result in the recipe
+  const firstResult = recipe.results[0]
+  const amount = firstResult?.amount || 1
+
+  // Only show amount if it's not 1
+  if (amount === 1) {
+    return displayName
+  }
+
+  return `${amount}x ${displayName}`
 })
 </script>
 
