@@ -114,7 +114,6 @@ class TooltipGenerator {
     for (const [baseType, prototypes] of Object.entries(organizedData)) {
       console.log(`  ${baseType}: ${Object.keys(prototypes).length} prototypes`)
     }
-
     this.organizedData = organizedData
     console.log('✓ Data organized successfully')
   }
@@ -130,7 +129,7 @@ class TooltipGenerator {
     // Create the unified object structure
     const unifiedObject = {
       types: [prototypeType],
-      [prototypeType]: prototypeData,
+      [prototypeType]: prototypeData[prototypeType][prototypeName],
       displayName: prototypeLocale.n || prototypeName,
       description: prototypeLocale.d || ''
     }
@@ -139,6 +138,7 @@ class TooltipGenerator {
     if (prototypeType === 'entity' && this.localeData.item?.[prototypeName]) {
       const itemLocale = this.localeData.item[prototypeName]
       unifiedObject.item = {
+        ...prototypeData['item'][prototypeName],
         displayName: itemLocale.n,
         description: itemLocale.d
       }
@@ -169,7 +169,7 @@ class TooltipGenerator {
 
       // Create unified object
       const unifiedObject = this.createUnifiedObject(prototypeType, prototypeName, prototypeData)
-
+      //console.log(unifiedObject)
       // Validate unified object
       if (!unifiedObject || !unifiedObject.types) {
         console.warn(
@@ -225,6 +225,8 @@ class TooltipGenerator {
         true, // isTooltip = true
         this.organizedData
       )
+
+      //console.log(tooltipData)
 
       // Restore original method
       this.detailsData.getDetailsData = originalGetDetailsData
@@ -292,13 +294,8 @@ class TooltipGenerator {
       throw new Error('Organized data and locale data must be loaded first')
     }
 
-    // Get prototype mapping to understand type hierarchy
-    const { subtypeToBaseType: _subtypeToBaseType } = useFactorioPrototypeMapping('en')
-
     // Process each prototype type using organized data
     for (const [prototypeType, prototypes] of Object.entries(this.organizedData)) {
-      console.log(`Processing ${prototypeType} prototypes...`)
-
       if (typeof prototypes !== 'object' || prototypes === null) {
         console.log(`  Skipping ${prototypeType} (not an object)`)
         continue
@@ -307,10 +304,11 @@ class TooltipGenerator {
       let typeCount = 0
       for (const [prototypeName, prototypeData] of Object.entries(prototypes)) {
         if (typeof prototypeData !== 'object' || prototypeData === null) {
+          console.log(`  Skipping ${prototypeName} (not an object)`)
           continue
         }
 
-        this.generateTooltipForPrototype(prototypeType, prototypeName, prototypeData)
+        this.generateTooltipForPrototype(prototypeType, prototypeName, this.organizedData)
         typeCount++
       }
 

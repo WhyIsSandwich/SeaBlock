@@ -3,27 +3,27 @@
   <template v-else-if="section.type === 'technology_cost'">
     <div :class="$style.section">
       <h4 :class="$style.sectionTitle">{{ section.label }}</h4>
-      <div v-if="section.items?.length > 0" :class="getItemsContainerClass()">
-        <div
+      <div v-if="section.items?.length > 0" style="display: flex; align-items: center; gap: 4px">
+        <IconButton
           v-for="item in section.items"
           :key="`${item.type}-${item.name}`"
-          :class="getItemEntryClass()"
+          :type="item.type"
+          :name="item.name"
+          :size="getIconSize()"
+          :clickable="true"
+          @click="handleItemClick(item)"
+          :show-tooltip="showTooltip"
+        />
+        <span
+          style="text-align: center; display: flex; vertical-align: middle; align-items: center"
         >
-          <IconButton
-            :type="item.type"
-            :name="item.name"
-            :size="getIconSize()"
-            :clickable="true"
-            @click="handleItemClick(item)"
-            :show-tooltip="showTooltip"
-          />
-        </div>
-        <div style="text-align: center; display: flex; vertical-align: middle; align-items: center">
           🕛{{ section.statistics[1].value }}
-        </div>
-        <div style="text-align: center; display: flex; vertical-align: middle; align-items: center">
+        </span>
+        <span
+          style="text-align: center; display: flex; vertical-align: middle; align-items: center"
+        >
           x {{ section.statistics[0].value }}
-        </div>
+        </span>
       </div>
     </div>
   </template>
@@ -160,7 +160,7 @@ export default {
       type: Object,
       required: true,
       validator: value => {
-        return value && typeof value.type === 'string'
+        return value
       }
     },
     showTooltip: {

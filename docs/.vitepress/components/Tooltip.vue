@@ -5,6 +5,7 @@
       tabindex="0"
       role="button"
       :aria-describedby="tooltipId"
+      :style="style"
       @mouseenter="showTooltip"
       @mouseleave="hideTooltip"
       @focus="showTooltip"
@@ -106,6 +107,10 @@ const props = defineProps({
   delay: {
     type: Number,
     default: 0
+  },
+  style: {
+    type: [String, Object],
+    default: null
   }
 })
 
