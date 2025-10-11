@@ -1,38 +1,5 @@
 import { labels, sectionTypes } from '../detailsDataTypes.js'
-
-/**
- * Parse energy string and extract value and unit
- * @param {string} energyString - String like "1.5MW", "0.5kJ", "2.3GW"
- * @returns {{value: number, unit: string, normalizedValue: number} | null} Parsed energy data or null if invalid
- * @example
- * parseEnergyString("1.5MW") // {value: 1.5, unit: "MW", normalizedValue: 1.5}
- * parseEnergyString("500kJ") // {value: 500, unit: "kJ", normalizedValue: 0.5}
- */
-function parseEnergyString(energyString) {
-  if (!energyString || typeof energyString !== 'string') return null
-
-  // Match number and unit (e.g., "1.5MW" -> ["1.5", "MW"])
-  const match = energyString.match(/(\d+(?:\.\d+)?)\s*([a-zA-Z]+)/)
-  if (!match) return null
-
-  const value = parseFloat(match[1])
-  const unit = match[2].toUpperCase()
-
-  const unitMultipliers = {
-    K: 1, // Kilowatts to MW
-    M: 1000, // Megawatts (base unit)
-    G: 1000000 // Gigawatts to MW
-  }
-
-  const multiplier = unitMultipliers[unit[0]] || 1
-  if (multiplier === undefined) return null
-
-  return {
-    value,
-    unit,
-    normalizedValue: value * multiplier
-  }
-}
+import { parseEnergyString, formatEnergyValue } from '../energyUtils.js'
 
 /**
  * Entity rules - unified format for both statistics and sections
@@ -56,7 +23,7 @@ export const entityRules = [
     order: 2,
     type: 'statistics',
     forType: 'entity',
-    shownInTooltip: false,
+    shownInTooltip: true,
     getValue: data => {
       if (data.entity?.type !== 'inserter') return null
       // TODO: derive from research data
@@ -101,7 +68,9 @@ export const entityRules = [
     forType: 'entity',
     shownInTooltip: true,
     getValue: data => data.entity?.speed * 60 * 8,
-    condition: data => data.entity?.type === 'transport-belt' && data.entity?.speed
+    condition: data =>
+      (data.entity?.type === 'transport-belt' || data.entity?.type === 'splitter') &&
+      data.entity?.speed
   },
   {
     name: labels.storage_size,
@@ -245,7 +214,10 @@ export const entityRules = [
     shownInTooltip: true,
     getValue: data =>
       data.entity?.speed ? `${((data.entity?.speed * 60) / (1000 / 3600)).toFixed(1)}km/h` : null,
-    condition: data => data.entity?.speed !== undefined && data.entity?.type !== 'transport-belt'
+    condition: data =>
+      data.entity?.speed !== undefined &&
+      data.entity?.type !== 'transport-belt' &&
+      data.entity?.type !== 'splitter'
   },
   {
     name: labels.range,
@@ -268,6 +240,7 @@ export const entityRules = [
       data.entity?.type === 'combat-robot' && data.entity?.attack_parameters?.cooldown !== undefined
   },
   {
+    //bot consumption
     name: labels.max_consumption,
     order: 23,
     type: 'statistics',
@@ -282,13 +255,13 @@ export const entityRules = [
       const energyPerMove = parseEnergyString(data.entity?.energy_per_move)
       if (!energyPerMove) return null
 
-      // Calculate max consumption: energy per tick + (energy per move * speed)
+      // Calculate max consumption: energy per tick + (energy per tile * speed (tiles per second))
       // Both values are now normalized to MW
       const maxConsumption =
-        energyPerTick.normalizedValue + energyPerMove.normalizedValue * data.entity?.speed
-
+        (energyPerTick.normalizedValue + energyPerMove.normalizedValue * data.entity?.speed) * 60
+      console.log('maxConsumption', maxConsumption)
       // Convert to per-second consumption (multiply by 60 ticks per second)
-      return `${(maxConsumption * 60).toFixed(2)}kW`
+      return formatEnergyValue(maxConsumption, 'W', { forceUnit: 'k' })
     },
     condition: data =>
       data.entity?.energy_per_tick && data.entity?.energy_per_move && data.entity?.speed
@@ -506,15 +479,73 @@ export const entityRules = [
     condition: data => data.entity?.vehicle_weapons !== undefined
   },
   {
+    name: sectionTypes.launches,
+    order: 8,
+    type: 'section',
+    forType: 'entity',
+    shownInTooltip: true,
+    getValue: data => ({ items: [{ name: 'cargo-pod', type: 'entity' }], itemsType: 'grid' }),
+    condition: data => data.entity?.type === 'rocket-silo'
+  },
+  {
+    name: sectionTypes.launched_by,
+    order: 8,
+    type: 'section',
+    forType: 'entity',
+    shownInTooltip: true,
+    getValue: data => ({ items: [{ name: 'rocket-silo', type: 'entity' }], itemsType: 'grid' }),
+    condition: data => data.entity?.type === 'cargo-pod'
+  },
+  {
+    name: sectionTypes.received_by,
+    order: 8,
+    type: 'section',
+    forType: 'entity',
+    shownInTooltip: true,
+    getValue: data => ({
+      items: [{ name: 'cargo-landing-pad', type: 'entity' }],
+      itemsType: 'grid'
+    }),
+    condition: data => data.entity?.type === 'cargo-pod'
+  },
+  {
+    name: sectionTypes.spawns_container,
+    order: 8,
+    type: 'section',
+    forType: 'entity',
+    shownInTooltip: true,
+    getValue: data => ({
+      items: [{ name: 'cargo-pod-container', type: 'entity' }],
+      itemsType: 'grid'
+    }),
+    condition: data => data.entity?.type === 'cargo-pod'
+  },
+  {
+    name: sectionTypes.container_spawned_by,
+    order: 8,
+    type: 'section',
+    forType: 'entity',
+    shownInTooltip: true,
+    getValue: data => ({
+      items: [{ name: 'cargo-pod', type: 'entity' }],
+      itemsType: 'grid'
+    }),
+    condition: data => data.entity?.name === 'cargo-pod-container'
+  },
+  {
     name: sectionTypes.vehicle,
     order: 6,
     type: 'section',
     forType: 'entity',
     shownInTooltip: true,
     getValue: data => {
-      return { items: [data.entity?.vehicle] }
+      return { statistics: [{ label: labels.weight, value: data.entity?.weight }] }
     },
-    condition: data => data.entity?.vehicle !== undefined
+    condition: data =>
+      data.entity?.type === 'locomotive' ||
+      data.entity?.type === 'cargo-wagon' ||
+      data.entity?.type === 'fluid-wagon' ||
+      data.entity?.type === 'artillery-wagon'
   },
   {
     name: sectionTypes.burnable_fuel,
@@ -526,11 +557,15 @@ export const entityRules = [
       const chemicalFuels = Object.values(context.factorioData.item)
         .filter(item => item.fuel_category === 'chemical')
         .map(item => ({ name: item.name, type: 'item' }))
+      const energyConsumption = parseEnergyString(
+        data.entity?.energy_consumption || data.entity?.consumption || data.entity?.max_power
+      )
+      const formattedEnergyConsumption = formatEnergyValue(energyConsumption.normalizedValue, 'W')
       return {
         statistics: [
           {
             label: labels.max_consumption,
-            value: data.entity?.energy_consumption || data.entity?.consumption
+            value: formattedEnergyConsumption
           }
         ],
         items: chemicalFuels,
@@ -673,20 +708,124 @@ export const entityRules = [
     shownInTooltip: true,
     getValue: data => {
       const energyUsage = parseEnergyString(data.entity?.energy_usage)
+      let drain = parseEnergyString(data.entity?.energy_source?.drain)
       if (!energyUsage) return null
-      const minConsumption = Math.ceil(energyUsage.normalizedValue * 0.03) //afaik 3% is min consumption
-      const maxConsumption = Math.ceil(energyUsage.normalizedValue * 1.03)
+      if (!drain && data.entity.type !== 'mining-drill') {
+        drain = { ...energyUsage }
+        drain.normalizedValue = energyUsage.normalizedValue * 0.03333333333333333
+        drain.value = energyUsage.value * 0.03333333333333333
+      }
+      const minConsumption = Math.ceil(drain?.normalizedValue || 0)
+      const maxConsumption = Math.ceil(energyUsage.normalizedValue + (drain?.normalizedValue || 0))
+      const statistics = []
+      statistics.push({
+        label: labels.max_consumption,
+        value: formatEnergyValue(maxConsumption, 'W')
+      })
+      if (minConsumption) {
+        statistics.push({
+          label: labels.min_consumption,
+          value: formatEnergyValue(minConsumption, 'W')
+        })
+      }
+
       return {
-        statistics: [
-          { label: labels.max_consumption, value: maxConsumption },
-          { label: labels.min_consumption, value: minConsumption }
-        ]
+        statistics
       }
     },
     condition: data =>
       data.entity?.energy_source &&
       data.entity?.energy_source.type === 'electric' &&
       data.entity.energy_usage
+  },
+  {
+    name: sectionTypes.consumes_electricity,
+    order: 14,
+    type: 'section',
+    forType: 'entity',
+    shownInTooltip: true,
+    getValue: data => {
+      const drain = parseEnergyString(data.entity?.energy_source?.drain)
+      const { energy_per_movement, energy_per_rotation, extension_speed, rotation_speed } =
+        data.entity
+
+      const energyPerMovement = parseEnergyString(energy_per_movement)
+      const energyPerRotation = parseEnergyString(energy_per_rotation)
+
+      const energyUsage =
+        (energyPerMovement.normalizedValue * extension_speed +
+          energyPerRotation.normalizedValue * rotation_speed) *
+        60
+
+      const minConsumption = drain?.normalizedValue
+      const maxConsumption = energyUsage + (drain?.normalizedValue || 0)
+      const statistics = []
+      statistics.push({
+        label: labels.max_consumption,
+        value: formatEnergyValue(maxConsumption, 'W')
+      })
+      if (minConsumption) {
+        statistics.push({
+          label: labels.min_consumption,
+          value: formatEnergyValue(minConsumption, 'W')
+        })
+      }
+
+      return {
+        statistics
+      }
+    },
+    condition: data =>
+      data.entity?.energy_source &&
+      data.entity?.energy_source.type === 'electric' &&
+      data.entity.type === 'inserter'
+  },
+  {
+    name: sectionTypes.consumes_electricity,
+    order: 14,
+    type: 'section',
+    forType: 'entity',
+    shownInTooltip: true,
+    getValue: data => {
+      const { max_energy, energy_per_tick, energy_per_move, speed } = data.entity
+
+      const energyPerTick = parseEnergyString(energy_per_tick)
+      const energyPerMove = parseEnergyString(energy_per_move)
+      const maxEnergy = parseEnergyString(max_energy)
+      const maxConsumption =
+        (energyPerTick.normalizedValue + energyPerMove.normalizedValue * speed) * 60
+      const minConsumption = energyPerTick.normalizedValue * 60
+
+      //In Seconds
+      const minimumOperationalTime = maxEnergy.normalizedValue / maxConsumption
+      //format to xhxmxs
+      const formattedMinimumOperationalTimeSplit = {
+        h: Math.floor(minimumOperationalTime / 3600),
+        m: Math.floor((minimumOperationalTime % 3600) / 60),
+        s: Math.floor(minimumOperationalTime % 60)
+      }
+
+      const formattedMinimumOperationalTime = Object.entries(formattedMinimumOperationalTimeSplit)
+        .filter(([_, value]) => value !== 0)
+        .map(([key, value]) => `${value}${key}`)
+        .join('')
+      //In Tiles
+      const maximumFlyingReach = (speed * minimumOperationalTime * 60).toFixed(0)
+
+      const statistics = [
+        { label: labels.max_consumption, value: formatEnergyValue(maxConsumption, 'W') },
+        { label: labels.min_consumption, value: formatEnergyValue(minConsumption, 'W') },
+        { label: labels.energy_capacty, value: max_energy },
+        { label: labels.minimum_operational_time, value: formattedMinimumOperationalTime },
+        { label: labels.maximum_flying_reach, value: maximumFlyingReach }
+      ]
+
+      return {
+        statistics
+      }
+    },
+    condition: data =>
+      data.entity.type === 'logistic-robot' || data.entity.type === 'construction-robot'
   },
   {
     name: sectionTypes.generates_electricity,
@@ -703,12 +842,11 @@ export const entityRules = [
         const fluidAmount = data.entity?.fluid_usage_per_tick
         const fluidTemperature = data.entity?.maximum_temperature
         const fluidHeatCapacity = parseEnergyString(fluid?.heat_capacity)
-
         const power = fluidAmount * (fluidTemperature - 15) * fluidHeatCapacity.normalizedValue * 60
-        return { statistics: [{ label: labels.max_output, value: power }] }
+        return { statistics: [{ label: labels.max_output, value: formatEnergyValue(power, 'W') }] }
       }
     },
-    condition: data => data.entity.type === 'steam-engine' || data.entity.type === 'solar-panel'
+    condition: data => data.entity.type === 'generator' || data.entity.type === 'solar-panel'
   }
 ]
 

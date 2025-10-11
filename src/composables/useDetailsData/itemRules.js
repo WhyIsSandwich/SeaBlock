@@ -7,6 +7,32 @@ import { sectionTypes } from '../detailsDataTypes.js'
 export const itemRules = [
   // Statistics rules
   {
+    name: labels.rocket_launch_product,
+    order: 1,
+    type: 'statistics',
+    forType: 'item',
+    shownInTooltip: true,
+    getValue: data => {
+      const products = data.item?.rocket_launch_products
+      return products.map(product => `[item=${product.name}] x ${product.amount}`).join(', ')
+    },
+    condition: data => data.item?.rocket_launch_products
+  },
+  {
+    name: labels.obtained_from_rocket_launch,
+    order: 1,
+    type: 'statistics',
+    forType: 'item',
+    shownInTooltip: true,
+    getValue: (data, context) => {
+      const items = Object.values(context.factorioData.item).filter(item =>
+        item.rocket_launch_products?.some(product => product.name === data.item?.name)
+      )
+      const products = items.map(item => item.name)
+      return products.map(product => `[item=${product}] `).join(', ')
+    }
+  },
+  {
     name: labels.nuclear_fuel,
     order: 1,
     type: 'statistics',
