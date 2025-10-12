@@ -347,20 +347,6 @@ export const entityRules = [
     getValue: data => data.item?.stack_size,
     condition: data => data.item?.stack_size !== undefined
   },
-  {
-    name: labels.fluid_requirements,
-    order: 30,
-    type: 'statistics',
-    forType: 'entity',
-    shownInTooltip: true,
-    getValue: data => {
-      if (!data.entity?.minable?.required_fluid || !data.entity?.minable?.fluid_amount) {
-        return null
-      }
-      return `[fluid=${data.entity.minable.required_fluid}] x ${data.entity.minable.fluid_amount}`
-    },
-    condition: data => data.entity?.type === 'resource' && data.entity?.minable?.required_fluid
-  },
 
   // Section rules
   {
@@ -453,6 +439,14 @@ export const entityRules = [
       const miningDrills = Object.values(context.factorioData.entity).filter(
         entity => entity.type === 'mining-drill'
       )
+      const statistics = []
+      if (data.entity?.minable?.required_fluid) {
+        statistics.push({
+          label: 'Fluid requirements',
+          value: `[fluid=${data.entity.minable.required_fluid}] x ${data.entity.minable.fluid_amount}`
+        })
+      }
+
       const filteredMiningDrills = miningDrills
         .filter(drill => {
           // Check if resource category matches
@@ -468,7 +462,7 @@ export const entityRules = [
           return categoryMatch
         })
         .map(drill => ({ name: drill.name, type: 'entity' }))
-      return { items: filteredMiningDrills, itemsType: 'grid' }
+      return { items: filteredMiningDrills, itemsType: 'list', statistics }
     },
     condition: data => data.entity?.type === 'resource'
   },
@@ -513,9 +507,7 @@ export const entityRules = [
     forType: 'entity',
     shownInTooltip: false,
     getValue: (data, context) => {
-      if (!data.entity?.minable?.results) return null
-
-      const results = data.entity.minable.results.map(result => {
+      let results = data.entity.minable.results?.map(result => {
         let amountLabel = ''
 
         // Handle different amount types like we did for recipes
@@ -550,9 +542,20 @@ export const entityRules = [
         }
       })
 
+      if (data.entity.minable.result) {
+        results = [
+          {
+            name: data.entity.minable.result,
+            type: 'item',
+            label: `{{item_name}} x ${data.entity.minable.count}`
+          }
+        ]
+      }
+      results = results?.filter(result => result.name !== data.entity.name)
       return { items: results, itemsType: 'list' }
     },
-    condition: data => data.entity?.type === 'resource' && data.entity?.minable?.results
+    condition: data => data.entity?.minable,
+    postCondition: data => data?.items?.length > 0
   },
   {
     name: sectionTypes.can_extract,
