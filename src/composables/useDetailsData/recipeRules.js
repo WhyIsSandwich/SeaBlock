@@ -47,11 +47,34 @@ export const recipeRules = [
     forType: 'recipe',
     shownInTooltip: true,
     getValue: data => ({
-      items: data.recipe?.results?.map(result => ({
-        name: result.name,
-        type: result.type,
-        label: `{{item_name}} x ${result.amount}`
-      })),
+      items: data.recipe?.results?.map(result => {
+        let amountText = ''
+        
+        // Handle different amount types
+        if (result.amount !== undefined) {
+          // Simple amount
+          amountText = result.amount.toString()
+        } else if (result.amount_min !== undefined && result.amount_max !== undefined) {
+          // Range amount
+          if (result.amount_min === result.amount_max) {
+            amountText = result.amount_min.toString()
+          } else {
+            amountText = `${result.amount_min}-${result.amount_max}`
+          }
+        }
+        
+        // Add probability if present and not 1
+        if (result.probability !== undefined && result.probability !== 1) {
+          const probabilityPercent = Math.round(result.probability * 100)
+          amountText += ` (${probabilityPercent}%)`
+        }
+        
+        return {
+          name: result.name,
+          type: result.type,
+          label: `{{item_name}} x ${amountText}`
+        }
+      }),
       itemsType: 'list'
     }),
     condition: (data, _context) => {

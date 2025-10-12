@@ -54,7 +54,8 @@ export const sectionTypes = new Proxy(
     spawns_container: 'Spawns container',
     container_spawned_by: 'Container spawned by',
     gathered_from: 'Gathered from',
-    consumed_in: 'Consumed in'
+    consumed_in: 'Consumed in',
+    minable_results: 'Mining results'
   },
   {
     get(target, prop) {
@@ -123,6 +124,7 @@ export const labels = new Proxy(
     energy_capacty: 'Energy Capacity',
     minimum_operational_time: 'Minimum Operational Time',
     maximum_flying_reach: 'Maximum Flying Reach',
+    fluid_requirements: 'Fluid requirements',
 
     // Item labels
     nuclear_fuel: 'Nuclear Fuel',

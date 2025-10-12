@@ -347,6 +347,20 @@ export const entityRules = [
     getValue: data => data.item?.stack_size,
     condition: data => data.item?.stack_size !== undefined
   },
+  {
+    name: labels.fluid_requirements,
+    order: 30,
+    type: 'statistics',
+    forType: 'entity',
+    shownInTooltip: true,
+    getValue: data => {
+      if (!data.entity?.minable?.required_fluid || !data.entity?.minable?.fluid_amount) {
+        return null
+      }
+      return `[fluid=${data.entity.minable.required_fluid}] x ${data.entity.minable.fluid_amount}`
+    },
+    condition: data => data.entity?.type === 'resource' && data.entity?.minable?.required_fluid
+  },
 
   // Section rules
   {
@@ -440,9 +454,19 @@ export const entityRules = [
         entity => entity.type === 'mining-drill'
       )
       const filteredMiningDrills = miningDrills
-        .filter(drill =>
-          drill?.resource_categories?.includes(data?.entity?.category || 'basic-solid')
-        )
+        .filter(drill => {
+          // Check if resource category matches
+          const categoryMatch = drill?.resource_categories?.includes(
+            data?.entity?.category || 'basic-solid'
+          )
+
+          // If resource requires fluid, only show drills that have input_fluid_box
+          if (data.entity?.minable?.required_fluid) {
+            return categoryMatch && drill?.input_fluid_box
+          }
+
+          return categoryMatch
+        })
         .map(drill => ({ name: drill.name, type: 'entity' }))
       return { items: filteredMiningDrills, itemsType: 'grid' }
     },
@@ -459,17 +483,80 @@ export const entityRules = [
         entity => entity.type === 'resource'
       )
       const filteredResources = resources
-        .filter(resource =>
-          data.entity?.resource_categories?.includes(resource.category || 'basic-solid')
-        )
+        .filter(resource => {
+          // Check if resource category matches
+          const categoryMatch = data.entity?.resource_categories?.includes(
+            resource.category || 'basic-solid'
+          )
+
+          // If mining drill has input_fluid_box, it can mine fluid-required resources
+          if (data.entity?.input_fluid_box && resource.minable?.required_fluid) {
+            return categoryMatch
+          }
+
+          // If mining drill doesn't have input_fluid_box, it can't mine fluid-required resources
+          if (!data.entity?.input_fluid_box && resource.minable?.required_fluid) {
+            return false
+          }
+
+          return categoryMatch
+        })
         .map(resource => ({ name: resource.name, type: 'entity' }))
       return { items: filteredResources, itemsType: 'grid' }
     },
     condition: data => data.entity?.type === 'mining-drill'
   },
   {
+    name: sectionTypes.minable_results,
+    order: 4,
+    type: 'section',
+    forType: 'entity',
+    shownInTooltip: false,
+    getValue: (data, context) => {
+      if (!data.entity?.minable?.results) return null
+
+      const results = data.entity.minable.results.map(result => {
+        let amountLabel = ''
+
+        // Handle different amount types like we did for recipes
+        if (result.amount !== undefined) {
+          // Simple amount
+          amountLabel = ` x ${result.amount}`
+        } else if (result.amount_min !== undefined && result.amount_max !== undefined) {
+          // Range amount
+          if (result.amount_min === result.amount_max) {
+            amountLabel = ` x ${result.amount_min}`
+          } else {
+            amountLabel = ` x ${result.amount_min}-${result.amount_max}`
+          }
+        } else if (result.amount_min !== undefined) {
+          // Only min amount
+          amountLabel = ` x ${result.amount_min}+`
+        } else {
+          // Default to 1 if no amount specified
+          amountLabel = ' x 1'
+        }
+
+        // Add probability if it's not 1 (100%)
+        if (result.probability !== undefined && result.probability !== 1) {
+          const percentage = Math.round(result.probability * 100)
+          amountLabel += ` (${percentage}%)`
+        }
+
+        return {
+          name: result.name,
+          type: result.type,
+          label: `{{${result.type}_name}}${amountLabel}`
+        }
+      })
+
+      return { items: results, itemsType: 'list' }
+    },
+    condition: data => data.entity?.type === 'resource' && data.entity?.minable?.results
+  },
+  {
     name: sectionTypes.can_extract,
-    order: 3,
+    order: 5,
     type: 'section',
     forType: 'entity',
     shownInTooltip: false,
