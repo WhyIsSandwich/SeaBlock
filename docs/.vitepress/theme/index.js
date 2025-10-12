@@ -2,8 +2,7 @@ import DefaultTheme from 'vitepress/theme'
 
 import Tooltip from '../components/Tooltip.vue'
 import SpriteIcon from '../components/SpriteIcon.vue'
-import AnimatedSprite from '../components/AnimatedSprite.vue'
-import Building from '../components/Building.vue'
+import IconButton from '../components/IconButton.vue'
 import Factoriopedia from '../components/Factoriopedia.vue'
 
 import Layout from './Layout.vue'
@@ -17,8 +16,7 @@ export default {
     // Register global components
     app.component('Tooltip', Tooltip)
     app.component('SpriteIcon', SpriteIcon)
-    app.component('AnimatedSprite', AnimatedSprite)
-    app.component('Building', Building)
+    app.component('IconButton', IconButton)
     app.component('Factoriopedia', Factoriopedia)
   }
 }
