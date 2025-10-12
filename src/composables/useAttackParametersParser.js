@@ -181,9 +181,14 @@ function parseActionDeliveryEffects(
     }
   }
 
-  // Handle target_effects for ALL delivery types
-  if (delivery.target_effects) {
-    delivery.target_effects.forEach((effect, _index) => {
+  // Handle target_effects for ALL delivery types target_effects might not be an array
+  const targetEffects = Array.isArray(delivery.target_effects)
+    ? delivery.target_effects
+    : delivery.target_effects
+      ? [delivery.target_effects]
+      : []
+  if (targetEffects && targetEffects.length > 0) {
+    targetEffects.forEach((effect, _index) => {
       if (effect.type === 'damage') {
         // Direct damage effect
         const damageAmount = effect.damage?.amount || 0
