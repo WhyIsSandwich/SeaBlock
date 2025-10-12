@@ -53,7 +53,8 @@ export const sectionTypes = new Proxy(
     received_by: 'Received by',
     spawns_container: 'Spawns container',
     container_spawned_by: 'Container spawned by',
-    gathered_from: 'Gathered from'
+    gathered_from: 'Gathered from',
+    consumed_in: 'Consumed in'
   },
   {
     get(target, prop) {

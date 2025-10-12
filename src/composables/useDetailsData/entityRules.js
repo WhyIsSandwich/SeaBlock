@@ -1,5 +1,6 @@
 import { labels, sectionTypes } from '../detailsDataTypes.js'
 import { parseEnergyString, formatEnergyValue } from '../energyUtils.js'
+import { parseAttackParameters } from '../useAttackParametersParser.js'
 
 /**
  * Entity rules - unified format for both statistics and sections
@@ -324,7 +325,9 @@ export const entityRules = [
           const damageType = damageTypes.find(dt => dt.name === resistance.type)
           const damageTypeLabel = damageType?.displayName || resistance.type
           let value = ''
-          if (resistance.percent !== undefined) {
+          if (resistance.percent !== undefined && resistance.decrease !== undefined) {
+            value = `${resistance.decrease}/${resistance.percent}%`
+          } else if (resistance.percent !== undefined) {
             value = `${resistance.percent}%`
           } else if (resistance.decrease !== undefined) {
             value = `${resistance.decrease}`
@@ -352,10 +355,79 @@ export const entityRules = [
     type: 'section',
     forType: 'entity',
     shownInTooltip: true,
-    getValue: data => {
-      return { items: [data.entity?.turret] }
+    getValue: (data, context) => {
+      // Handle regular turrets
+      if (data.entity?.attack_parameters) {
+        const turret = data.entity?.attack_parameters
+        const statistics = []
+
+        if (turret.range) {
+          statistics.push({ label: 'Range', value: turret.range })
+        }
+        if (turret.min_range) {
+          statistics.push({ label: 'Minimum range', value: turret.min_range })
+        }
+        if (turret.cooldown && data.entity?.type !== 'fluid-turret') {
+          statistics.push({
+            label: 'Shooting speed',
+            value: `${(60 / turret.cooldown).toFixed(1)}/s`
+          })
+        }
+        if (turret.energy_consumption) {
+          statistics.push({
+            label: 'Fluid consumption',
+            value: `${turret.fluid_consumption.toFixed(1)}/s`
+          })
+        }
+
+        if (data.entity?.type === 'fluid-turret') {
+          statistics.push({
+            label: 'Fluid consumption',
+            value: `${((turret.fluid_consumption * 60) / turret.cooldown).toFixed(1)}/s`
+          })
+          const fluidItems = turret.fluids.map(fluid => ({ name: fluid.type, type: 'fluid' }))
+          return {
+            statistics,
+            items: fluidItems,
+            itemsLabel: 'Fluid consumption',
+            itemsType: 'grid'
+          }
+        }
+
+        return {
+          statistics
+        }
+      }
+
+      // Handle unit attack parameters (turret-like behavior)
+      if (data.entity?.attack_parameters) {
+        const attack = data.entity.attack_parameters
+        const statistics = []
+
+        if (attack.range) {
+          statistics.push({ label: 'Range', value: attack.range })
+        }
+        if (attack.min_range) {
+          statistics.push({ label: 'Minimum range', value: attack.min_range })
+        }
+        if (attack.cooldown) {
+          statistics.push({
+            label: 'Shooting speed',
+            value: `${(60 / attack.cooldown).toFixed(1)}/s`
+          })
+        }
+        if (attack.damage_modifier) {
+          statistics.push({ label: 'Damage modifier', value: `${attack.damage_modifier}%` })
+        }
+
+        return {
+          statistics
+        }
+      }
+
+      return null
     },
-    condition: data => data.entity?.turret !== undefined
+    condition: data => data.entity?.attack_parameters !== undefined
   },
   {
     name: sectionTypes.mined_by,
@@ -417,10 +489,28 @@ export const entityRules = [
     type: 'section',
     forType: 'entity',
     shownInTooltip: true,
-    getValue: data => {
-      return { items: [data.entity?.effect] }
+    getValue: (data, context) => {
+      // Get attack parameters from entity or gun item
+      let attack = null
+      let isArtillery = false
+
+      if (data.entity?.attack_parameters) {
+        attack = data.entity.attack_parameters
+      } else if (data.entity?.gun) {
+        const gunItem = context.factorioData.item[data.entity.gun]
+        if (gunItem?.attack_parameters) {
+          attack = gunItem.attack_parameters
+          isArtillery = true
+        }
+      }
+
+      if (!attack) return null
+
+      // Use the attack parameters parser
+      return parseAttackParameters(attack, context, isArtillery)
     },
-    condition: data => data.entity?.effect !== undefined
+    condition: data =>
+      data.entity?.attack_parameters !== undefined || data.entity?.gun !== undefined
   },
   {
     name: sectionTypes.consumes_water,

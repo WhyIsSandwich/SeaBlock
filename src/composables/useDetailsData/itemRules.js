@@ -1,5 +1,6 @@
 import { labels } from '../useDetailsData.js'
 import { sectionTypes } from '../detailsDataTypes.js'
+import { parseAttackParameters } from '../useAttackParametersParser.js'
 
 /**
  * Item rules - unified format for both statistics and sections
@@ -81,7 +82,9 @@ export const itemRules = [
           const damageType = damageTypes.find(dt => dt.name === resistance.type)
           const damageTypeLabel = damageType?.displayName || resistance.type
           let value = ''
-          if (resistance.percent !== undefined) {
+          if (resistance.percent !== undefined && resistance.decrease !== undefined) {
+            value = `${resistance.decrease}/${resistance.percent}%`
+          } else if (resistance.percent !== undefined) {
             value = `${resistance.percent}%`
           } else if (resistance.decrease !== undefined) {
             value = `${resistance.decrease}`
@@ -261,8 +264,15 @@ export const itemRules = [
     type: 'section',
     forType: 'item',
     shownInTooltip: true,
-    getValue: data => data.item?.effect,
-    condition: data => data.item?.effect !== undefined
+    getValue: (data, context) => {
+      // If item has attack parameters, use the attack parameters parser
+      if (data.item?.attack_parameters) {
+        return parseAttackParameters(data.item.attack_parameters, context, false)
+      }
+      // Otherwise, return the raw effect data
+      return data.item?.effect
+    },
+    condition: data => data.item?.effect !== undefined || data.item?.attack_parameters !== undefined
   },
   {
     name: sectionTypes.generates_equipment_grid_electricity,

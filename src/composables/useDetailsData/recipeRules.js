@@ -104,7 +104,6 @@ export const recipeRules = [
           }))
           return { name: technology.name, type: 'technology', items: (technology.name, items) }
         })
-      console.log(unlockTechnologies)
       return { items: unlockTechnologies, type: 'unlock_technologies' }
     },
     condition: data => data.recipe?.name !== undefined

@@ -98,6 +98,26 @@ export const fluidRules = [
     condition: data => data.fluid?.name !== undefined
   },
   {
+    name: sectionTypes.consumed_in,
+    order: 3,
+    type: 'section',
+    forType: 'fluid',
+    shownInTooltip: false,
+    getValue: (data, context) => {
+      // Find fluid turrets that can consume this specific fluid
+      const fluidTurrets = Object.values(context.factorioData.entity)
+        .filter(
+          entity =>
+            entity.type === 'fluid-turret' &&
+            entity.attack_parameters?.fluids?.some(fluid => fluid.type === data.fluid?.name)
+        )
+        .map(turret => ({ name: turret.name, type: 'entity' }))
+
+      return { items: fluidTurrets, itemsType: 'grid' }
+    },
+    condition: data => data.fluid?.fuel_value && !data.fluid?.gas_temperature
+  },
+  {
     name: sectionTypes.alternative_recipes,
     order: 2,
     type: 'section',

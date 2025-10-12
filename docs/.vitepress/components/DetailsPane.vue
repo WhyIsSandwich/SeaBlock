@@ -100,11 +100,7 @@
         />
 
         <template v-for="section in detailsData.sections" :key="section.type">
-          <DetailsPaneSection
-            :section="section"
-            @select-item="handleItemSelection"
-            @item-selected="handleItemSelection"
-          />
+          <DetailsPaneSection :section="section" />
         </template>
       </div>
       <!-- Raws Tab Content -->

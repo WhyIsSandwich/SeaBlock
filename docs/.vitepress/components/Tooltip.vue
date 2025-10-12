@@ -327,7 +327,6 @@ function showTooltip() {
     return
   }
 
-  console.log('showTooltip called for', props.itemId, props.category)
   if (showTimeout.value) {
     clearTimeout(showTimeout.value)
   }
@@ -337,7 +336,6 @@ function showTooltip() {
   }
 
   showTimeout.value = setTimeout(async () => {
-    console.log('Loading tooltip data for', props.itemId, props.category)
     isLoading.value = true
     hasError.value = false
 
@@ -363,7 +361,6 @@ function showTooltip() {
       }
 
       const data = getTooltipDataForItem()
-      console.log('Tooltip data loaded:', data)
 
       if (data) {
         tooltipDatas.value = [data]
@@ -378,7 +375,6 @@ function showTooltip() {
         }
 
         isVisible.value = true
-        console.log('Setting tooltip visible, positioning...')
         positionTooltip()
 
         // Announce to screen readers

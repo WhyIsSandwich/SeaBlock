@@ -31,7 +31,6 @@ import IconButton from './IconButton.vue'
 
 const props = defineProps({
   text: {
-    type: String,
     required: true
   }
 })
