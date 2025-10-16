@@ -30,6 +30,11 @@ export function useFactorioRenderingMapping() {
   const belts = entity => {
     // to do
     //belt animation set + structure
+    return [
+      entity.belt_animation_set.animation_set
+      //entity.structure?.north,
+      //entity.structure?.direction_in
+    ]
   }
   const inserters = entity => {
     // to do

@@ -94,13 +94,13 @@ function getHiResScale(layer, useHiRes = null, devicePixelRatio = 2) {
 }
 
 // Normalize shifts to canvas scale
-function normalizeShift(shift, layerWidth, pixelsPerTile = 32) {
+function normalizeShift(shift, _layerWidth, pixelsPerTile = 32) {
   if (!shift || !Array.isArray(shift)) return [0, 0]
 
   const [shiftX, shiftY] = shift
-  // Convert from tile-space to pixel-space
-  const shiftPixelsX = (shiftX * layerWidth) / pixelsPerTile
-  const shiftPixelsY = (shiftY * layerWidth) / pixelsPerTile
+  // Convert from tile-space to pixel-space (1 tile = 32 pixels)
+  const shiftPixelsX = shiftX * pixelsPerTile
+  const shiftPixelsY = shiftY * pixelsPerTile
 
   return [shiftPixelsX, shiftPixelsY]
 }
@@ -120,9 +120,8 @@ function calculateShadowPosition(layer, allLayers) {
       const shadowHeight = layer.height || 0
       const shadowWidth = layer.width || 0
 
-      // Apply shift values (convert from tiles to pixels: 1 tile = 32 pixels)
-      const shiftX = layer.shift && layer.shift[0] ? layer.shift[0] * 32 : 0
-      const shiftY = layer.shift && layer.shift[1] ? layer.shift[1] * 32 : 0
+      // Apply shift values using the normalizeShift function for consistency
+      const [shiftX, shiftY] = normalizeShift(layer.shift, layer.width)
 
       const position = {
         x: mainSpriteX + (mainSpriteWidth - shadowWidth) + shiftX,
@@ -133,9 +132,8 @@ function calculateShadowPosition(layer, allLayers) {
     }
   }
 
-  // For non-shadows, use normal positioning
-  const shiftX = layer.shift && layer.shift[0] ? layer.shift[0] * 32 : 0
-  const shiftY = layer.shift && layer.shift[1] ? layer.shift[1] * 32 : 0
+  // For non-shadows, use normal positioning with consistent shift calculation
+  const [shiftX, shiftY] = normalizeShift(layer.shift, layer.width)
 
   const position = {
     x: (layer.x || 0) + shiftX,
@@ -514,6 +512,7 @@ export function createFactorioAnimationEngine({
 
     renderLayeredSprite(ctx, layers, props = {}) {
       if (!layers) return
+
       //console.log(sortedLayers)
       for (let i = 0; i < layers.length; i++) {
         const layer = layers[i]
@@ -545,6 +544,7 @@ export function createFactorioAnimationEngine({
             const layerAnimationSpeed = layer.animation_speed || 1
             const adjustedFrame = Math.floor(baseFrame * layerAnimationSpeed)
             const currentFrame = adjustedFrame % (layer.frame_count || layer.repeat_count || 1)
+
             const framesPerRow = layer.line_length || layer.frame_count || 1 // || layer.frame_count
             const frameX = (currentFrame % framesPerRow) * layer.width
             const finalRow = layer.frame_count / layer.line_length || 1
@@ -557,11 +557,10 @@ export function createFactorioAnimationEngine({
             }
 
             // Draw the specific frame from the sprite sheet
-            // Apply Factorio shift values (convert from tiles to pixels: 1 tile = 32 pixels)
-            const shiftX = layer.shift && layer.shift[0] ? layer.shift[0] * 32 : 0
-            const shiftY = layer.shift && layer.shift[1] ? layer.shift[1] * 32 : 0
+            // Apply Factorio shift values using the normalizeShift function for consistency
+            const [shiftX, shiftY] = normalizeShift(layer.shift, layer.width)
 
-            // Calculate destination position - center on canvas with scale
+            // Calculate destination position - support custom positioning
             const canvasWidth = ctx.canvas.width
             const canvasHeight = ctx.canvas.height
             const scale = layer.scale || 1.0
@@ -572,8 +571,19 @@ export function createFactorioAnimationEngine({
             const pixelShiftX = shiftX
             const pixelShiftY = shiftY
 
-            const destX = (canvasWidth - scaledWidth) / 2 + pixelShiftX
-            const destY = (canvasHeight - scaledHeight) / 2 + pixelShiftY
+            // Support custom positioning via props, fallback to proper centering
+            let destX, destY
+            if (props.customPosition) {
+              // Use custom position (for scene rendering)
+              // The customPosition is the center of the entity, so center the sprite there, then apply shift
+              destX = props.customPosition.x - scaledWidth / 2 + pixelShiftX
+              destY = props.customPosition.y - scaledHeight / 2 + pixelShiftY
+            } else {
+              // Default centering behavior (for single sprite rendering)
+              // Center the sprite in the canvas, then apply shift relative to center
+              destX = (canvasWidth - scaledWidth) / 2 + pixelShiftX
+              destY = (canvasHeight - scaledHeight) / 2 + pixelShiftY
+            }
 
             //console.log(destX, destY, layer.width, layer.height)
             ctx.drawImage(
@@ -612,6 +622,7 @@ export function createFactorioAnimationEngine({
         console.warn('No animation data provided to render')
         return
       }
+
       const { getRenderingMethod, getProcessedLayers } = useFactorioRenderingMapping()
 
       let processedLayersPromise = null
@@ -629,8 +640,10 @@ export function createFactorioAnimationEngine({
 
       const processedLayers = await processedLayersPromise
 
-      // Draw checkerboard background to show transparency
-      drawCheckerboardBackground(ctx, ctx.canvas.width, ctx.canvas.height)
+      // Draw checkerboard background to show transparency (only for single sprite mode)
+      if (!props.skipBackground) {
+        drawCheckerboardBackground(ctx, ctx.canvas.width, ctx.canvas.height)
+      }
       await this.renderLayeredSprite(ctx, processedLayers.shadow, props)
       await this.renderLayeredSprite(ctx, processedLayers.base, props)
       await this.renderLayeredSprite(ctx, processedLayers.glow, props)

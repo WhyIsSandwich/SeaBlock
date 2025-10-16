@@ -4,6 +4,7 @@ import Tooltip from '../components/Tooltip.vue'
 import SpriteIcon from '../components/SpriteIcon.vue'
 import IconButton from '../components/IconButton.vue'
 import Factoriopedia from '../components/Factoriopedia.vue'
+import FactorioScene from '../components/FactorioScene.vue'
 
 import Layout from './Layout.vue'
 import './custom.css'
@@ -18,5 +19,6 @@ export default {
     app.component('SpriteIcon', SpriteIcon)
     app.component('IconButton', IconButton)
     app.component('Factoriopedia', Factoriopedia)
+    app.component('FactorioScene', FactorioScene)
   }
 }
