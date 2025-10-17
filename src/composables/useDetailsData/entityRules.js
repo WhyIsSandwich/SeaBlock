@@ -554,7 +554,7 @@ export const entityRules = [
       results = results?.filter(result => result.name !== data.entity.name)
       return { items: results, itemsType: 'list' }
     },
-    condition: data => data.entity?.minable,
+    condition: data => data.entity?.minable && data.entity?.minable?.results?.length > 0,
     postCondition: data => data?.items?.length > 0
   },
   {
@@ -806,9 +806,10 @@ export const entityRules = [
       }
     },
     condition: data =>
-      data.entity.type != 'inserter' &&
+      data.entity.type !== 'inserter' &&
       data.entity?.energy_source?.type === 'burner' &&
-      data.entity?.energy_source?.fuel_categories?.includes('chemical')
+      data.entity?.energy_source?.fuel_categories?.includes('chemical') &&
+      data.entity?.energy_consumption !== undefined
   },
   {
     name: sectionTypes.generates_steam,

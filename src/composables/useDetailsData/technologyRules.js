@@ -30,7 +30,7 @@ export const technologyRules = [
         ]
       }
     },
-    condition: data => data.technology.unit !== undefined
+    condition: data => data.technology.unit !== undefined && data.technology.unit?.length > 0
   },
   {
     name: sectionTypes.technology_effects,
@@ -69,6 +69,7 @@ export const technologyRules = [
         .map(technology => ({ name: technology.name, type: 'technology' }))
       return { items: prerequisites }
     },
+    condition: data => data.technology.prerequisites?.length > 0,
     postCondition: data => data.items?.length > 0
   },
   {
@@ -80,7 +81,11 @@ export const technologyRules = [
     getValue: (data, context) => {
       const technologies = Object.values(context.factorioData.technology)
       const descendants = technologies
-        .filter(technology => technology.prerequisites?.includes(data.technology.name))
+        .filter(
+          technology =>
+            technology?.prerequisites?.length > 0 &&
+            technology.prerequisites?.includes(data.technology.name)
+        )
         .map(technology => ({ name: technology.name, type: 'technology' }))
       return { items: descendants, itemsType: 'grid' }
     },

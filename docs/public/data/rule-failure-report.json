@@ -1,10 +1,10 @@
 {
-  "generated": "2025-10-11T16:57:33.316Z",
+  "generated": "2025-10-17T01:41:36.827Z",
   "summary": {
-    "totalPrototypes": 3404,
-    "totalErrors": 0,
-    "totalRulesExecuted": 2845,
-    "totalRulesFailed": 0,
+    "totalPrototypes": 10301,
+    "totalErrors": 1,
+    "totalRulesExecuted": 16556,
+    "totalRulesFailed": 1,
     "successRate": "100.0"
   },
   "ruleTypeStats": {
@@ -65,15 +65,15 @@
       "failed": 0
     },
     "entity": {
-      "executed": 426,
+      "executed": 2158,
       "failed": 0
     },
     "item": {
-      "executed": 444,
+      "executed": 1824,
       "failed": 0
     },
     "recipe": {
-      "executed": 1448,
+      "executed": 11266,
       "failed": 0
     },
     "quality": {
@@ -81,11 +81,11 @@
       "failed": 0
     },
     "fluid": {
-      "executed": 72,
+      "executed": 582,
       "failed": 0
     },
     "tile": {
-      "executed": 47,
+      "executed": 55,
       "failed": 0
     },
     "space-location": {
@@ -197,7 +197,7 @@
       "failed": 0
     },
     "technology": {
-      "executed": 408,
+      "executed": 671,
       "failed": 0
     },
     "tips-and-tricks-item-category": {
@@ -245,6 +245,8 @@
       "failed": 0
     }
   },
-  "prototypeFailures": {},
+  "prototypeFailures": {
+    "entity:petroleum-generator": "Cannot read properties of null (reading 'normalizedValue')"
+  },
   "recommendations": []
 }

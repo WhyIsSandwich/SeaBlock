@@ -166,7 +166,7 @@ const groupedRecipes = computed(() => {
         .map(subgroup => ({
           ...subgroup,
           recipes: subgroup.recipes.filter(recipe =>
-            recipe.displayName.toLowerCase().includes(query)
+            recipe.displayName?.toLowerCase()?.includes(query)
           )
         }))
         .filter(subgroup => subgroup.recipes.length > 0)
@@ -194,7 +194,9 @@ const disabledFilters = computed(() => {
     const filteredSubgroups = categoryData.subgroups
       .map(subgroup => ({
         ...subgroup,
-        recipes: subgroup.recipes.filter(recipe => recipe.displayName.toLowerCase().includes(query))
+        recipes: subgroup.recipes.filter(recipe =>
+          recipe.displayName?.toLowerCase()?.includes(query)
+        )
       }))
       .filter(subgroup => subgroup.recipes.length > 0)
 

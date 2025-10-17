@@ -49,7 +49,7 @@ export const recipeRules = [
     getValue: data => ({
       items: data.recipe?.results?.map(result => {
         let amountText = ''
-        
+
         // Handle different amount types
         if (result.amount !== undefined) {
           // Simple amount
@@ -62,13 +62,13 @@ export const recipeRules = [
             amountText = `${result.amount_min}-${result.amount_max}`
           }
         }
-        
+
         // Add probability if present and not 1
         if (result.probability !== undefined && result.probability !== 1) {
           const probabilityPercent = Math.round(result.probability * 100)
           amountText += ` (${probabilityPercent}%)`
         }
-        
+
         return {
           name: result.name,
           type: result.type,
@@ -120,7 +120,10 @@ export const recipeRules = [
             )?.length > 0
         )
         .map(technology => {
-          const items = technology.unit?.ingredients?.map(ingredient => ({
+          // todo deal with unit not being defined
+          const ingredients =
+            technology.unit?.ingredients.length > 0 ? technology.unit.ingredients : []
+          const items = ingredients.map(ingredient => ({
             name: ingredient[0],
             type: 'item',
             amount: ingredient[1]
