@@ -95,7 +95,7 @@ const iconStyle = computed(() => {
   const style = {
     width: `${scaledWidth}px !important`,
     height: `${scaledHeight}px !important`,
-    backgroundImage: `url(${withBase(`/data/${spritemapData.value.image}`)}) !important`,
+    backgroundImage: `url(${withBase(`/data/${spritemapData.value.image.replace('.png', '.webp')}`)}) !important`,
     backgroundPosition: `-${spriteData.value.x * scale}px -${spriteData.value.y * scale}px !important`,
     backgroundSize: `${spritemapData.value.width * scale}px ${spritemapData.value.height * scale}px !important`,
     backgroundRepeat: 'no-repeat !important'

@@ -499,7 +499,13 @@ class FactorioDataProcessorRefactored {
     })
 
     const packed = {}
-    const maxWidth = 2048 // Maximum texture width (conservative for compatibility)
+    //nearest power of two based on square root of the total area of the sprites
+    const totalArea = Object.values(sprites).reduce(
+      (acc, sprite) => acc + sprite.width * sprite.height,
+      0
+    )
+    //nearest power of two
+    const maxWidth = Math.pow(2, Math.ceil(Math.log2(Math.sqrt(totalArea))))
     const padding = 2 // Padding between sprites to avoid bleeding
 
     // Skyline: array of {x, y, width} representing the top edge
