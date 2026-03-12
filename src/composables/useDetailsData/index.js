@@ -14,10 +14,10 @@ import { recipeRules } from './recipeRules.js'
 import { technologyRules } from './technologyRules.js'
 
 export const allRules = [
-  ...entityRules,
-  ...itemRules,
-  ...tileRules,
-  ...fluidRules,
-  ...recipeRules,
-  ...technologyRules
+  ...entityRules.map(rule => ({ ...rule, _sourceType: 'entity' })),
+  ...itemRules.map(rule => ({ ...rule, _sourceType: 'item' })),
+  ...tileRules.map(rule => ({ ...rule, _sourceType: 'tile' })),
+  ...fluidRules.map(rule => ({ ...rule, _sourceType: 'fluid' })),
+  ...recipeRules.map(rule => ({ ...rule, _sourceType: 'recipe' })),
+  ...technologyRules.map(rule => ({ ...rule, _sourceType: 'technology' }))
 ]

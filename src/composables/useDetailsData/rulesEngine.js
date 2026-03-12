@@ -115,15 +115,45 @@ function applyRuleTransform(rule, result, data, context) {
  * @returns {Array} Array of statistics or section objects
  */
 export function applyRules(rules, data, context = {}) {
+  const typeOrder = Array.isArray(context.types) ? [...context.types].reverse() : []
+  const getTypeRank = rule => {
+    if (typeOrder.length === 0) {
+      return Number.MAX_SAFE_INTEGER
+    }
+    const ruleType = rule.forType || rule._sourceType
+    const rank = typeOrder.indexOf(ruleType)
+    return rank === -1 ? Number.MAX_SAFE_INTEGER : rank
+  }
+
   return rules
     .map((rule, index) => ({ rule, index }))
     .sort((a, b) => {
+      const aTypeRank = getTypeRank(a.rule)
+      const bTypeRank = getTypeRank(b.rule)
+      if (aTypeRank !== bTypeRank) {
+        return aTypeRank - bTypeRank
+      }
+
       const aOrder = a.rule.order ?? Number.MAX_SAFE_INTEGER
       const bOrder = b.rule.order ?? Number.MAX_SAFE_INTEGER
-      if (aOrder === bOrder) {
+      if (aOrder !== bOrder) {
+        return aOrder - bOrder
+      }
+
+      if (a.rule._sourceType !== b.rule._sourceType) {
+        const aSource = a.rule._sourceType || ''
+        const bSource = b.rule._sourceType || ''
+        return aSource.localeCompare(bSource)
+      }
+
+      if (a.rule.name !== b.rule.name) {
+        return String(a.rule.name || '').localeCompare(String(b.rule.name || ''))
+      }
+
+      if (a.index !== b.index) {
         return a.index - b.index
       }
-      return aOrder - bOrder
+      return 0
     })
     .map(({ rule }) => rule)
     .filter(rule => {

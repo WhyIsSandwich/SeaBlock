@@ -93,20 +93,32 @@ export const recipeRules = [
     forType: 'recipe',
     shownInTooltip: true,
     getValue: (data, context) => {
+      const recipeCategory = data.recipe?.category || 'crafting'
       const entities = Object.values(context.factorioData.entity)
-        .filter(entity => entity.crafting_categories?.includes(data.recipe?.category || 'crafting'))
+        .filter(entity => {
+          const categories = entity.crafting_categories
+          if (Array.isArray(categories)) {
+            return categories.includes(recipeCategory)
+          }
+          if (categories && typeof categories === 'object') {
+            return Object.keys(categories).includes(recipeCategory)
+          }
+          return entity.fixed_recipe === data.recipe?.name
+        })
         .map(entity => ({ name: entity.name, type: 'entity' }))
       return {
         items: entities,
         itemsType: 'grid' // Use grid layout for made_in section
       }
     },
-    condition: data => data.recipe?.category !== undefined
+    condition: data => data.recipe?.name !== undefined,
+    postCondition: data => data?.items?.length > 0
   },
   {
     name: sectionTypes.unlock_technologies,
     order: 5,
     type: 'section',
+    forType: 'recipe',
     shownInTooltip: false, // TODO: add unlock technologies
     getValue: (data, context) => {
       const technologies = Object.values(context.factorioData.technology)

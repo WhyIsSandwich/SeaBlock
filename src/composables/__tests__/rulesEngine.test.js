@@ -73,4 +73,36 @@ describe('rulesEngine.applyRules', () => {
       value: '18'
     })
   })
+
+  it('sorts by reversed unified type order before local order', () => {
+    const rules = [
+      {
+        name: 'Item-first',
+        type: 'statistics',
+        shownInTooltip: true,
+        forType: 'item',
+        order: 1,
+        getValue: () => 'item'
+      },
+      {
+        name: 'Entity-second',
+        type: 'statistics',
+        shownInTooltip: true,
+        forType: 'entity',
+        order: 2,
+        getValue: () => 'entity'
+      },
+      {
+        name: 'Entity-first',
+        type: 'statistics',
+        shownInTooltip: true,
+        forType: 'entity',
+        order: 1,
+        getValue: () => 'entity-1'
+      }
+    ]
+
+    const results = applyRules(rules, {}, { types: ['item', 'recipe', 'entity'], isTooltip: true })
+    expect(results.map(result => result.label)).toEqual(['Entity-first', 'Entity-second', 'Item-first'])
+  })
 })

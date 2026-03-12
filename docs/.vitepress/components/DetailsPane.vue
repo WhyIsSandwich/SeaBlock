@@ -99,7 +99,10 @@
           :statistics="detailsData.statistics"
         />
 
-        <template v-for="section in detailsData.sections" :key="section.type">
+        <template
+          v-for="(section, sectionIndex) in detailsData.sections"
+          :key="`${section.type || section.label || 'section'}-${sectionIndex}`"
+        >
           <DetailsPaneSection :section="section" />
         </template>
       </div>
