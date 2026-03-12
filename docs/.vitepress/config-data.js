@@ -24,7 +24,8 @@ export const configData = {
       { text: 'Home', link: '/' },
       { text: 'Getting Started', link: '/getting-started/' },
       { text: 'Guides', link: '/guides/' },
-      { text: 'Reference', link: '/reference/' }
+      { text: 'Reference', link: '/reference/' },
+      { text: 'Governance', link: '/governance/' }
     ],
 
     // Sidebar hardcoded here for the editor

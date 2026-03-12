@@ -22,6 +22,7 @@ This project uses a dual SSG approach:
 
 - **[VitePress Browser Bundle Guide](VITEPRESS_BROWSER_BUNDLE_GUIDE.md)** - Complete guide to the custom VitePress browser bundle solution
 - **[Vite Dependencies Guide](VITE_DEPENDENCIES_GUIDE.md)** - Analysis of VitePress browser compatibility challenges
+- **[Governance Artifacts](docs/governance/index.md)** - Architecture brief, key issues, guidelines, and roadmap
 
 ## 🛠️ Development
 
