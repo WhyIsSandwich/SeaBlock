@@ -1,5 +1,4 @@
-import { labels } from '../useDetailsData.js'
-import { sectionTypes } from '../detailsDataTypes.js'
+import { labels, sectionTypes } from '../detailsDataTypes.js'
 
 /**
  * Recipe rules - unified format for both statistics and sections

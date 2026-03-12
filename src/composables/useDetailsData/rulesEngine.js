@@ -16,6 +16,97 @@
  * }
  */
 
+function toRichTextValue(value) {
+  if (value === null || value === undefined) {
+    return value
+  }
+  return typeof value === 'string' ? value : String(value)
+}
+
+function normalizeStatistic(statistic, defaultLabel = '') {
+  if (statistic === null || statistic === undefined) {
+    return null
+  }
+
+  if (typeof statistic !== 'object' || Array.isArray(statistic)) {
+    return {
+      label: defaultLabel,
+      value: toRichTextValue(statistic)
+    }
+  }
+
+  const normalized = {
+    ...statistic,
+    label: statistic.label ?? defaultLabel
+  }
+
+  if (normalized.value !== undefined) {
+    normalized.value = toRichTextValue(normalized.value)
+  }
+
+  if (normalized.children) {
+    normalized.children = normalized.children
+      .map(child => normalizeStatistic(child))
+      .filter(child => child !== null)
+  }
+
+  return normalized
+}
+
+function normalizeStatisticsList(statistics) {
+  if (!Array.isArray(statistics)) {
+    return []
+  }
+  return statistics.map(stat => normalizeStatistic(stat)).filter(stat => stat !== null)
+}
+
+function normalizeRuleResult(rule, result) {
+  if (rule.type === 'statistics') {
+    return normalizeStatistic(result, rule.name)
+  }
+
+  if (!result || typeof result !== 'object') {
+    return result
+  }
+
+  const normalized = { ...result }
+  if (!normalized.label) {
+    normalized.label = rule.name
+  }
+  if (Array.isArray(normalized.statistics)) {
+    normalized.statistics = normalizeStatisticsList(normalized.statistics)
+  }
+  return normalized
+}
+
+function applyRuleTransform(rule, result, data, context) {
+  if (!rule.transform || result === null || result === undefined) {
+    return result
+  }
+
+  if (rule.type !== 'statistics') {
+    return result
+  }
+
+  if (typeof result === 'object' && !Array.isArray(result)) {
+    if (result.value === undefined) {
+      return result
+    }
+
+    const transformedValue = rule.transform(result.value, data, context)
+    return {
+      ...result,
+      rawValue: result.rawValue ?? result.value,
+      value: transformedValue
+    }
+  }
+
+  return {
+    value: rule.transform(result, data, context),
+    rawValue: result
+  }
+}
+
 /**
  * Apply rules to generate statistics or sections
  * @param {Array} rules - Array of rule objects
@@ -25,6 +116,16 @@
  */
 export function applyRules(rules, data, context = {}) {
   return rules
+    .map((rule, index) => ({ rule, index }))
+    .sort((a, b) => {
+      const aOrder = a.rule.order ?? Number.MAX_SAFE_INTEGER
+      const bOrder = b.rule.order ?? Number.MAX_SAFE_INTEGER
+      if (aOrder === bOrder) {
+        return a.index - b.index
+      }
+      return aOrder - bOrder
+    })
+    .map(({ rule }) => rule)
     .filter(rule => {
       // Check if rule is for the correct type
       if (rule.forType && !context.types?.includes(rule.forType)) {
@@ -44,27 +145,21 @@ export function applyRules(rules, data, context = {}) {
       return true
     })
     .map(rule => {
-      const result = rule.getValue(data, context)
+      let result = rule.getValue(data, context)
       if (!result && !rule.condition) return null
+
+      result = applyRuleTransform(rule, result, data, context)
 
       if (rule.postCondition && !rule.postCondition(result, context)) {
         return null
       }
 
-      //Allow statistics rules to return a simple value
-      if (rule.type === 'statistics' && typeof result !== 'object') {
-        return {
-          label: rule.name,
-          value: result,
-          _ruleType: rule.type
-        }
+      const normalizedResult = normalizeRuleResult(rule, result)
+      if (!normalizedResult) {
+        return null
       }
 
-      if (result && !result.label) {
-        result.label = rule.name
-      }
-
-      return { ...result, _ruleType: rule.type }
+      return { ...normalizedResult, _ruleType: rule.type }
     })
     .filter(result => result !== null && result !== undefined)
 }
@@ -77,14 +172,7 @@ export function applyRules(rules, data, context = {}) {
  * @returns {Array} Sorted array of results
  */
 export function applyRulesSorted(rules, data, context = {}) {
-  const results = applyRules(rules, data, context)
-
-  // Sort by order if specified
-  return results.sort((a, b) => {
-    const aOrder = a.order || 0
-    const bOrder = b.order || 0
-    return aOrder - bOrder
-  })
+  return applyRules(rules, data, context)
 }
 
 /**

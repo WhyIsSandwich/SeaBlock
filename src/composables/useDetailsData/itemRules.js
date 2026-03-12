@@ -1,5 +1,4 @@
-import { labels } from '../useDetailsData.js'
-import { sectionTypes } from '../detailsDataTypes.js'
+import { labels, sectionTypes } from '../detailsDataTypes.js'
 import { parseAttackParameters } from '../useAttackParametersParser.js'
 
 /**
@@ -27,11 +26,13 @@ export const itemRules = [
     shownInTooltip: true,
     getValue: (data, context) => {
       const items = Object.values(context.factorioData.item).filter(item =>
-        item.rocket_launch_products?.some(product => product.name === data.iteem?.name)
+        item.rocket_launch_products?.some(product => product.name === data.item?.name)
       )
       const products = items.map(item => item.name)
-      return products.map(product => `[item=${product}] `).join(', ')
-    }
+      if (products.length === 0) return null
+      return products.map(product => `[item=${product}]`).join(', ')
+    },
+    condition: data => data.item?.name !== undefined
   },
   {
     name: labels.nuclear_fuel,

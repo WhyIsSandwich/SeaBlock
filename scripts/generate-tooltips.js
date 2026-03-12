@@ -2,13 +2,10 @@
 
 import fs from 'fs'
 import path from 'path'
-import { fileURLToPath } from 'url'
 
 import { useDetailsData } from '../src/composables/useDetailsData.js'
 import { useFactorioPrototypeMapping } from '../src/composables/useFactorioPrototypeMapping.js'
-
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = path.dirname(__filename)
+import { useUnifiedObjects } from '../src/composables/useUnifiedObjects.js'
 
 /**
  * Tooltip Generator
@@ -40,6 +37,7 @@ class TooltipGenerator {
 
     // Initialize the details data system
     this.detailsData = useDetailsData()
+    this.unifiedObjects = useUnifiedObjects()
   }
 
   /**
@@ -122,29 +120,30 @@ class TooltipGenerator {
    * Create unified object for a prototype
    */
   createUnifiedObject(prototypeType, prototypeName, prototypeData) {
-    // Get locale data for this prototype
-    const typeLocale = this.localeData[prototypeType] || {}
-    const prototypeLocale = typeLocale[prototypeName] || {}
+    const objects = this.unifiedObjects.createUnifiedObjectByKey(prototypeName, prototypeData)
+    const runtimeEquivalent = objects.find(object => object.types.includes(prototypeType))
 
-    // Create the unified object structure
-    const unifiedObject = {
-      types: [prototypeType],
-      [prototypeType]: prototypeData[prototypeType][prototypeName],
-      displayName: prototypeLocale.n || prototypeName,
-      description: prototypeLocale.d || ''
-    }
-
-    // Add additional data for entities that are also items
-    if (prototypeType === 'entity' && this.localeData.item?.[prototypeName]) {
-      const itemLocale = this.localeData.item[prototypeName]
-      unifiedObject.item = {
-        ...prototypeData['item'][prototypeName],
-        displayName: itemLocale.n,
-        description: itemLocale.d
+    if (!runtimeEquivalent) {
+      const typeLocale = this.localeData[prototypeType] || {}
+      const prototypeLocale = typeLocale[prototypeName] || {}
+      return {
+        types: [prototypeType],
+        [prototypeType]: prototypeData[prototypeType][prototypeName],
+        displayName: prototypeLocale.n || prototypeName,
+        description: prototypeLocale.d || ''
       }
     }
 
-    return unifiedObject
+    const localeByType =
+      runtimeEquivalent.types
+        ?.map(type => this.localeData[type]?.[prototypeName])
+        .find(locale => locale) || {}
+
+    return {
+      ...runtimeEquivalent,
+      displayName: runtimeEquivalent.displayName || localeByType.n || prototypeName,
+      description: runtimeEquivalent.description || localeByType.d || ''
+    }
   }
 
   /**
@@ -344,11 +343,13 @@ class TooltipGenerator {
           cleanedCount++
         }
 
-        // Check if tooltip is empty (no meaningful content)
-        const isEmpty =
-          !tooltipData.title ||
-          tooltipData.title === prototypeName ||
-          (!tooltipData.statistics && !tooltipData.sections && !tooltipData.tooltipExtras)
+        const hasContent = Boolean(
+          tooltipData.statistics || tooltipData.sections || tooltipData.tooltipExtras
+        )
+        const hasText = Boolean(tooltipData.title?.trim() || tooltipData.description?.trim())
+
+        // Only filter entries that truly have no text and no generated content
+        const isEmpty = !hasContent && !hasText
 
         if (isEmpty) {
           delete this.tooltips[type][prototypeName]

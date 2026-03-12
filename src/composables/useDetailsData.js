@@ -21,7 +21,8 @@ Sections type as follows:
 Statistics type as follows where children is an array of Statistics type:
 {
     label: string,
-    value: string?, //formated value
+    value: string?, // Factorio rich-text-ready value
+    rawValue: any?, // optional source value (for debugging/testing)
     // may need extending for quality in the future
     children: [] //array of Statistics type
 }

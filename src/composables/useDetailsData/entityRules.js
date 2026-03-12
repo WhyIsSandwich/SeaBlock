@@ -224,7 +224,7 @@ export const entityRules = [
     name: labels.range,
     order: 21,
     type: 'statistics',
-    forType: 'combat-robot',
+    forType: 'entity',
     shownInTooltip: true,
     getValue: data => data.entity?.attack_parameters?.range,
     condition: data =>
@@ -234,7 +234,7 @@ export const entityRules = [
     name: labels.shooting_speed,
     order: 22,
     type: 'statistics',
-    forType: 'combat-robot',
+    forType: 'entity',
     shownInTooltip: true,
     getValue: data => data.entity?.attack_parameters?.cooldown,
     condition: data =>

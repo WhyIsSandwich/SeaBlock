@@ -1,4 +1,4 @@
-import { labels, sectionTypes } from '../useDetailsData.js'
+import { labels, sectionTypes } from '../detailsDataTypes.js'
 
 import { transforms } from './rulesEngine.js'
 
