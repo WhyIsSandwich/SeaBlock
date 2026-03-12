@@ -45,17 +45,19 @@ export default {
 .statistics {
   margin-bottom: 12px;
   padding: 10px;
-  background: linear-gradient(135deg, #3a3a3a, #2d2d2d);
+  background: linear-gradient(135deg, #2d2d2d, #252525);
   border-radius: 2px;
-  border: 1px solid #4a4a4a;
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.2);
+  border: 1px solid #3f3f3f;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.03),
+    inset 0 1px 2px rgba(0, 0, 0, 0.35);
 }
 
 .statItem {
   margin-bottom: 6px;
   color: #ffffff;
   font-size: 13px;
-  line-height: 1.3;
+  line-height: 1.35;
 }
 
 .statItem:last-child {
@@ -71,7 +73,8 @@ export default {
   margin: 4px 0 0 0;
   padding-left: 16px;
   color: #ffffff;
-  font-size: 14px;
+  font-size: 13px;
+  line-height: 1.3;
   list-style-type: square;
 }
 

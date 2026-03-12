@@ -45,10 +45,10 @@
             :show-tooltip="showTooltip"
             @click="handleItemClick(item)"
           >
-            <template #container="{ title, click, spriteKey, containerClass }">
+            <template #container="{ title, click, spriteKey, class: containerClass }">
               <div :class="[containerClass, $style.technologyPanel]" :title="title" @click="click">
                 <!-- Technology Icon (large, centered) -->
-                <div class="$style.technologyIconContainer">
+                <div :class="$style.technologyIconContainer">
                   <SpriteIcon v-if="spriteKey" :sprite-key="spriteKey" :size="128" />
                 </div>
 
@@ -259,7 +259,7 @@ export default {
       return this.$style.itemEntry
     },
     getIconSize() {
-      return this.isGridLayout ? this.sectionGrid.buttonSize.value : 24
+      return this.isGridLayout ? this.sectionGrid.buttonSize : 24
     },
     shouldShowLabel() {
       // In grid layout, only show labels if explicitly requested
@@ -317,18 +317,23 @@ export default {
 <style module>
 .section {
   margin-bottom: 16px;
-  padding: 12px;
-  background: #2a2a2a;
-  border-radius: 4px;
-  border: 1px solid #3a3a3a;
+  padding: 10px;
+  background: #1f1f1f;
+  border-radius: 2px;
+  border: 1px solid #3f3f3f;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 1px 0 rgba(0, 0, 0, 0.45);
 }
 
 .sectionTitle {
   margin: 0 0 8px 0;
-  color: #ffffff;
+  color: #f2c15a;
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 700;
   text-transform: capitalize;
+  border-bottom: 1px solid #494949;
+  padding-bottom: 4px;
 }
 
 .itemsList {
@@ -343,7 +348,7 @@ export default {
   max-height: 200px;
   overflow-y: auto;
   background: #1f1f1f;
-  border: 1px solid #4a4a4a;
+  border: 1px solid #3d3d3d;
   border-radius: 2px;
   padding: 2px;
   box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.3);
@@ -414,8 +419,8 @@ export default {
   gap: 12px;
   padding: 8px;
   background: #1f1f1f;
-  border: 1px solid #3a3a3a;
-  border-radius: 4px;
+  border: 1px solid #3f3f3f;
+  border-radius: 2px;
   transition: background-color 0.2s ease;
 }
 
@@ -457,8 +462,8 @@ export default {
 
 .technologyLevel {
   display: flex;
-  align-items: left;
-  justify-content: left;
+  align-items: center;
+  justify-content: flex-start;
   min-height: 16px;
   height: 16px;
   width: 128px;
@@ -472,8 +477,8 @@ export default {
 .sciencePacksContainer {
   display: flex;
   gap: 1px;
-  justify-content: left;
-  align-items: left;
+  justify-content: flex-start;
+  align-items: flex-start;
   height: 26px;
   width: 128px;
   background: #01711f;
@@ -499,7 +504,7 @@ export default {
 }
 
 .technologyName {
-  color: #ffffff;
+  color: #d9d9d9;
   font-size: 14px;
   font-weight: 500;
   flex: 1;

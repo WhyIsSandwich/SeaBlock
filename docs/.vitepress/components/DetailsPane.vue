@@ -345,14 +345,15 @@ const formattedDisplayName = computed(() => {
   flex: 1;
   display: flex;
   flex-direction: column;
-  background: var(--vp-c-bg);
-  border-left: 1px solid var(--vp-c-border);
+  background: #4a4a4a;
+  border-left: 1px solid #1a1a1a;
   overflow-y: auto;
 }
 
 .itemDetails {
-  padding: 12px;
+  padding: 10px;
   max-width: 100%;
+  line-height: 1.35;
 }
 
 .itemHeader {
@@ -361,10 +362,12 @@ const formattedDisplayName = computed(() => {
   align-items: center;
   margin-bottom: 12px;
   padding: 6px 10px;
-  background: linear-gradient(135deg, #8b7355, #6b5b47);
+  background: linear-gradient(to bottom, #2f2f2f, #232323);
   border-radius: 2px;
-  border: 1px solid #9d8563;
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.3);
+  border: 1px solid #3f3f3f;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 1px 0 rgba(0, 0, 0, 0.45);
   gap: 16px;
 }
 
@@ -395,10 +398,10 @@ const formattedDisplayName = computed(() => {
 .navButton {
   width: 32px;
   height: 32px;
-  background: #4a4a4a;
-  border: 1px solid #6a6a6a;
-  border-top: 1px solid #7a7a7a;
-  border-left: 1px solid #7a7a7a;
+  background: linear-gradient(to bottom, #2d2d2d, #1f1f1f);
+  border: 1px solid #595959;
+  border-top: 1px solid #6b6b6b;
+  border-left: 1px solid #6b6b6b;
   border-radius: 2px;
   color: #ffffff;
   font-size: 16px;
@@ -414,10 +417,10 @@ const formattedDisplayName = computed(() => {
 }
 
 .navButton:hover:not(.disabled) {
-  background: #5a5a5a;
-  border-color: #7a7a7a;
-  border-top: 1px solid #8a8a8a;
-  border-left: 1px solid #8a8a8a;
+  background: linear-gradient(to bottom, #3a3a3a, #2a2a2a);
+  border-color: #7f7f7f;
+  border-top: 1px solid #8e8e8e;
+  border-left: 1px solid #8e8e8e;
   box-shadow:
     1px 1px 0px rgba(0, 0, 0, 0.4),
     inset 0 1px 1px rgba(255, 255, 255, 0.15);
@@ -444,7 +447,7 @@ const formattedDisplayName = computed(() => {
   max-height: 400px;
   background: #2d2d2d;
   border: 1px solid #4a4a4a;
-  border-radius: 4px;
+  border-radius: 2px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
   z-index: 1000;
   overflow-y: auto;
@@ -486,15 +489,16 @@ const formattedDisplayName = computed(() => {
 }
 
 .historyButton {
-  background: #4a4a4a;
-  border: 1px solid #6a6a6a;
-  border-top: 1px solid #7a7a7a;
-  border-left: 1px solid #7a7a7a;
+  background: linear-gradient(to bottom, #2d2d2d, #1f1f1f);
+  border: 1px solid #585858;
+  border-top: 1px solid #6a6a6a;
+  border-left: 1px solid #6a6a6a;
   border-radius: 2px;
   padding: 4px 8px;
-  color: #ffffff;
-  font-size: 12px;
-  font-weight: bold;
+  color: #d3d3d3;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.1;
   cursor: pointer;
   transition: all 0.2s ease;
   box-shadow:
@@ -503,7 +507,7 @@ const formattedDisplayName = computed(() => {
 }
 
 .historyButton:hover {
-  background: #5a5a5a;
+  background: linear-gradient(to bottom, #3a3a3a, #2a2a2a);
   border-color: #7a7a7a;
   border-top: 1px solid #8a8a8a;
   border-left: 1px solid #8a8a8a;
@@ -513,15 +517,16 @@ const formattedDisplayName = computed(() => {
 }
 
 .headerTabs button {
-  background: #4a4a4a;
-  border: 1px solid #6a6a6a;
-  border-top: 1px solid #7a7a7a;
-  border-left: 1px solid #7a7a7a;
+  background: linear-gradient(to bottom, #2d2d2d, #1f1f1f);
+  border: 1px solid #585858;
+  border-top: 1px solid #6a6a6a;
+  border-left: 1px solid #6a6a6a;
   border-radius: 2px;
   padding: 4px 8px;
-  color: #ffffff;
-  font-size: 12px;
-  font-weight: bold;
+  color: #d3d3d3;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.1;
   cursor: pointer;
   transition: all 0.2s ease;
   box-shadow:
@@ -530,7 +535,7 @@ const formattedDisplayName = computed(() => {
 }
 
 .headerTabs button:hover {
-  background: #5a5a5a;
+  background: linear-gradient(to bottom, #3a3a3a, #2a2a2a);
   border-color: #7a7a7a;
   border-top: 1px solid #8a8a8a;
   border-left: 1px solid #8a8a8a;
@@ -540,10 +545,10 @@ const formattedDisplayName = computed(() => {
 }
 
 .headerTabs button.active {
-  background: #6a6a6a;
-  border-color: #8a8a8a;
-  border-top: 1px solid #9a9a9a;
-  border-left: 1px solid #9a9a9a;
+  background: linear-gradient(to bottom, #3a3022, #2d2418);
+  border-color: #ad8344;
+  border-top: 1px solid #bc9250;
+  border-left: 1px solid #bc9250;
   box-shadow:
     1px 1px 0px rgba(0, 0, 0, 0.5),
     inset 0 1px 1px rgba(255, 255, 255, 0.2);
@@ -553,48 +558,28 @@ const formattedDisplayName = computed(() => {
 .itemHeader h3 {
   margin: 0;
   font-size: 16px;
-  font-weight: bold;
-  color: #000000;
-}
-
-.headerControls {
-  display: flex;
-  gap: 8px;
-}
-
-.controlButton {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-  background: none;
-  border: none;
-  border-radius: 2px;
-  color: #000000;
-  cursor: pointer;
-  transition: background 0.2s ease;
-}
-
-.controlButton:hover {
-  background: rgba(0, 0, 0, 0.1);
+  font-weight: 700;
+  line-height: 1.25;
+  color: #f2f2f2;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.65);
 }
 
 .itemImageContainer {
   width: 100%;
-  margin-bottom: 20px;
-  background: #2d2d2d;
-  border-radius: 4px;
-  border: 1px solid #4a4a4a;
+  background: #1e1e1e;
+  border-radius: 2px;
+  border: 1px solid #1b1b1b;
   display: flex;
   justify-content: center;
   align-items: center;
   box-sizing: border-box;
   padding: 0;
-  margin: 0;
+  margin: 0 0 12px 0;
   /* Maintain 698x265 aspect ratio (265/698 ≈ 0.3797) */
   aspect-ratio: 698 / 265;
-  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.3);
+  box-shadow:
+    inset 0 0 0 1px #3a3a3a,
+    inset 0 1px 4px rgba(0, 0, 0, 0.55);
 }
 
 .usageDescription {
@@ -607,7 +592,7 @@ const formattedDisplayName = computed(() => {
 .usageDescription p {
   margin: 0;
   color: #ffffff;
-  line-height: 1.6;
+  line-height: 1.45;
   font-size: 14px;
 }
 
@@ -662,15 +647,15 @@ const formattedDisplayName = computed(() => {
 .modInfo {
   margin-bottom: 12px;
   padding: 6px 10px;
-  background: #3a3a3a;
+  background: #1f1f1f;
   border-radius: 2px;
   font-size: 12px;
-  color: #87ceeb;
+  color: #7ea4b7;
   box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 .modOrigin {
-  color: #87ceeb;
+  color: #7ea4b7;
   font-size: 12px;
   line-height: 1.2;
 }
@@ -678,9 +663,9 @@ const formattedDisplayName = computed(() => {
 .electricityConsumption {
   margin-bottom: 12px;
   padding: 10px;
-  background: #3a3a3a;
+  background: #1f1f1f;
   border-radius: 2px;
-  border: 1px solid #4a4a4a;
+  border: 1px solid #3f3f3f;
   box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
@@ -689,16 +674,16 @@ const formattedDisplayName = computed(() => {
   align-items: center;
   gap: 8px;
   color: #ffeb3b; /* Vibrant electricity yellow color */
-  font-size: 13px;
+  font-size: 14px;
   margin-bottom: 8px;
 }
 
-.electricitySection .sprite-icon {
+.electricitySection :global(.sprite-icon) {
   filter: hue-rotate(45deg) saturate(2) brightness(1.2) !important; /* Convert to electricity yellow */
 }
 
 /* Alternative approach - target the background image directly */
-.electricitySection .sprite-icon[style*='background-image'] {
+.electricitySection :global(.sprite-icon)[style*='background-image'] {
   filter: hue-rotate(45deg) saturate(2) brightness(1.2) !important; /* Convert to electricity yellow */
 }
 
@@ -713,8 +698,9 @@ const formattedDisplayName = computed(() => {
 
 .energyItem {
   color: #ffffff;
-  font-size: 13px;
+  font-size: 14px;
   margin-bottom: 4px;
+  line-height: 1.35;
 }
 
 .energyItem strong {
@@ -730,18 +716,17 @@ const formattedDisplayName = computed(() => {
 
 .recipeSection,
 .technologySection {
-  padding: 10px;
-  background: linear-gradient(135deg, #3a3a3a, #2d2d2d);
+  padding: 8px;
+  background: #202020;
   border-radius: 2px;
-  border: 1px solid #4a4a4a;
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.2);
-  margin-bottom: 10px;
+  border: 1px solid #3a3a3a;
+  margin-bottom: 8px;
 }
 
 .recipeSection h4,
 .technologySection h4 {
   margin: 0 0 8px 0;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: bold;
   color: #ffffff;
   display: flex;
@@ -785,6 +770,7 @@ const formattedDisplayName = computed(() => {
   gap: 6px;
   color: #ffffff;
   font-size: 13px;
+  line-height: 1.3;
 }
 
 .costDetails {
@@ -799,6 +785,7 @@ const formattedDisplayName = computed(() => {
   gap: 6px;
   color: #ffffff;
   font-size: 13px;
+  line-height: 1.3;
 }
 
 .sciencePacksSection {
@@ -834,6 +821,7 @@ const formattedDisplayName = computed(() => {
   color: #ffffff;
   font-size: 13px;
   margin-bottom: 4px;
+  line-height: 1.3;
 }
 
 .researchTimeItem strong {
@@ -848,6 +836,7 @@ const formattedDisplayName = computed(() => {
   color: #ffffff;
   font-size: 13px;
   padding-left: 22px; /* Account for icon width + gap in research time line */
+  line-height: 1.3;
 }
 
 .researchCountItem strong {
@@ -895,6 +884,7 @@ const formattedDisplayName = computed(() => {
 .levelItem {
   color: #ffffff;
   font-size: 13px;
+  line-height: 1.3;
 }
 
 .ingredientsList {
@@ -934,6 +924,7 @@ const formattedDisplayName = computed(() => {
   font-size: 13px;
   margin-bottom: 3px;
   min-height: 36px;
+  line-height: 1.3;
 }
 
 .ingredientItem:hover,
@@ -985,30 +976,20 @@ const formattedDisplayName = computed(() => {
   color: #888888;
 }
 
-.noSelection-content {
+.noSelectionContent {
   text-align: center;
 }
 
-.noSelection-content h3 {
+.noSelectionContent h3 {
   margin: 0 0 8px 0;
   color: #ffffff;
   font-size: 18px;
 }
 
-.noSelection-content p {
+.noSelectionContent p {
   margin: 0;
   line-height: 1.6;
   font-size: 14px;
-}
-
-/* Dark mode adjustments */
-.dark .controlButton {
-  background: var(--vp-c-bg-soft);
-  border-color: var(--vp-c-border);
-}
-
-.dark .controlButton:hover {
-  background: var(--vp-c-bg-soft-hover);
 }
 
 /* New section styles */
@@ -1344,9 +1325,10 @@ const formattedDisplayName = computed(() => {
   }
 
   .headerTitle h3 {
-    font-size: 14px;
+    font-size: 15px;
     flex: 1;
     word-break: break-word;
+    line-height: 1.25;
   }
 
   .headerTabs {
@@ -1424,7 +1406,7 @@ const formattedDisplayName = computed(() => {
 
   .triggerItem,
   .costItem {
-    font-size: 11px;
+    font-size: 12px;
     padding: 2px 4px;
     margin-bottom: 2px;
   }
@@ -1442,7 +1424,7 @@ const formattedDisplayName = computed(() => {
   }
 
   .headerTitle h3 {
-    font-size: 13px;
+    font-size: 14px;
   }
 
   .headerTabs button {
@@ -1486,7 +1468,7 @@ const formattedDisplayName = computed(() => {
 
   .triggerItem,
   .costItem {
-    font-size: 10px;
+    font-size: 11px;
   }
 }
 </style>

@@ -1,8 +1,31 @@
 <template>
   <div :class="$style.factoripedia">
+    <div v-if="isMobileViewport" :class="$style.mobilePanelControls">
+      <button
+        :class="[
+          $style.mobilePanelButton,
+          { [$style.active]: activeMobilePanel === 'details' && selectedItem }
+        ]"
+        :disabled="!selectedItem"
+        @click="activeMobilePanel = 'details'"
+      >
+        Details
+      </button>
+      <button
+        :class="[$style.mobilePanelButton, { [$style.active]: activeMobilePanel === 'browse' }]"
+        @click="activeMobilePanel = 'browse'"
+      >
+        Browse
+      </button>
+    </div>
     <div :class="$style.factoripediaContainer">
       <!-- Left Panel: Item Browser -->
-      <div :class="$style.factoripediaLeftPanel">
+      <div
+        :class="[
+          $style.factoripediaLeftPanel,
+          { [$style.mobileHidden]: isMobileViewport && activeMobilePanel !== 'browse' }
+        ]"
+      >
         <div :class="$style.factoripediaHeader">
           <h2>Factoriopedia</h2>
         </div>
@@ -40,7 +63,11 @@
         </div>
 
         <!-- Recipe Grid -->
-        <div ref="gridContainer" :style="{ ...itemGrid.containerStyles, overflowY: 'scroll' }">
+        <div
+          ref="gridContainer"
+          :class="$style.itemGrid"
+          :style="{ ...itemGrid.containerStyles, overflowY: 'scroll' }"
+        >
           <template v-for="subgroup in groupedRecipes" :key="subgroup.subgroup">
             <!-- Subgroup wrapper -->
             <div
@@ -58,7 +85,7 @@
                     getPrimaryType(selectedItem) === getPrimaryType(item)
                   "
                   @click="selectItem(getPrimaryType(item), item.name, item)"
-                  style="itemGrid.itemStyles"
+                  :style="itemGrid.itemStyles"
                 />
               </template>
             </div>
@@ -67,7 +94,12 @@
       </div>
 
       <!-- Right Panel: Details -->
-      <div :class="$style.factoripediaRightPanel">
+      <div
+        :class="[
+          $style.factoripediaRightPanel,
+          { [$style.mobileHidden]: isMobileViewport && activeMobilePanel !== 'details' }
+        ]"
+      >
         <DetailsPane
           :name="selectedItem?.name"
           :type="selectedItem ? getPrimaryType(selectedItem) : null"
@@ -123,6 +155,8 @@ const gridContainer = ref(null)
 const categoryStructure = ref({})
 const primaryCategories = ref([])
 const secondaryCategories = ref([])
+const isMobileViewport = ref(false)
+const activeMobilePanel = ref('browse')
 
 const itemGrid = computed(() =>
   useFactorioGrid({
@@ -320,6 +354,9 @@ function navigateItem(direction) {
 
 function closeDetails() {
   selectedItem.value = null
+  if (isMobileViewport.value) {
+    activeMobilePanel.value = 'browse'
+  }
   updateURL()
 }
 
@@ -388,6 +425,24 @@ function selectItem(type, name, data = null) {
     selectedItem.value = unifiedObject
     addToNavigationStack(unifiedObject)
     addToMRU(unifiedObject)
+    if (isMobileViewport.value) {
+      activeMobilePanel.value = 'details'
+    }
+  }
+}
+
+function updateMobileViewport() {
+  if (typeof window === 'undefined') return
+  const isMobile = window.innerWidth <= 768
+  isMobileViewport.value = isMobile
+
+  if (!isMobile) {
+    activeMobilePanel.value = 'browse'
+    return
+  }
+
+  if (!selectedItem.value) {
+    activeMobilePanel.value = 'browse'
   }
 }
 
@@ -409,6 +464,8 @@ function handleKeydown(event) {
 
 onMounted(() => {
   window.addEventListener('keydown', handleKeydown)
+  window.addEventListener('resize', updateMobileViewport)
+  updateMobileViewport()
   // Temporarily disable click outside handler to debug
   // document.addEventListener('click', handleClickOutside)
 
@@ -436,6 +493,7 @@ onMounted(() => {
 
 onUnmounted(() => {
   window.removeEventListener('keydown', handleKeydown)
+  window.removeEventListener('resize', updateMobileViewport)
   // document.removeEventListener('click', handleClickOutside)
   if (window._factoriopediaResizeObserver) {
     window._factoriopediaResizeObserver.disconnect()
@@ -456,11 +514,13 @@ const filterGrid = useFactorioGrid({
   width: 100%;
   height: 80vh;
   min-height: 600px;
-  background: #2d2d2d;
-  border: 2px solid #4a4a4a;
-  border-radius: 4px;
+  background: #212121;
+  border: 2px solid #3e3e3e;
+  border-radius: 2px;
   overflow: hidden;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  box-shadow:
+    0 0 0 1px #101010,
+    0 6px 14px rgba(0, 0, 0, 0.45);
 }
 
 .factoripediaContainer {
@@ -468,21 +528,58 @@ const filterGrid = useFactorioGrid({
   height: 100%;
 }
 
+.mobilePanelControls {
+  display: none;
+}
+
+.mobilePanelButton {
+  background: linear-gradient(to bottom, #2f2f2f, #1f1f1f);
+  border: 1px solid #585858;
+  border-top: 1px solid #6d6d6d;
+  border-left: 1px solid #6d6d6d;
+  border-radius: 2px;
+  color: #d9d9d9;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 6px 10px;
+  min-height: 32px;
+  cursor: pointer;
+  box-shadow:
+    1px 1px 0 rgba(0, 0, 0, 0.35),
+    inset 0 1px 1px rgba(255, 255, 255, 0.08);
+}
+
+.mobilePanelButton.active {
+  background: linear-gradient(to bottom, #3d3121, #2f2518);
+  border-color: #b78c45;
+  border-top: 1px solid #c99c50;
+  border-left: 1px solid #c99c50;
+  color: #ffffff;
+}
+
+.mobilePanelButton:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 /* Left Panel */
 .factoripediaLeftPanel {
   width: 50%;
-  background: #2d2d2d;
-  border-right: 2px solid #4a4a4a;
+  background: #262626;
+  border-right: 2px solid #1a1a1a;
   display: flex;
   flex-direction: column;
   position: relative;
+  box-shadow: inset -1px 0 0 rgba(255, 255, 255, 0.04);
 }
 
 .factoripediaHeader {
-  padding: 12px 16px;
-  background: linear-gradient(to bottom, #3a3a3a, #2d2d2d);
-  border-bottom: 1px solid #4a4a4a;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  padding: 10px 14px;
+  background: linear-gradient(to bottom, #2f2f2f, #262626);
+  border-bottom: 1px solid #3f3f3f;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 1px 3px rgba(0, 0, 0, 0.45);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -490,9 +587,11 @@ const filterGrid = useFactorioGrid({
 
 .factoripediaHeader h2 {
   margin: 0;
-  color: #ffffff;
+  color: #e0d2bd;
   font-size: 18px;
-  font-weight: 600;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.5);
 }
 
 .filterButton {
@@ -517,17 +616,19 @@ const filterGrid = useFactorioGrid({
 }
 
 .filterButton:hover {
-  background: #ffa207;
-  border-color: #ffa207;
+  background: linear-gradient(to bottom, #f0b14a, #c7891f);
+  border-color: #cf9428;
   box-shadow:
-    0 0 8px rgba(255, 200, 100, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.25),
     0 2px 4px rgba(0, 0, 0, 0.4);
 }
 
 .filterButton.active {
-  background: #ffa207;
-  border-color: #ffa207;
-  /*box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);*/
+  background: linear-gradient(to bottom, #efb046, #c5861d);
+  border-color: #d89b2a;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 224, 160, 0.25),
+    0 1px 2px rgba(0, 0, 0, 0.45);
 }
 
 .filterButton.disabled {
@@ -552,20 +653,24 @@ const filterGrid = useFactorioGrid({
 
 .searchContainer {
   padding: 8px;
-  background: linear-gradient(to bottom, #3a3a3a, #2d2d2d);
-  border-bottom: 1px solid #4a4a4a;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  background: linear-gradient(to bottom, #2d2d2d, #242424);
+  border-bottom: 1px solid #3f3f3f;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 1px 3px rgba(0, 0, 0, 0.35);
 }
 
 .searchInput {
   width: 100%;
   padding: 6px 8px;
-  background: linear-gradient(to bottom, #4a4a4a, #3a3a3a);
-  border: 1px solid #5a5a5a;
+  background: linear-gradient(to bottom, #3f3f3f, #333333);
+  border: 1px solid #555555;
   border-radius: 2px;
-  color: #ffffff;
+  color: #e6e6e6;
   font-size: 14px;
-  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.3);
+  box-shadow:
+    inset 0 1px 3px rgba(0, 0, 0, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
 .searchInput::placeholder {
@@ -582,12 +687,14 @@ const filterGrid = useFactorioGrid({
 
 .itemGrid {
   /* Grid properties handled by composable inline styles */
-  padding: 8px;
+  padding: 6px;
   overflow-y: scroll;
   background: #1f1f1f;
-  border: 1px solid #4a4a4a;
+  border: 1px solid #3b3b3b;
   border-radius: 2px;
-  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.3);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.03),
+    inset 0 1px 3px rgba(0, 0, 0, 0.5);
 }
 
 /* Subgroup styling handled by composable */
@@ -632,11 +739,13 @@ const filterGrid = useFactorioGrid({
 /* Right Panel */
 .factoripediaRightPanel {
   width: 50%;
-  background: #2d2d2d;
+  background: #4a4a4a;
   display: flex;
   flex-direction: column;
   overflow-y: auto;
-  box-shadow: inset 1px 0 3px rgba(0, 0, 0, 0.3);
+  box-shadow:
+    inset 1px 0 0 rgba(255, 255, 255, 0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 0.03);
 }
 
 .itemDetails,
@@ -887,13 +996,27 @@ const filterGrid = useFactorioGrid({
 /* Mobile Responsive Layout */
 @media (max-width: 768px) {
   .factoripedia {
-    height: auto;
+    height: 100vh;
     min-height: 100vh;
+  }
+
+  .mobilePanelControls {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    padding: 8px;
+    border-bottom: 1px solid #3b3b3b;
+    background: linear-gradient(to bottom, #2f2f2f, #252525);
   }
 
   .factoripediaContainer {
     flex-direction: column;
-    height: auto;
+    height: calc(100% - 49px);
+    min-height: 0;
+  }
+
+  .mobileHidden {
+    display: none !important;
   }
 
   /* Left Panel - Mobile */
@@ -901,14 +1024,20 @@ const filterGrid = useFactorioGrid({
     width: 100%;
     border-right: none;
     border-bottom: 2px solid #4a4a4a;
-    max-height: 90vh;
-    min-height: 40vh;
+    min-height: 0;
+    flex: 1;
   }
 
   /* Right Panel - Mobile */
   .factoripediaRightPanel {
     width: 100%;
-    min-height: 10vh;
+    min-height: 0;
+    flex: 1;
+  }
+
+  .itemGrid {
+    flex: 1;
+    min-height: 0;
   }
 
   /* Smaller filter buttons on mobile - maintain size relative to grid */
@@ -933,25 +1062,24 @@ const filterGrid = useFactorioGrid({
 /* iPhone 12 Pro and similar devices */
 @media (max-width: 428px) {
   .factoripedia {
-    height: auto;
+    height: 100vh;
     min-height: 100vh;
   }
 
   .factoripediaContainer {
-    flex-direction: column;
+    height: calc(100% - 47px);
   }
 
   .factoripediaLeftPanel {
     width: 100%;
     border-right: none;
     border-bottom: 2px solid #4a4a4a;
-    max-height: 90vh;
-    min-height: 40vh;
+    min-height: 0;
   }
 
   .factoripediaRightPanel {
     width: 100%;
-    min-height: 10vh;
+    min-height: 0;
   }
 
   /* Smaller filter buttons - maintain minimum size */
@@ -974,6 +1102,11 @@ const filterGrid = useFactorioGrid({
 
   .searchContainer {
     padding: 6px;
+  }
+
+  .mobilePanelControls {
+    padding: 6px;
+    gap: 4px;
   }
 }
 
