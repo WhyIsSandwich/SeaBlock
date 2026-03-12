@@ -37,6 +37,7 @@ factorioObjects type
 */
 
 import { labels, sectionTypes } from './detailsDataTypes.js'
+import { postProcessFactorioData } from './factorioDataPostProcessing.js'
 import { applyRules, allRules } from './useDetailsData/index.js'
 
 export { labels, sectionTypes }
@@ -47,16 +48,18 @@ export { labels, sectionTypes }
  * @param {string[]} types - The types present in the unified object
  * @param {boolean} isTooltip - Whether this is for a tooltip
  * @param {Object} factorioData - The factorio data context
+ * @param {Object} options - Optional processing flags
  * @returns {Object} Object containing statistics and sections arrays
  */
-function applyAllRules(unifiedObject, types, isTooltip, factorioData) {
+function applyAllRules(unifiedObject, types, isTooltip, factorioData, options = {}) {
   const statistics = []
   const sections = []
+  const processedFactorioData = postProcessFactorioData(factorioData, options)
 
   // Create a context object that includes all the data
   const context = {
     isTooltip,
-    factorioData,
+    factorioData: processedFactorioData,
     types
   }
 
@@ -75,7 +78,13 @@ function applyAllRules(unifiedObject, types, isTooltip, factorioData) {
     }
   })
 
-  return { statistics, sections }
+  // Keep unlock technologies section pinned to the bottom when present.
+  const pinnedSectionType = 'unlock_technologies'
+  const pinnedSections = sections.filter(section => section.type === pinnedSectionType)
+  const regularSections = sections.filter(section => section.type !== pinnedSectionType)
+  const orderedSections = [...regularSections, ...pinnedSections]
+
+  return { statistics, sections: orderedSections }
 }
 
 /***
@@ -83,9 +92,11 @@ function applyAllRules(unifiedObject, types, isTooltip, factorioData) {
  * @param {string[]} types - the types of the item
  * @param {object} unifiedObject - the unified object of the item
  * @param {boolean} isTooltip - whether the data is being generated for a tooltip
+ * @param {object} factorioData - organized factorio prototypes by type
+ * @param {object} options - Optional processing flags
  * @returns {object} the details data
  */
-function getDetailsData(types, unifiedObject, isTooltip, factorioData) {
+function getDetailsData(types, unifiedObject, isTooltip, factorioData, options = {}) {
   const data = {
     title: unifiedObject.displayName,
     description: unifiedObject.description,
@@ -95,7 +106,7 @@ function getDetailsData(types, unifiedObject, isTooltip, factorioData) {
   }
 
   // Apply all rules at once and get the results
-  const { statistics, sections } = applyAllRules(unifiedObject, types, isTooltip, factorioData)
+  const { statistics, sections } = applyAllRules(unifiedObject, types, isTooltip, factorioData, options)
 
   // Add the results to the data object
   data.statistics.push(...statistics)

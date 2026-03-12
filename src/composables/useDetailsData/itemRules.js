@@ -312,8 +312,7 @@ export const itemRules = [
       const resources = Object.values(context.factorioData.entity)
         .filter(
           entity =>
-            (!entity.hidden &&
-              !entity.factoriopedia_alternative &&
+            (!entity.factoriopedia_alternative &&
               entity.name !== data.item?.name &&
               entity.minable?.result == data.item?.name) ||
             (entity.minable?.results?.length > 0 &&

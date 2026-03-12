@@ -8,6 +8,7 @@
 import { ref } from 'vue'
 import { withBase } from 'vitepress'
 
+import { postProcessFactorioData } from './factorioDataPostProcessing.js'
 import { useUnifiedObjects } from './useUnifiedObjects.js'
 import { useFactorioPrototypeMapping } from './useFactorioPrototypeMapping.js'
 
@@ -230,6 +231,9 @@ function createFactorioDataInstance() {
 
     const structure = {}
     const { createUnifiedObjectByKey } = useUnifiedObjects()
+    const processedFactorioData = postProcessFactorioData(organizedData.value, {
+      excludeHiddenFromFactorioData: true
+    })
 
     // Data sources for unified object creation
     let allItems = []
@@ -237,10 +241,10 @@ function createFactorioDataInstance() {
     const usedKeys = new Set()
     // Get all distinct keys from all data sources
 
-    for (const prototypes of Object.values(organizedData.value)) {
+    for (const prototypes of Object.values(processedFactorioData)) {
       for (const prototypeName of Object.keys(prototypes)) {
         if (usedKeys.has(prototypeName)) continue
-        const unifiedObjects = createUnifiedObjectByKey(prototypeName, organizedData.value)
+        const unifiedObjects = createUnifiedObjectByKey(prototypeName, processedFactorioData)
         if (unifiedObjects && unifiedObjects.length > 0) {
           allItems.push(...unifiedObjects)
         }
@@ -252,8 +256,6 @@ function createFactorioDataInstance() {
 
     // Filter out items that have a factoriopedia alternative
     allItems = allItems.filter(item => !item.factoriopedia_alternative)
-    allItems = allItems.filter(item => !item.hidden)
-    allItems = allItems.filter(item => !item.hidden_in_factoriopedia)
 
     // Group items by subgroup
     const itemGroups = {}

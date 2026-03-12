@@ -309,7 +309,9 @@ const itemTypeLabel = computed(() => {
 const detailsData = computed(() => {
   const data =
     selectedItem.value &&
-    getDetailsData(selectedItem.value.types, selectedItem.value, false, organizedData.value)
+    getDetailsData(selectedItem.value.types, selectedItem.value, false, organizedData.value, {
+      excludeHiddenFromFactorioData: true
+    })
   console.log('detailsData', data)
   return data
 })

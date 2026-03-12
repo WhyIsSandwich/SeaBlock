@@ -179,13 +179,14 @@ class TooltipGenerator {
 
       // Track rule execution by monkey-patching the rules engine
       const originalGetDetailsData = this.detailsData.getDetailsData
-      this.detailsData.getDetailsData = (types, unifiedObject, isTooltip, factorioData) => {
+      this.detailsData.getDetailsData = (types, unifiedObject, isTooltip, factorioData, options) => {
         const result = originalGetDetailsData.call(
           this.detailsData,
           types,
           unifiedObject,
           isTooltip,
-          factorioData
+          factorioData,
+          options
         )
 
         // Analyze the result to understand what rules were applied
@@ -222,7 +223,8 @@ class TooltipGenerator {
         [prototypeType],
         unifiedObject,
         true, // isTooltip = true
-        this.organizedData
+        this.organizedData,
+        { excludeHiddenFromFactorioData: true }
       )
 
       //console.log(tooltipData)
