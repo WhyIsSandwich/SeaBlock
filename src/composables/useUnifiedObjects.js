@@ -10,6 +10,24 @@ export function useUnifiedObjects() {
     )
   }
 
+  function getRecipePrimaryProduct(recipe, factorioData) {
+    if (!recipe || !factorioData) return null
+
+    let productRef = null
+    if (recipe.main_product) {
+      productRef = { name: recipe.main_product, type: null }
+    } else if (Array.isArray(recipe.results) && recipe.results.length === 1) {
+      productRef = recipe.results[0]
+    }
+    if (!productRef?.name) return null
+
+    const productType = productRef.type === 'fluid' ? 'fluid' : 'item'
+    const product = factorioData[productType]?.[productRef.name]
+    if (!product || shouldExcludeFromUnified(product)) return null
+
+    return product
+  }
+
   /**
    * Create a unified object from recipe data
    */
@@ -284,6 +302,14 @@ export function useUnifiedObjects() {
         object.entity?.order ||
         object.tile?.order ||
         key
+
+      // Factoriopedia categorizes recipes by primary product when recipe subgroup is missing.
+      if (object.recipe) {
+        const primaryProduct = getRecipePrimaryProduct(object.recipe, factorioData)
+        if (!object.recipe?.subgroup && primaryProduct?.subgroup) {
+          object.subgroup = primaryProduct.subgroup
+        }
+      }
 
       // Metadata
       object.lastUpdated = Date.now()
