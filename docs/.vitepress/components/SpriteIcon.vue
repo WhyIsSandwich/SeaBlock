@@ -67,6 +67,13 @@ const iconSize = computed(() => {
   return Math.max(16, Math.min(128, containerSize.value))
 })
 
+const iconFillRatio = computed(() => {
+  if (iconSize.value <= 20) return 0.9
+  if (iconSize.value <= 28) return 0.88
+  if (iconSize.value <= 40) return 0.86
+  return 0.84
+})
+
 const iconClasses = computed(() => ({
   'sprite-icon-loading': isLoading.value,
   'sprite-icon-error': hasError.value
@@ -88,17 +95,19 @@ const iconStyle = computed(() => {
     return {}
   }
 
-  const scale = iconSize.value / Math.max(spriteData.value.width, spriteData.value.height)
+  const targetSpriteSize = iconSize.value * iconFillRatio.value
+  const scale = targetSpriteSize / Math.max(spriteData.value.width, spriteData.value.height)
   const scaledWidth = spriteData.value.width * scale
   const scaledHeight = spriteData.value.height * scale
 
   const style = {
-    width: `${scaledWidth}px !important`,
-    height: `${scaledHeight}px !important`,
-    backgroundImage: `url(${withBase(`/data/${spritemapData.value.image.replace('.png', '.webp')}`)}) !important`,
-    backgroundPosition: `-${spriteData.value.x * scale}px -${spriteData.value.y * scale}px !important`,
-    backgroundSize: `${spritemapData.value.width * scale}px ${spritemapData.value.height * scale}px !important`,
-    backgroundRepeat: 'no-repeat !important'
+    width: `${scaledWidth}px`,
+    height: `${scaledHeight}px`,
+    backgroundImage: `url(${withBase(`/data/${spritemapData.value.image.replace('.png', '.webp')}`)})`,
+    backgroundPosition: `-${spriteData.value.x * scale}px -${spriteData.value.y * scale}px`,
+    backgroundSize: `${spritemapData.value.width * scale}px ${spritemapData.value.height * scale}px`,
+    backgroundRepeat: 'no-repeat',
+    imageRendering: 'pixelated'
   }
 
   // Add color if color prop is provided
@@ -111,14 +120,14 @@ const iconStyle = computed(() => {
     const scaledY = spriteData.value.y * scale
 
     // Override the background image with solid color and mask
-    style.background = `${props.color} !important` // Use the provided color
-    style.backgroundImage = 'none !important'
-    style.webkitMask = `url(${baseUrl}) no-repeat !important`
-    style.webkitMaskPosition = `-${scaledX}px -${scaledY}px !important`
-    style.webkitMaskSize = `${scaledSheetWidth}px ${scaledSheetHeight}px !important`
-    style.mask = `url(${baseUrl}) no-repeat !important`
-    style.maskPosition = `-${scaledX}px -${scaledY}px !important`
-    style.maskSize = `${scaledSheetWidth}px ${scaledSheetHeight}px !important`
+    style.background = props.color
+    style.backgroundImage = 'none'
+    style.webkitMask = `url(${baseUrl}) no-repeat`
+    style.webkitMaskPosition = `-${scaledX}px -${scaledY}px`
+    style.webkitMaskSize = `${scaledSheetWidth}px ${scaledSheetHeight}px`
+    style.mask = `url(${baseUrl}) no-repeat`
+    style.maskPosition = `-${scaledX}px -${scaledY}px`
+    style.maskSize = `${scaledSheetWidth}px ${scaledSheetHeight}px`
   }
 
   // console.log(`SpriteIcon style for ${props.spriteKey}:`, style)
@@ -225,11 +234,13 @@ onUnmounted(() => {
   vertical-align: middle;
   position: relative;
   flex-shrink: 0;
-  /* Ensure inline styles override any conflicting CSS */
-  width: auto !important;
-  height: auto !important;
-  /* Add drop shadow to sprites */
-  filter: drop-shadow(0.1em 0.1em 0.1em rgba(0, 0, 0, 0.5));
+  width: auto;
+  height: auto;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  filter:
+    drop-shadow(0 1px 0 rgba(255, 255, 255, 0.06))
+    drop-shadow(0 1px 1px rgba(0, 0, 0, 0.45));
 }
 
 .sprite-icon-fallback {

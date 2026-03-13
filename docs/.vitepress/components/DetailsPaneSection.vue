@@ -123,7 +123,7 @@
             <IconButton
               :type="item.type"
               :name="item.name"
-              :size="40"
+              :size="getListIconSize()"
               :clickable="true"
               :show-tooltip="showTooltip"
               @click="handleItemClick(item)"
@@ -166,6 +166,10 @@ export default {
     showTooltip: {
       type: Boolean,
       default: true
+    },
+    visualContext: {
+      type: String,
+      default: 'details'
     }
   },
   emits: ['select-item', 'item-selected'],
@@ -266,7 +270,13 @@ export default {
       return this.$style.itemEntry
     },
     getIconSize() {
-      return this.isGridLayout ? this.sectionGrid.buttonSize : 24
+      return this.isGridLayout ? this.sectionGrid.buttonSize : this.getListIconSize()
+    },
+    getListIconSize() {
+      if (this.visualContext === 'tooltip') {
+        return 32
+      }
+      return 36
     },
     shouldShowLabel() {
       // In grid layout, only show labels if explicitly requested

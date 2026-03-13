@@ -47,7 +47,12 @@
               @click="!disabledFilters.has(category.key) && selectCategory(category.key)"
               :style="categoryGrid.itemStyles"
             >
-              <SpriteIcon v-if="category.icon" :sprite-key="category.icon" :title="category.name" />
+              <SpriteIcon
+                v-if="category.icon"
+                :sprite-key="category.icon"
+                :size="Math.max(24, categoryGrid.buttonSize - 10)"
+                :title="category.name"
+              />
             </button>
           </div>
         </div>

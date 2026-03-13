@@ -38,18 +38,6 @@
                   >
                     {{ tooltipData.title }}
                   </div>
-                  <button
-                    class="tooltip-close-button"
-                    title="Close tooltip"
-                    aria-label="Close tooltip"
-                    @click.stop="closeTooltip"
-                  >
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
-                      <path
-                        d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"
-                      />
-                    </svg>
-                  </button>
                 </div>
                 <div
                   v-if="tooltipData?.description"
@@ -70,6 +58,7 @@
                     v-for="(section, sectionIndex) in tooltipData.sections"
                     :key="`${section.type}-${sectionIndex}`"
                     :show-tooltip="false"
+                    visual-context="tooltip"
                     :section="section"
                   />
                 </div>
@@ -568,14 +557,7 @@ onUnmounted(() => {
 }
 
 .tooltip-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 4px;
-}
-
-.tooltip-icon {
-  flex-shrink: 0;
+  margin-bottom: 6px;
 }
 
 .tooltip-title {
@@ -583,31 +565,7 @@ onUnmounted(() => {
   font-size: 16px;
   color: #ffffff;
   margin: 0;
-  flex: 1;
-}
-
-.tooltip-close-button {
-  background: none;
-  border: none;
-  padding: 4px;
-  cursor: pointer;
-  color: #888888;
-  border-radius: 2px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s ease;
-  flex-shrink: 0;
-}
-
-.tooltip-close-button:hover {
-  background: #333333;
-  color: #cccccc;
-}
-
-.tooltip-close-button:focus {
-  outline: 2px solid #666666;
-  outline-offset: 1px;
+  line-height: 1.3;
 }
 
 .tooltip-description {
@@ -615,6 +573,10 @@ onUnmounted(() => {
   color: #cccccc;
   margin-bottom: 8px;
   line-height: 1.4;
+}
+
+.tooltip-description p {
+  margin: 0;
 }
 
 .tooltip-sections {

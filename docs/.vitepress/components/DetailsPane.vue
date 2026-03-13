@@ -68,6 +68,7 @@
                       item.type === 'tile'
                     "
                     :sprite-key="`${item.type}-${item.name}`"
+                    :size="32"
                     :title="item.displayName"
                   />
                   <span :class="$style.historyItemName">{{ item.displayName }}</span>
