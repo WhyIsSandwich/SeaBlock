@@ -20,7 +20,7 @@
     <div class="example">
       <h4>Colored Text:</h4>
       <FactorioRichText
-        :text="'This is [color=red]red text[/color] and [color=blue]blue text[/color]'"
+        :text="'This is [color=red]red text[/color] and [color=#7ac1de]blue text[.color]'"
       />
     </div>
 
@@ -34,6 +34,23 @@
       <FactorioRichText
         :text="'To make [item=steel-plate], you need [recipe=steel-plate] which requires [item=iron-plate] and [fluid=water]'"
       />
+    </div>
+
+    <div class="example">
+      <h4>Inline Sprite and Tooltip:</h4>
+      <FactorioRichText
+        :text="'[img=utility.warning_icon] [tooltip=Hover for locale tooltip,item-name.iron-plate]'"
+      />
+    </div>
+
+    <div class="example">
+      <h4>Space Age Tags:</h4>
+      <FactorioRichText :text="'Planet [planet=gleba], location [space-location=nauvis], [space-age]'" />
+    </div>
+
+    <div class="example">
+      <h4>Strict-Mode Malformed Tag:</h4>
+      <FactorioRichText :text="'Invalid close [color=green]text[/font] keeps raw tag'" />
     </div>
   </div>
 </template>

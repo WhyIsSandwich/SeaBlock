@@ -63,7 +63,8 @@
               <SpriteIcon
                 v-if="category.icon"
                 :sprite-key="category.icon"
-                :size="Math.max(24, categoryGrid.buttonSize - 10)"
+                :size="categoryGrid.buttonSize"
+                :fill-ratio="CATEGORY_ICON_FILL_RATIO"
                 :title="category.name"
               />
             </button>
@@ -185,6 +186,8 @@ const itemGrid = computed(() =>
     padding: 16
   })
 )
+
+const CATEGORY_ICON_FILL_RATIO = 100 / 120
 
 const categoryGrid = computed(() =>
   useFactorioGrid({

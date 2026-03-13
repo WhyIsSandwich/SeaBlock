@@ -154,13 +154,11 @@ const resolvedTitle = computed(() => {
 })
 
 const resolvedAriaLabel = computed(() => resolvedTitle.value || null)
+const ICON_BORDER_RATIO = 5 / 64
 const slotPadding = computed(() => {
   const numericSize = Number(props.size) || 32
-  if (numericSize <= 20) return '1px'
-  if (numericSize <= 28) return '2px'
-  if (numericSize <= 40) return '3px'
-  if (numericSize <= 56) return '4px'
-  return '6px'
+  const borderPx = Math.max(1, Math.round(numericSize * ICON_BORDER_RATIO))
+  return `${borderPx}px`
 })
 
 // Methods

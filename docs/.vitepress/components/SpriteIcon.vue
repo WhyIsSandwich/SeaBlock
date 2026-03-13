@@ -7,7 +7,10 @@
     :title="title"
     :aria-label="ariaLabel"
   >
-    <span v-if="!spriteData" class="sprite-icon-fallback">
+    <span
+      v-if="!spriteData"
+      class="sprite-icon-fallback"
+    >
       {{ fallbackText }}
     </span>
   </span>
@@ -44,6 +47,10 @@ const props = defineProps({
   color: {
     type: String,
     default: null
+  },
+  fillRatio: {
+    type: Number,
+    default: null
   }
 })
 
@@ -67,11 +74,12 @@ const iconSize = computed(() => {
   return Math.max(16, Math.min(128, containerSize.value))
 })
 
+const DEFAULT_ICON_FILL_RATIO = 54 / 64
 const iconFillRatio = computed(() => {
-  if (iconSize.value <= 20) return 0.9
-  if (iconSize.value <= 28) return 0.88
-  if (iconSize.value <= 40) return 0.86
-  return 0.84
+  if (typeof props.fillRatio === 'number' && Number.isFinite(props.fillRatio) && props.fillRatio > 0) {
+    return props.fillRatio
+  }
+  return DEFAULT_ICON_FILL_RATIO
 })
 
 const spriteScale = computed(() => {
@@ -150,7 +158,6 @@ const iconStyle = computed(() => {
 const measureContainer = () => {
   if (!iconElement.value) return
 
-  const rect = iconElement.value.getBoundingClientRect()
   const parentRect = iconElement.value.parentElement?.getBoundingClientRect()
 
   if (parentRect) {
