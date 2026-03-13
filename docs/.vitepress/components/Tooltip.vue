@@ -46,7 +46,7 @@
                     'tooltip-error': hasError
                   }"
                 >
-                  <p>{{ tooltipData.description }}</p>
+                  <FactorioRichText :text="tooltipData.description" />
                 </div>
                 <Statistics
                   v-if="tooltipData.statistics?.length > 0"
@@ -81,6 +81,7 @@ import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { useTooltipData } from '../../../src/composables/useTooltipData.js'
 
 import DetailsPaneSection from './DetailsPaneSection.vue'
+import FactorioRichText from './FactorioRichText.vue'
 import Statistics from './Statistics.vue'
 
 // Props

@@ -22,13 +22,13 @@
   <template v-else-if="section.type === 'unlock_technologies'">
     <div :class="$style.section">
       <h4 :class="$style.sectionTitle">{{ section.label }}</h4>
-      <div v-if="section.items?.length > 0" :class="$style.unlockTechnologies">
+      <div v-if="section.items?.length > 0" :class="$style.unlockList">
         <div
           v-for="item in section.items"
           :key="`${item.type}-${item.name}`"
-          :class="$style.technologyEntry"
+          :class="$style.unlockRow"
         >
-          <!-- Left side: Green technology panel -->
+          <!-- Left side: game-style technology panel -->
           <IconButton
             :type="item.type"
             :name="item.name"
@@ -37,36 +37,28 @@
             :show-tooltip="showTooltip"
             @click="handleItemClick(item)"
           >
-            <template #container="{ title, click, spriteKey, class: containerClass }">
-              <div :class="[containerClass, $style.technologyPanel]" :title="title" @click="click">
-                <!-- Technology Icon (large, centered) -->
-                <div :class="$style.technologyIconContainer">
+            <template #container="{ title, click, spriteKey }">
+              <div :class="$style.unlockPanel" :title="title" @click="click">
+                <div :class="$style.unlockIconPanel">
                   <SpriteIcon v-if="spriteKey" :sprite-key="spriteKey" :size="128" />
                 </div>
-
-                <!-- Technology Level (if prototype name ends with a number) -->
-                <div :class="$style.technologyLevel">
-                  {{ getTechnologyLevel(item.name) }}
+                <div :class="$style.unlockLevel">
+                  <span v-if="getTechnologyLevel(item.name)" :class="$style.unlockLevelBadge">
+                    {{ getTechnologyLevel(item.name) }}
+                  </span>
                 </div>
-                <!-- Science Pack Icons (bottom of green panel) -->
-                <div :class="$style.sciencePacksContainer">
-                  <IconButton
+                <div :class="$style.unlockSciencePacks">
+                  <SpriteIcon
                     v-for="pack in item.items"
                     :key="pack.name"
-                    :is="'div'"
-                    :size="16"
-                    :show-tooltip="false"
-                    :clickable="false"
-                    :name="pack.name"
-                    :type="pack.type || 'item'"
+                    :sprite-key="`${pack.type || 'item'}-${pack.name}`"
+                    :size="20"
                   />
                 </div>
               </div>
             </template>
           </IconButton>
-
-          <!-- Right side: Technology name -->
-          <div :class="$style.technologyName">
+          <div :class="$style.unlockName">
             {{ getItemLabel(item) || item.name }}
           </div>
         </div>
@@ -198,7 +190,9 @@ export default {
     isGridLayout() {
       if (this.visualContext === 'tooltip' && this.section.itemsType === 'grid') {
         const hasTextualLabels = Array.isArray(this.section.items)
-          ? this.section.items.some(item => typeof item?.label === 'string' && item.label.trim().length > 0)
+          ? this.section.items.some(
+              item => typeof item?.label === 'string' && item.label.trim().length > 0
+            )
           : false
 
         if (hasTextualLabels) {
@@ -241,6 +235,9 @@ export default {
     this.cleanupGridResizeObserver()
   },
   methods: {
+    isUnlockSectionType(sectionType) {
+      return sectionType === 'unlock_technologies' || sectionType === 'unlocked_by'
+    },
     getItemLabel(item) {
       const localisedName = this.localizedData?.[item.type]?.[item.name]?.n
       if (!item.label) {
@@ -402,6 +399,10 @@ export default {
   padding-bottom: 3px;
 }
 
+.unlockSectionTitle {
+  text-transform: none;
+}
+
 .technologyCostRow {
   display: flex;
   align-items: center;
@@ -488,79 +489,91 @@ export default {
   flex: 1;
 }
 
-/* Unlock Technologies Styles */
-.unlockTechnologies {
+/* Shared Unlock/Unlocked Styles */
+.unlockList {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 10px;
 }
 
-.technologyEntry {
+.unlockRow {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 6px;
-  background: #1f1f1f;
-  border: 1px solid #3f3f3f;
-  border-radius: 2px;
+  gap: 12px;
+  padding: 0;
 }
 
-.technologyPanel {
+.unlockPanel {
   display: flex;
   flex-direction: column;
-  padding-top: 10px;
-  width: 128px;
-  height: 180px;
-  border: 2px solid #333;
-  background: linear-gradient(135deg, #00c659 0%, #00a84d 50%, #008f41 100%);
-  border-radius: 6px;
-  box-shadow:
-    0 4px 8px rgba(0, 0, 0, 0.4),
-    0 2px 4px rgba(0, 0, 0, 0.3),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.3);
+  padding: 0 !important;
+  width: 128px !important;
+  min-width: 128px !important;
+  max-width: 128px !important;
+  height: 180px !important;
+  min-height: 180px !important;
+  max-height: 180px !important;
+  border: 1px solid #1a6f3f;
+  background: #00c659;
+  border-radius: 0;
+  box-shadow: none;
   overflow: hidden;
   position: relative;
   cursor: pointer;
 }
 
-.technologyPanel:hover {
-  filter: brightness(1.2);
+.unlockPanel:hover {
+  filter: brightness(1.05);
 }
-.technologyIconContainer {
+.unlockIconPanel {
   display: flex;
   align-items: center;
   justify-content: center;
   height: 128px;
   min-width: 128px;
   background: #00c659;
-  border-bottom: 1px solid #333;
+  border-bottom: 1px solid #0d8c4a;
 }
 
-.technologyLevel {
+.unlockLevel {
   display: flex;
   align-items: center;
   justify-content: flex-start;
   min-height: 16px;
   height: 16px;
   width: 128px;
-  background: #24d07f;
-  color: #ffffff;
-  font-size: 12px;
-  font-weight: 600;
-  border-bottom: 1px solid #333;
+  background: #00b857;
+  border-bottom: 1px solid #0d8c4a;
 }
 
-.sciencePacksContainer {
+.unlockLevelBadge {
+  margin-left: 0;
+  width: 33%;
+  height: 14px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #9ff3b8;
+  color: #083b1f;
+  font-size: 12px;
+  line-height: 1;
+  font-weight: 700;
+  border: 1px solid #56c97a;
+  border-radius: 1px;
+}
+
+.unlockSciencePacks {
   display: flex;
   gap: 1px;
   justify-content: flex-start;
-  align-items: flex-start;
-  height: 26px;
+  align-items: center;
+  flex: 1;
+  min-height: 26px;
   width: 128px;
-  background: #01711f;
-  padding: 4px;
-  flex-wrap: wrap;
+  background: #026f27;
+  padding: 1px 2px;
+  overflow: hidden;
 }
 
 .sciencePackIcon {
@@ -580,11 +593,11 @@ export default {
   border-radius: 2px;
 }
 
-.technologyName {
-  color: #d9d9d9;
-  font-size: 14px;
+.unlockName {
+  color: #e4e4e4;
+  font-size: 13px;
   font-weight: 500;
   flex: 1;
-  padding-left: 6px;
+  padding-left: 2px;
 }
 </style>

@@ -16,7 +16,7 @@ export const sectionTypes = new Proxy(
     made_in: 'made in',
     used_in: 'used in',
     can_craft: 'can craft',
-    unlock_technologies: 'Unlock technologies',
+    unlock_technologies: 'Unlocked by',
     technology_cost: 'Cost',
     technology_effects: 'Effects',
     turret: 'Turret',
