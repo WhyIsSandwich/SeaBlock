@@ -175,6 +175,24 @@ describe('effects regression from game data', () => {
     expect(effectSection).toBeUndefined()
   })
 
+  it('renders gun statistics and supported ammo categories for gun items', () => {
+    const details = detailsForPrototype('item', 'submachine-gun')
+
+    expect(details.statistics).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ label: 'Range', value: '18' }),
+        expect.objectContaining({ label: 'Shooting Speed', value: '10.0/s' })
+      ])
+    )
+
+    const ammoCategorySection = details.sections.find(section => section.label === 'Ammo category')
+    expect(ammoCategorySection).toBeDefined()
+    expect(ammoCategorySection.itemsType).toBe('list')
+    expect(ammoCategorySection.items).toEqual(
+      expect.arrayContaining([expect.objectContaining({ name: 'bullet', type: 'ammo-category' })])
+    )
+  })
+
   it('renders module effects as top-level statistics', () => {
     const details = detailsForPrototype('item', 'speed-module')
     const effectsStat = details.statistics.find(stat => stat.label === 'Effects')

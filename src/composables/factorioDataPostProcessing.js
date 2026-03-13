@@ -31,19 +31,6 @@ export function postProcessFactorioData(factorioData, options = {}) {
     return cachedByOption.get(cacheKey)
   }
 
-  const excludedPrototypeNames = new Set()
-  for (const prototypes of Object.values(factorioData)) {
-    if (!prototypes || typeof prototypes !== 'object' || Array.isArray(prototypes)) {
-      continue
-    }
-
-    for (const [prototypeName, prototype] of Object.entries(prototypes)) {
-      if (shouldExcludeFromFactorioData(prototype)) {
-        excludedPrototypeNames.add(prototypeName)
-      }
-    }
-  }
-
   const processedData = {}
   for (const [prototypeType, prototypes] of Object.entries(factorioData)) {
     if (!prototypes || typeof prototypes !== 'object' || Array.isArray(prototypes)) {
@@ -52,10 +39,9 @@ export function postProcessFactorioData(factorioData, options = {}) {
     }
 
     processedData[prototypeType] = Object.fromEntries(
-      Object.entries(prototypes).filter(
-        ([prototypeName, prototype]) =>
-          !excludedPrototypeNames.has(prototypeName) && !shouldExcludeFromFactorioData(prototype)
-      )
+      Object.entries(prototypes).filter(([_prototypeName, prototype]) => {
+        return !shouldExcludeFromFactorioData(prototype)
+      })
     )
   }
 

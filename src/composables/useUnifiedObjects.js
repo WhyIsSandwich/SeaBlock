@@ -4,6 +4,12 @@
  */
 
 export function useUnifiedObjects() {
+  function shouldExcludeFromUnified(prototype) {
+    return Boolean(
+      prototype?.hidden || prototype?.hidden_in_factoriopedia || prototype?.hidden_from_factorio
+    )
+  }
+
   /**
    * Create a unified object from recipe data
    */
@@ -19,8 +25,12 @@ export function useUnifiedObjects() {
     for (const prototype of Object.keys(factorioData)) {
       allTypes[prototype] = factorioData[prototype][key]
     }
-    // Start with the base data for this key
-    const { item, fluid, entity, recipe, tile } = allTypes
+    // Start with the base data for this key (ignore hidden entries when unifying)
+    const item = shouldExcludeFromUnified(allTypes.item) ? null : allTypes.item
+    const fluid = shouldExcludeFromUnified(allTypes.fluid) ? null : allTypes.fluid
+    const entity = shouldExcludeFromUnified(allTypes.entity) ? null : allTypes.entity
+    const recipe = shouldExcludeFromUnified(allTypes.recipe) ? null : allTypes.recipe
+    const tile = shouldExcludeFromUnified(allTypes.tile) ? null : allTypes.tile
     /*
     const recipe = { ...recipesData?.[key] }
 
@@ -53,6 +63,7 @@ export function useUnifiedObjects() {
     for (const [type, value] of Object.entries(allTypes)) {
       if (handledTypes.has(type)) continue
       if (!value) continue
+      if (shouldExcludeFromUnified(value)) continue
       if (excludedTypes.includes(type)) continue
       const unifiedObject = {
         types: [type],
@@ -168,7 +179,7 @@ export function useUnifiedObjects() {
       if (item.place_as_equipment_result) {
         const equipmentName = item.place_as_equipment_result
         const equipment = factorioData.equipment?.[equipmentName]
-        if (equipment) {
+        if (equipment && !shouldExcludeFromUnified(equipment)) {
           unifiedObject.equipment = equipment
           unifiedObject.types.push('equipment')
         }
@@ -179,7 +190,8 @@ export function useUnifiedObjects() {
     if (tile && !tileUsed) {
       // check if it would've been part of an item
       const placeAsTileItem = Object.values(factorioData.item).filter(
-        item => item.place_as_tile && item.place_as_tile.result === key
+        item =>
+          !shouldExcludeFromUnified(item) && item.place_as_tile && item.place_as_tile.result === key
       )
       if (placeAsTileItem.length === 0 && tile.next_direction) {
         // walk the tile data until and end or we cycle back to the original tile
@@ -187,7 +199,10 @@ export function useUnifiedObjects() {
         while (currentTile.next_direction && currentTile.next_direction !== tile.name) {
           currentTile = factorioData.tile[currentTile.next_direction]
           const otherTilePlaceAsTileItem = Object.values(factorioData.item).filter(
-            item => item.place_as_tile && item.place_as_tile.result === currentTile.name
+            item =>
+              !shouldExcludeFromUnified(item) &&
+              item.place_as_tile &&
+              item.place_as_tile.result === currentTile.name
           )
           if (otherTilePlaceAsTileItem.length > 0) {
             return createUnifiedObjectByKey(currentTile.name, factorioData)

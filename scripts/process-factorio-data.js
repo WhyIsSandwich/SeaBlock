@@ -222,6 +222,8 @@ class FactorioDataProcessorRefactored {
     'airborne-pollutant',
     'ammo-category',
     'asteroid-chunk',
+    'container',
+    'damage-type',
     'decorative',
     'entity',
     'equipment',
@@ -240,7 +242,7 @@ class FactorioDataProcessorRefactored {
    * Find icon for a prototype using collapsing logic
    * This mimics Factoriopedia behavior where some icons are inherited
    */
-  findPrototypeIcon(prototypeType, prototypeName, prototypeData) {
+  findPrototypeIcon(prototypeType, prototypeName, _prototypeData) {
     // Get the mapping from the composable
     const { subtypeToBaseType } = useFactorioPrototypeMapping()
 
@@ -256,6 +258,12 @@ class FactorioDataProcessorRefactored {
 
     // 1. Direct base type/name path
     possiblePaths.push(path.join(this.scriptOutputPath, baseType, `${prototypeName}.png`))
+
+    // 2. Fallback to subtype folder when icon dumps are organized by concrete prototype type.
+    // This covers cases like capsule/gun-family prototypes that may not be mirrored under base folders.
+    if (prototypeType && prototypeType !== baseType) {
+      possiblePaths.push(path.join(this.scriptOutputPath, prototypeType, `${prototypeName}.png`))
+    }
 
     // Try each path
     for (const iconPath of possiblePaths) {

@@ -5,6 +5,21 @@ import {
   parseGenericItemEffect
 } from '../useAttackParametersParser.js'
 
+function asArray(value) {
+  if (!value) return []
+  return Array.isArray(value) ? value : [value]
+}
+
+function getGunAmmoCategories(item) {
+  if (!item?.attack_parameters) return []
+  const categories = [
+    ...asArray(item.attack_parameters.ammo_categories),
+    ...asArray(item.attack_parameters.ammo_category)
+  ].filter(Boolean)
+
+  return [...new Set(categories)]
+}
+
 /**
  * Item rules - unified format for both statistics and sections
  */
@@ -155,13 +170,34 @@ export const itemRules = [
     condition: data => data.item?.shield_recharge_rate !== undefined
   },
   {
-    name: labels.range_shooting_speed,
+    name: labels.range,
     order: 12,
     type: 'statistics',
     forType: 'item',
     shownInTooltip: true,
-    getValue: data => data.item?.range_shooting_speed,
-    condition: data => data.item?.range_shooting_speed !== undefined
+    getValue: data => data.item?.attack_parameters?.range,
+    condition: data =>
+      data.item?.type === 'gun' && data.item?.attack_parameters?.range !== undefined
+  },
+  {
+    name: 'Minimum range',
+    order: 12.1,
+    type: 'statistics',
+    forType: 'item',
+    shownInTooltip: true,
+    getValue: data => data.item?.attack_parameters?.min_range,
+    condition: data =>
+      data.item?.type === 'gun' && data.item?.attack_parameters?.min_range !== undefined
+  },
+  {
+    name: labels.shooting_speed,
+    order: 12.2,
+    type: 'statistics',
+    forType: 'item',
+    shownInTooltip: true,
+    getValue: data => `${(60 / data.item.attack_parameters.cooldown).toFixed(1)}/s`,
+    condition: data =>
+      data.item?.type === 'gun' && data.item?.attack_parameters?.cooldown !== undefined
   },
   {
     name: labels.stack_size,
@@ -277,8 +313,23 @@ export const itemRules = [
     condition: data => data.item?.turret !== undefined
   },
   {
-    name: sectionTypes.effect,
+    name: 'Ammo category',
     order: 6,
+    type: 'section',
+    forType: 'item',
+    shownInTooltip: true,
+    getValue: data => ({
+      items: getGunAmmoCategories(data.item).map(category => ({
+        name: category,
+        type: 'ammo-category'
+      })),
+      itemsType: 'list'
+    }),
+    condition: data => data.item?.type === 'gun' && getGunAmmoCategories(data.item).length > 0
+  },
+  {
+    name: sectionTypes.effect,
+    order: 7,
     type: 'section',
     forType: 'item',
     shownInTooltip: true,
