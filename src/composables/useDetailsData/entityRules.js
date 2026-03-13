@@ -588,7 +588,8 @@ export const entityRules = [
       if (data.entity?.attack_parameters) {
         attack = data.entity.attack_parameters
       } else if (data.entity?.gun) {
-        const gunItem = context.factorioData.item[data.entity.gun]
+        const gunItem =
+          context.factorioData.item?.[data.entity.gun] || context.factorioDataRaw?.item?.[data.entity.gun]
         if (gunItem?.attack_parameters) {
           attack = gunItem.attack_parameters
           isArtillery = true

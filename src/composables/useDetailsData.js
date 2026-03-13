@@ -60,6 +60,7 @@ function applyAllRules(unifiedObject, types, isTooltip, factorioData, options = 
   const context = {
     isTooltip,
     factorioData: processedFactorioData,
+    factorioDataRaw: factorioData,
     types
   }
 

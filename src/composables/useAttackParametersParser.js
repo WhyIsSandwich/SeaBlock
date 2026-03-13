@@ -48,8 +48,17 @@ function resolveEntityReference(delivery) {
   return null
 }
 
+function getPrototypeFromContext(context, baseType, prototypeName) {
+  if (!prototypeName || !context) return null
+  return (
+    context.factorioData?.[baseType]?.[prototypeName] ||
+    context.factorioDataRaw?.[baseType]?.[prototypeName] ||
+    null
+  )
+}
+
 function parseStickerEffect(stickerName, context) {
-  const stickerEntity = context.factorioData.entity?.[stickerName]
+  const stickerEntity = getPrototypeFromContext(context, 'entity', stickerName)
   if (!stickerEntity) return []
 
   const children = []
@@ -59,13 +68,13 @@ function parseStickerEffect(stickerName, context) {
   if (stickerEntity.target_movement_modifier_from !== undefined) {
     children.push({
       label: 'Movement speed',
-      value: `${formatNumber(stickerEntity.target_movement_modifier_from * 100)}%`
+      value: `${(stickerEntity.target_movement_modifier_from * 100).toFixed(1)}%`
     })
   }
   if (stickerEntity.vehicle_speed_modifier_from !== undefined) {
     children.push({
-      label: 'Vehicle speed',
-      value: `${formatNumber(stickerEntity.vehicle_speed_modifier_from * 100)}%`
+      label: 'Vehicle Speed',
+      value: `${(stickerEntity.vehicle_speed_modifier_from * 100).toFixed(1)}%`
     })
   }
   return children
@@ -117,7 +126,7 @@ function parseEffectDescriptor(effect, context, damageModifier, statistics, acti
   }
 
   if ((effect.type === 'create-fire' || effect.type === 'create-entity') && effect.entity_name) {
-    const createdEntity = context.factorioData.entity?.[effect.entity_name]
+    const createdEntity = getPrototypeFromContext(context, 'entity', effect.entity_name)
     const createdChildren = []
 
     if (effect.duration !== undefined) {
@@ -136,7 +145,11 @@ function parseEffectDescriptor(effect, context, damageModifier, statistics, acti
 
     if (createdEntity) {
       parseEntityEffects(createdEntity, context, damageModifier, createdChildren, visited)
-      if (createdEntity.damage_per_tick?.amount !== undefined && createdEntity.damage_per_tick?.type) {
+      if (
+        createdEntity.damage_per_tick?.amount !== undefined &&
+        createdEntity.damage_per_tick?.amount > 0 &&
+        createdEntity.damage_per_tick?.type
+      ) {
         createdChildren.push({
           label: 'Damage',
           value: `${formatNumber(createdEntity.damage_per_tick.amount * 60 * damageModifier)}/${createdEntity.damage_per_tick.type}`
@@ -147,11 +160,13 @@ function parseEffectDescriptor(effect, context, damageModifier, statistics, acti
     if (createdChildren.length > 0) {
       const createdLabel =
         createdEntity?.displayName ||
-        (effect.entity_name.includes('acid')
-          ? 'Acid splash'
-          : effect.entity_name.includes('fire')
-            ? 'Fire'
-            : effect.entity_name)
+        (effect.entity_name.includes('electric-fire')
+          ? 'Electrolytic bile splash'
+          : effect.entity_name.includes('acid')
+            ? 'Acid splash'
+            : effect.entity_name.includes('fire')
+              ? 'Fire'
+              : effect.entity_name)
       statistics.push({
         label: `Creates: 1 x ${createdLabel}`,
         children: createdChildren
@@ -195,24 +210,45 @@ function parseEntityEffects(
   if (entity.initial_lifetime !== undefined) {
     statistics.push({ label: 'Lifetime', value: toSecondsLabel(entity.initial_lifetime, true) })
   }
+  if (entity.light_size_modifier_maximum !== undefined) {
+    ensureAreaStatistic(statistics, entity.light_size_modifier_maximum)
+  }
 
   asArray(entity.effects).forEach(effect =>
     parseEffectDescriptor(effect, context, damageModifier, statistics, null, visited)
   )
 
-  if (entity.on_damage_tick_effect?.action_delivery) {
-    parseActionDeliveryEffects(
-      entity.on_damage_tick_effect.action_delivery,
-      context,
-      { type: 'direct' },
-      damageModifier,
-      statistics,
-      visited
-    )
+  const onDamageTickActions = asArray(entity.on_damage_tick_effect)
+  if (onDamageTickActions.length > 0) {
+    for (const action of onDamageTickActions) {
+      const delivery = action?.action_delivery
+      if (!delivery) continue
+
+      const appliesChildren = []
+      for (const effect of asArray(delivery.target_effects)) {
+        if (effect?.type === 'create-sticker' && effect.sticker) {
+          appliesChildren.push(...parseStickerEffect(effect.sticker, context))
+        }
+        if (effect?.type === 'damage' && effect.damage?.amount !== undefined && effect.damage?.type) {
+          // Fire on-damage effects are applied in pulses (10 ticks in these prototypes).
+          const damagePerSecond = (effect.damage.amount * 60 * damageModifier) / 10
+          statistics.push({
+            label: 'Damage',
+            value: `${formatNumber(damagePerSecond)}/s/${effect.damage.type}`
+          })
+        }
+      }
+      if (appliesChildren.length > 0) {
+        statistics.push({
+          label: 'Applies effect',
+          children: appliesChildren
+        })
+      }
+    }
   }
 
   if (entity.created_effect) {
-    const createdEntity = context.factorioData.entity?.[entity.created_effect]
+    const createdEntity = getPrototypeFromContext(context, 'entity', entity.created_effect)
     if (createdEntity) {
       const createdChildren = []
       parseEntityEffects(createdEntity, context, damageModifier, createdChildren, visited)
@@ -242,8 +278,17 @@ function parseActionDeliveryEffects(
 
     const entityName = resolveEntityReference(oneDelivery)
     if (entityName) {
-      const referencedEntity = context.factorioData.entity?.[entityName]
+      const referencedEntity = getPrototypeFromContext(context, 'entity', entityName)
       if (referencedEntity) {
+        if (
+          (oneDelivery.type === 'projectile' || oneDelivery.type === 'artillery') &&
+          referencedEntity.max_range !== undefined
+        ) {
+          statistics.push({
+            label: 'Projectile range',
+            value: referencedEntity.max_range
+          })
+        }
         parseEntityEffects(referencedEntity, context, damageModifier, statistics, visited)
       } else {
         statistics.push({
@@ -287,6 +332,13 @@ export function parseAttackParameters(attackParameters, context, _isArtillery = 
 
   const statistics = []
   const damageModifier = attackParameters.damage_modifier || 1
+  if (attackParameters.type === 'projectile' && attackParameters.range !== undefined) {
+    // Match in-game display for projectile stream range where applicable.
+    statistics.push({
+      label: 'Projectile range',
+      value: attackParameters.range * 2
+    })
+  }
   const actions = [
     ...asArray(attackParameters.ammo_type?.action),
     ...asArray(attackParameters.action)

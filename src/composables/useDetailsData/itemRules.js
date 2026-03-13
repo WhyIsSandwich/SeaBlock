@@ -274,6 +274,9 @@ export const itemRules = [
       if (data.item?.attack_parameters) {
         return parseAttackParameters(data.item.attack_parameters, context, false)
       }
+      if (data.item?.ammo_type) {
+        return parseAttackParameters({ ammo_type: data.item.ammo_type }, context, false)
+      }
       if (data.item?.capsule_action) {
         return parseCapsuleAction(data.item.capsule_action, context)
       }
@@ -286,6 +289,7 @@ export const itemRules = [
     condition: data =>
       data.item?.effect !== undefined ||
       data.item?.attack_parameters !== undefined ||
+      data.item?.ammo_type !== undefined ||
       data.item?.capsule_action !== undefined
   },
   {
