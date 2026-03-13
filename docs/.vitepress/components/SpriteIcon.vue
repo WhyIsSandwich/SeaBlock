@@ -74,6 +74,19 @@ const iconFillRatio = computed(() => {
   return 0.84
 })
 
+const spriteScale = computed(() => {
+  if (!spriteData.value) return 1
+  const targetSpriteSize = iconSize.value * iconFillRatio.value
+  return targetSpriteSize / Math.max(spriteData.value.width, spriteData.value.height)
+})
+
+const imageRenderingMode = computed(() => {
+  // Fractional scales look jagged with nearest-neighbor, so prefer smooth rendering.
+  const roundedScale = Math.round(spriteScale.value)
+  const isIntegerScale = Math.abs(spriteScale.value - roundedScale) < 0.001
+  return spriteScale.value >= 1 && isIntegerScale ? 'pixelated' : 'auto'
+})
+
 const iconClasses = computed(() => ({
   'sprite-icon-loading': isLoading.value,
   'sprite-icon-error': hasError.value
@@ -95,8 +108,7 @@ const iconStyle = computed(() => {
     return {}
   }
 
-  const targetSpriteSize = iconSize.value * iconFillRatio.value
-  const scale = targetSpriteSize / Math.max(spriteData.value.width, spriteData.value.height)
+  const scale = spriteScale.value
   const scaledWidth = spriteData.value.width * scale
   const scaledHeight = spriteData.value.height * scale
 
@@ -107,7 +119,7 @@ const iconStyle = computed(() => {
     backgroundPosition: `-${spriteData.value.x * scale}px -${spriteData.value.y * scale}px`,
     backgroundSize: `${spritemapData.value.width * scale}px ${spritemapData.value.height * scale}px`,
     backgroundRepeat: 'no-repeat',
-    imageRendering: 'pixelated'
+    imageRendering: imageRenderingMode.value
   }
 
   // Add color if color prop is provided
@@ -236,8 +248,7 @@ onUnmounted(() => {
   flex-shrink: 0;
   width: auto;
   height: auto;
-  image-rendering: pixelated;
-  image-rendering: crisp-edges;
+  image-rendering: auto;
   filter:
     drop-shadow(0 1px 0 rgba(255, 255, 255, 0.06))
     drop-shadow(0 1px 1px rgba(0, 0, 0, 0.45));

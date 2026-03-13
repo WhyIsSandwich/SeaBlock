@@ -88,16 +88,16 @@
       <div
         v-if="section.items?.length > 0"
         :class="getItemsContainerClass()"
-        :style="isGridLayout ? sectionGrid.containerStyles : {}"
+        :style="getGridContainerStyle()"
         ref="gridContainer"
       >
         <!-- Use composable's grid structure -->
-        <div v-if="isGridLayout" :style="sectionGrid.subgroupStyles">
+        <div v-if="isGridLayout" :style="getGridSubgroupStyle()">
           <IconButton
             v-for="item in section.items"
             :key="`${item.type}-${item.name}`"
-            :style="sectionGrid.itemStyles"
-            :size="sectionGrid.buttonSize"
+            :style="getGridItemStyle()"
+            :size="getGridButtonSize()"
             :type="item.type"
             :name="item.name"
             :clickable="true"
@@ -121,7 +121,7 @@
               @click="handleItemClick(item)"
             />
             <span v-if="shouldShowLabel()" :class="$style.itemLabel">{{
-              getItemLabel(item) || item.name
+              getDisplayLabel(item)
             }}</span>
           </div>
         </template>
@@ -196,6 +196,15 @@ export default {
   },
   computed: {
     isGridLayout() {
+      if (this.visualContext === 'tooltip' && this.section.itemsType === 'grid') {
+        const hasTextualLabels = Array.isArray(this.section.items)
+          ? this.section.items.some(item => typeof item?.label === 'string' && item.label.trim().length > 0)
+          : false
+
+        if (hasTextualLabels) {
+          return false
+        }
+      }
       return this.section.itemsType === 'grid'
     },
     isListLayout() {
@@ -246,12 +255,25 @@ export default {
         .replace(/{{item_name}}/g, placeholderValue)
         .replace(/{{fluid_name}}/g, placeholderValue)
     },
+    getDisplayLabel(item) {
+      const label = this.getItemLabel(item)
+      if (label) {
+        return label
+      }
+      if (item?.name) {
+        return item.name
+      }
+      return item?.type || 'unknown'
+    },
     handleItemClick(_item) {
       // No need to emit - IconButton handles this directly via provide/inject
     },
     getItemsContainerClass() {
       if (this.isGridLayout) {
-        return this.$style.itemsGrid
+        return [
+          this.$style.itemsGrid,
+          this.visualContext === 'tooltip' ? this.$style.tooltipItemsGrid : null
+        ]
       }
       return this.$style.itemsList
     },
@@ -262,7 +284,42 @@ export default {
       return this.$style.itemEntry
     },
     getIconSize() {
-      return this.isGridLayout ? this.sectionGrid.buttonSize : this.getListIconSize()
+      return this.isGridLayout ? this.getGridButtonSize() : this.getListIconSize()
+    },
+    getGridButtonSize() {
+      if (this.visualContext === 'tooltip') {
+        return 32
+      }
+      return this.sectionGrid.buttonSize
+    },
+    getGridContainerStyle() {
+      if (!this.isGridLayout) {
+        return {}
+      }
+      if (this.visualContext === 'tooltip') {
+        return {}
+      }
+      return this.sectionGrid.containerStyles
+    },
+    getGridSubgroupStyle() {
+      if (this.visualContext === 'tooltip') {
+        const maxColumns = 10
+        const itemCount = this.section?.items?.length || 1
+        const columns = Math.min(itemCount, maxColumns)
+        return {
+          display: 'grid',
+          gridTemplateColumns: `repeat(${columns}, 32px)`,
+          gap: '2px',
+          justifyContent: 'start'
+        }
+      }
+      return this.sectionGrid.subgroupStyles
+    },
+    getGridItemStyle() {
+      if (this.visualContext === 'tooltip') {
+        return {}
+      }
+      return this.sectionGrid.itemStyles
     },
     getListIconSize() {
       if (this.visualContext === 'tooltip') {
@@ -379,7 +436,7 @@ export default {
 }
 
 /* Fallback grid layout if JavaScript calculations fail */
-.itemsGrid:not([style*='grid-template-columns']) {
+.itemsGrid:not(.tooltipItemsGrid):not([style*='grid-template-columns']) {
   display: grid;
   grid-template-columns: repeat(
     v-bind('sectionGrid.columns.value'),
@@ -387,6 +444,12 @@ export default {
   );
   gap: 2px;
   justify-content: start;
+}
+
+.tooltipItemsGrid {
+  display: block;
+  width: max-content;
+  max-width: calc((32px * 10) + (2px * 9) + 8px);
 }
 
 .itemEntry {

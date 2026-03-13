@@ -1,5 +1,25 @@
 import { labels, sectionTypes } from '../detailsDataTypes.js'
 
+function formatAmountPrefix(entry) {
+  let amountText = '1'
+
+  if (entry.amount !== undefined) {
+    amountText = entry.amount.toString()
+  } else if (entry.amount_min !== undefined && entry.amount_max !== undefined) {
+    amountText =
+      entry.amount_min === entry.amount_max
+        ? entry.amount_min.toString()
+        : `${entry.amount_min}-${entry.amount_max}`
+  }
+
+  if (entry.probability !== undefined && entry.probability !== 1) {
+    const probabilityPercent = Math.round(entry.probability * 100)
+    return `${probabilityPercent}% ${amountText} x`
+  }
+
+  return `${amountText} x`
+}
+
 /**
  * Recipe rules - unified format for both statistics and sections
  */
@@ -19,7 +39,7 @@ export const recipeRules = [
         items: data.recipe?.ingredients?.map(ingredient => ({
           name: ingredient.name,
           type: ingredient.type,
-          label: `{{item_name}} x ${ingredient.amount}`
+          label: `${formatAmountPrefix(ingredient)} {{item_name}}`
         })),
         itemsType: 'list'
       }
@@ -47,31 +67,10 @@ export const recipeRules = [
     shownInTooltip: true,
     getValue: data => ({
       items: data.recipe?.results?.map(result => {
-        let amountText = ''
-
-        // Handle different amount types
-        if (result.amount !== undefined) {
-          // Simple amount
-          amountText = result.amount.toString()
-        } else if (result.amount_min !== undefined && result.amount_max !== undefined) {
-          // Range amount
-          if (result.amount_min === result.amount_max) {
-            amountText = result.amount_min.toString()
-          } else {
-            amountText = `${result.amount_min}-${result.amount_max}`
-          }
-        }
-
-        // Add probability if present and not 1
-        if (result.probability !== undefined && result.probability !== 1) {
-          const probabilityPercent = Math.round(result.probability * 100)
-          amountText += ` (${probabilityPercent}%)`
-        }
-
         return {
           name: result.name,
           type: result.type,
-          label: `{{item_name}} x ${amountText}`
+          label: `${formatAmountPrefix(result)} {{item_name}}`
         }
       }),
       itemsType: 'list'

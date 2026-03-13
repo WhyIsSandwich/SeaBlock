@@ -533,8 +533,9 @@ onUnmounted(() => {
   border: 1px solid #444444;
   border-radius: 4px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
-  inline-size: fit-content;
-  max-inline-size: min(560px, calc(100vw - 16px));
+  width: max-content;
+  max-width: min(560px, calc(100vw - 16px));
+  min-width: 0;
   z-index: 9999;
   opacity: 0;
   transform: translateY(-4px);
@@ -611,16 +612,12 @@ onUnmounted(() => {
 }
 
 .tooltip-sections :deep(.itemsGrid) {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(32px, 1fr));
-  gap: 2px;
   max-height: 120px;
   overflow-y: auto;
   background: #111111;
   border: 1px solid #444444;
   border-radius: 2px;
   padding: 4px;
-  width: 100%;
 }
 
 .tooltip-sections :deep(.itemEntry) {

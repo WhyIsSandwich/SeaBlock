@@ -1,22 +1,35 @@
 <template>
   <div :class="$style.factoripedia">
     <div v-if="isMobileViewport" :class="$style.mobilePanelControls">
-      <button
-        :class="[
-          $style.mobilePanelButton,
-          { [$style.active]: activeMobilePanel === 'details' && selectedItem }
-        ]"
-        :disabled="!selectedItem"
-        @click="activeMobilePanel = 'details'"
-      >
-        Details
-      </button>
-      <button
-        :class="[$style.mobilePanelButton, { [$style.active]: activeMobilePanel === 'browse' }]"
-        @click="activeMobilePanel = 'browse'"
-      >
-        Browse
-      </button>
+      <span :class="$style.mobilePanelToggleLabel">View</span>
+      <div :class="$style.mobilePanelToggle" role="tablist" aria-label="Switch mobile panel">
+        <span
+          :class="[
+            $style.mobilePanelIndicator,
+            { [$style.details]: activeMobilePanel === 'details' && selectedItem }
+          ]"
+        />
+        <button
+          :class="[$style.mobilePanelButton, { [$style.active]: activeMobilePanel === 'browse' }]"
+          role="tab"
+          :aria-selected="activeMobilePanel === 'browse'"
+          @click="activeMobilePanel = 'browse'"
+        >
+          Browse
+        </button>
+        <button
+          :class="[
+            $style.mobilePanelButton,
+            { [$style.active]: activeMobilePanel === 'details' && selectedItem }
+          ]"
+          role="tab"
+          :aria-selected="activeMobilePanel === 'details' && !!selectedItem"
+          :disabled="!selectedItem"
+          @click="activeMobilePanel = 'details'"
+        >
+          Details
+        </button>
+      </div>
     </div>
     <div :class="$style.factoripediaContainer">
       <!-- Left Panel: Item Browser -->
@@ -537,33 +550,39 @@ const filterGrid = useFactorioGrid({
   display: none;
 }
 
+.mobilePanelToggleLabel {
+  display: none;
+}
+
+.mobilePanelToggle {
+  display: none;
+}
+
+.mobilePanelIndicator {
+  display: none;
+}
+
 .mobilePanelButton {
-  background: linear-gradient(to bottom, #2f2f2f, #1f1f1f);
-  border: 1px solid #585858;
-  border-top: 1px solid #6d6d6d;
-  border-left: 1px solid #6d6d6d;
-  border-radius: 2px;
-  color: #d9d9d9;
+  position: relative;
+  z-index: 1;
+  border: none;
+  background: transparent;
+  color: #bcbcbc;
   font-size: 13px;
   font-weight: 700;
-  padding: 6px 10px;
-  min-height: 32px;
+  line-height: 1;
+  min-height: 34px;
   cursor: pointer;
-  box-shadow:
-    1px 1px 0 rgba(0, 0, 0, 0.35),
-    inset 0 1px 1px rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  transition: color 0.18s ease;
 }
 
 .mobilePanelButton.active {
-  background: linear-gradient(to bottom, #3d3121, #2f2518);
-  border-color: #b78c45;
-  border-top: 1px solid #c99c50;
-  border-left: 1px solid #c99c50;
   color: #ffffff;
 }
 
 .mobilePanelButton:disabled {
-  opacity: 0.45;
+  color: #777777;
   cursor: not-allowed;
 }
 
@@ -614,7 +633,8 @@ const filterGrid = useFactorioGrid({
 
 /* Override SpriteIcon styling for filter buttons */
 .filterButton :global(.sprite-icon) {
-  background: transparent !important;
+  /* Preserve inline sprite background-image while clearing only fill color */
+  background-color: transparent !important;
   border: none !important;
   box-shadow: none !important;
   border-radius: 0 !important;
@@ -1006,12 +1026,60 @@ const filterGrid = useFactorioGrid({
   }
 
   .mobilePanelControls {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 6px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
     padding: 8px;
     border-bottom: 1px solid #3b3b3b;
     background: linear-gradient(to bottom, #2f2f2f, #252525);
+  }
+
+  .mobilePanelToggleLabel {
+    display: inline-block;
+    color: #b0b0b0;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .mobilePanelToggle {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    position: relative;
+    flex: 1;
+    background: linear-gradient(to bottom, #222222, #1a1a1a);
+    border: 1px solid #4f4f4f;
+    border-radius: 16px;
+    padding: 3px;
+    box-shadow:
+      inset 0 1px 2px rgba(0, 0, 0, 0.45),
+      0 1px 0 rgba(255, 255, 255, 0.06);
+  }
+
+  .mobilePanelIndicator {
+    display: block;
+    position: absolute;
+    top: 3px;
+    bottom: 3px;
+    left: 3px;
+    width: calc(50% - 3px);
+    border-radius: 13px;
+    background: linear-gradient(to bottom, #3d3121, #2f2518);
+    border: 1px solid #b78c45;
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.2),
+      0 1px 2px rgba(0, 0, 0, 0.4);
+    transition: transform 0.18s ease;
+    pointer-events: none;
+  }
+
+  .mobilePanelIndicator.details {
+    transform: translateX(100%);
+  }
+
+  .mobilePanelButton {
+    width: 100%;
   }
 
   .factoripediaContainer {
@@ -1111,7 +1179,7 @@ const filterGrid = useFactorioGrid({
 
   .mobilePanelControls {
     padding: 6px;
-    gap: 4px;
+    gap: 8px;
   }
 }
 
