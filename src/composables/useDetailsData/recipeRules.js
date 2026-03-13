@@ -139,7 +139,11 @@ export const recipeRules = [
             type: 'item',
             amount: ingredient[1]
           }))
-          return { name: technology.name, type: 'technology', items: (technology.name, items) }
+          return {
+            name: technology.name,
+            type: 'technology',
+            items: (technology.name, items)
+          }
         })
       return { items: unlockTechnologies, type: 'unlock_technologies' }
     },

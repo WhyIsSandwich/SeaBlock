@@ -241,7 +241,14 @@ export default {
       if (!item.label) {
         return localisedName
       }
-      return item.label?.replace(/{{item_name}}/g, localisedName)
+      const placeholderValue = localisedName || item.name
+      const typePlaceholder = item.type ? new RegExp(`{{${item.type}_name}}`, 'g') : null
+      const withTypeLabel = typePlaceholder
+        ? item.label.replace(typePlaceholder, placeholderValue)
+        : item.label
+      return withTypeLabel
+        .replace(/{{item_name}}/g, placeholderValue)
+        .replace(/{{fluid_name}}/g, placeholderValue)
     },
     handleItemClick(_item) {
       // No need to emit - IconButton handles this directly via provide/inject

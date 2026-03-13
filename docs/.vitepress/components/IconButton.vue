@@ -5,6 +5,7 @@
     v-if="!isEmpty && type && name"
     :item-id="name"
     :category="type"
+    :focusable-trigger="false"
   >
     <!-- Use slot if provided, otherwise use default container -->
     <slot
@@ -17,7 +18,8 @@
           [$style.emptyCell]: isEmpty
         }
       ]"
-      :title="resolvedTitle"
+      :title="showBrowserTooltip ? resolvedTitle : null"
+      :aria-label="resolvedAriaLabel"
       :click="handleClick"
       :sprite-key="resolvedSpriteKey"
       :label="label"
@@ -31,14 +33,19 @@
             [$style.emptyCell]: isEmpty
           }
         ]"
-        :title="resolvedTitle"
+        :title="showBrowserTooltip ? resolvedTitle : null"
+        :aria-label="resolvedAriaLabel"
+        :role="clickable ? 'button' : null"
+        :tabindex="clickable ? 0 : -1"
         @click="handleClick"
+        @keydown.enter.prevent="handleClick"
+        @keydown.space.prevent="handleClick"
       >
         <SpriteIcon
           v-if="!isEmpty && resolvedSpriteKey"
           :sprite-key="resolvedSpriteKey"
           :size="size"
-          :title="resolvedTitle"
+          :title="showBrowserTooltip ? resolvedTitle : null"
         />
         <span v-if="label" :class="$style.iconLabel">
           {{ label }}
@@ -99,6 +106,10 @@ const props = defineProps({
   showTooltip: {
     type: Boolean,
     default: true
+  },
+  showBrowserTooltip: {
+    type: Boolean,
+    default: false
   }
 })
 
@@ -141,6 +152,8 @@ const resolvedTitle = computed(() => {
 
   return ''
 })
+
+const resolvedAriaLabel = computed(() => resolvedTitle.value || null)
 
 // Methods
 function handleClick() {
@@ -193,6 +206,13 @@ function handleClick() {
   box-shadow:
     0 0 8px rgba(255, 200, 100, 0.4),
     0 2px 4px rgba(0, 0, 0, 0.4);
+}
+
+.clickable:focus-visible {
+  outline: 2px solid #ffd28a;
+  outline-offset: 1px;
+  background: #ffa207;
+  border-color: #ffa207;
 }
 
 .selected {

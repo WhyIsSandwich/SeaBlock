@@ -2,14 +2,14 @@
   <ClientOnly>
     <span
       class="tooltip-trigger"
-      tabindex="0"
-      role="button"
+      :tabindex="focusableTrigger ? 0 : -1"
+      :role="focusableTrigger ? 'button' : null"
       :aria-describedby="tooltipId"
       :style="style"
       @mouseenter="showTooltip"
       @mouseleave="hideTooltip"
-      @focus="showTooltip"
-      @blur="hideTooltip"
+      @focusin="showTooltip"
+      @focusout="hideTooltip"
     >
       <slot />
       <Teleport to="body">
@@ -111,6 +111,10 @@ const props = defineProps({
   style: {
     type: [String, Object],
     default: null
+  },
+  focusableTrigger: {
+    type: Boolean,
+    default: true
   }
 })
 

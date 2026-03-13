@@ -12,6 +12,27 @@ import { useFactorioPrototypeMapping } from '../src/composables/useFactorioProto
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
+function formatInfiniteTechnologyDisplayName(prototypeName, displayName, technologyData) {
+  if (!displayName) {
+    return displayName
+  }
+
+  if (technologyData?.max_level !== 'infinite') {
+    return displayName
+  }
+
+  const levelMatch = prototypeName?.match(/(\d+)$/)
+  if (!levelMatch) {
+    return displayName
+  }
+
+  if (/\s\d+\+?$/.test(displayName)) {
+    return displayName
+  }
+
+  return `${displayName} ${levelMatch[1]}+`
+}
+
 /**
  * Factorio Data Processor (Refactored)
  *
@@ -133,7 +154,16 @@ class FactorioDataProcessorRefactored {
       if (localeContent.names) {
         for (const [name, displayName] of Object.entries(localeContent.names)) {
           if (!data[localeType][name]) data[localeType][name] = {}
-          data[localeType][name].n = displayName
+          if (localeType === 'technology') {
+            const technologyData = this.rawData?.technology?.[name]
+            data[localeType][name].n = formatInfiniteTechnologyDisplayName(
+              name,
+              displayName,
+              technologyData
+            )
+          } else {
+            data[localeType][name].n = displayName
+          }
         }
       }
 
