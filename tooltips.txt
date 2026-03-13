@@ -20,15 +20,3 @@ No base type found for tips-and-tricks-item, using as-is
 No base type found for tutorial, using as-is
 No base type found for impact-category, using as-is
 No base type found for deliver-category, using as-is
-✗ Error processing entity:petroleum-generator: Cannot read properties of null (reading 'normalizedValue')
-  Stack trace: TypeError: Cannot read properties of null (reading 'normalizedValue')
-    at Object.getValue (file:///workspaces/SeaBlock/src/composables/useDetailsData/entityRules.js:1080:81)
-    at file:///workspaces/SeaBlock/src/composables/useDetailsData/rulesEngine.js:178:25
-    at Array.map (<anonymous>)
-    at applyRules (file:///workspaces/SeaBlock/src/composables/useDetailsData/rulesEngine.js:177:6)
-    at applyAllRules (file:///workspaces/SeaBlock/src/composables/useDetailsData.js:67:22)
-    at Object.getDetailsData (file:///workspaces/SeaBlock/src/composables/useDetailsData.js:109:36)
-    at detailsData.getDetailsData (file:///workspaces/SeaBlock/scripts/generate-tooltips.js:183:47)
-    at TooltipGenerator.generateTooltipForPrototype (file:///workspaces/SeaBlock/scripts/generate-tooltips.js:222:44)
-    at TooltipGenerator.processAllPrototypes (file:///workspaces/SeaBlock/scripts/generate-tooltips.js:312:14)
-    at TooltipGenerator.process (file:///workspaces/SeaBlock/scripts/generate-tooltips.js:588:12)
