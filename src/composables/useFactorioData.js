@@ -182,12 +182,22 @@ function createFactorioDataInstance() {
    * Get all technologies that unlock a specific recipe
    */
   function getUnlockTechnologies(recipeName) {
-    if (!organizedData.value?.technologies || !recipeName) return []
+    if (!recipeName) return []
+    const technologies =
+      organizedData.value?.technology ||
+      organizedData.value?.technologies ||
+      organizedData.value?.['technology']
+    if (!technologies) return []
 
     const unlockTechnologies = []
-    for (const [techName, techData] of Object.entries(organizedData.value?.technologies)) {
-      if (techData.effects && techData.effects.length > 0) {
-        for (const effect of techData.effects) {
+    for (const [techName, techData] of Object.entries(technologies)) {
+      const effects = Array.isArray(techData.effects)
+        ? techData.effects
+        : techData.effects
+          ? [techData.effects]
+          : []
+      if (effects.length > 0) {
+        for (const effect of effects) {
           if (effect.type === 'unlock-recipe' && effect.recipe === recipeName) {
             unlockTechnologies.push(techName)
             break
@@ -202,18 +212,62 @@ function createFactorioDataInstance() {
    * Get all recipes unlocked by a specific technology
    */
   function getUnlockedRecipes(technologyName) {
-    if (!organizedData.value?.technologies || !technologyName) return []
+    if (!technologyName) return []
+    const technologies =
+      organizedData.value?.technology ||
+      organizedData.value?.technologies ||
+      organizedData.value?.['technology']
+    if (!technologies) return []
 
-    const techData = organizedData.value?.technologies[technologyName]
+    const techData = technologies[technologyName]
     if (!techData || !techData.effects) return []
 
     const unlockedRecipes = []
-    for (const effect of techData.effects) {
+    const effects = Array.isArray(techData.effects) ? techData.effects : [techData.effects]
+    for (const effect of effects) {
       if (effect.type === 'unlock-recipe') {
         unlockedRecipes.push(effect.recipe)
       }
     }
     return unlockedRecipes
+  }
+
+  /**
+   * Get all effects for a specific technology
+   */
+  function getTechnologyEffects(technologyName) {
+    if (!technologyName) return []
+    const technologies =
+      organizedData.value?.technology ||
+      organizedData.value?.technologies ||
+      organizedData.value?.['technology']
+    if (!technologies) return []
+    const techData = technologies[technologyName]
+    if (!techData?.effects) return []
+    return Array.isArray(techData.effects) ? techData.effects : [techData.effects]
+  }
+
+  /**
+   * Get all technologies that include a given effect type
+   */
+  function getTechnologiesByEffectType(effectType) {
+    if (!effectType) return []
+    const technologies =
+      organizedData.value?.technology ||
+      organizedData.value?.technologies ||
+      organizedData.value?.['technology']
+    if (!technologies) return []
+
+    return Object.entries(technologies)
+      .filter(([_name, techData]) => {
+        const effects = Array.isArray(techData?.effects)
+          ? techData.effects
+          : techData?.effects
+            ? [techData.effects]
+            : []
+        return effects.some(effect => effect.type === effectType)
+      })
+      .map(([name]) => name)
   }
 
   // These methods have been removed - use unified objects instead
@@ -425,6 +479,8 @@ function createFactorioDataInstance() {
     findRecipesByIngredient,
     getUnlockTechnologies,
     getUnlockedRecipes,
+    getTechnologyEffects,
+    getTechnologiesByEffectType,
     precomputeCategoryStructure,
     getAlternativeRecipes,
     createUnifiedSelectionObject

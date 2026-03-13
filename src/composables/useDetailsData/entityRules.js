@@ -1069,17 +1069,32 @@ export const entityRules = [
     forType: 'entity',
     shownInTooltip: true,
     getValue: (data, context) => {
-      if (data.entity?.type === 'solar-panel')
+      if (data.entity?.type === 'solar-panel') {
         return { statistics: [{ label: labels.max_output, value: data.entity?.production }] }
-      else {
-        const fluidName = data.entity?.fluid_box?.filter
-        const fluid = context.factorioData.fluid[fluidName]
-        const fluidAmount = data.entity?.fluid_usage_per_tick
-        const fluidTemperature = data.entity?.maximum_temperature
-        const fluidHeatCapacity = parseEnergyString(fluid?.heat_capacity)
-        const power = fluidAmount * (fluidTemperature - 15) * fluidHeatCapacity.normalizedValue * 60
-        return { statistics: [{ label: labels.max_output, value: formatEnergyValue(power, 'W') }] }
       }
+
+      // Prefer explicit generator output when available (covers mods that do not expose a fluid filter).
+      const maxPowerOutput = parseEnergyString(data.entity?.max_power_output)
+      if (maxPowerOutput?.normalizedValue !== undefined) {
+        return {
+          statistics: [{ label: labels.max_output, value: formatEnergyValue(maxPowerOutput.normalizedValue, 'W') }]
+        }
+      }
+
+      const fluidName = data.entity?.fluid_box?.filter
+      const fluid = fluidName ? context.factorioData.fluid[fluidName] : null
+      const fluidAmount = data.entity?.fluid_usage_per_tick
+      const fluidTemperature = data.entity?.maximum_temperature
+      const fluidHeatCapacity = parseEnergyString(fluid?.heat_capacity)
+      if (
+        fluidAmount === undefined ||
+        fluidTemperature === undefined ||
+        fluidHeatCapacity?.normalizedValue === undefined
+      ) {
+        return null
+      }
+      const power = fluidAmount * (fluidTemperature - 15) * fluidHeatCapacity.normalizedValue * 60
+      return { statistics: [{ label: labels.max_output, value: formatEnergyValue(power, 'W') }] }
     },
     condition: data => data.entity.type === 'generator' || data.entity.type === 'solar-panel'
   }

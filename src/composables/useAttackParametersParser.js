@@ -1,424 +1,367 @@
 /**
- * Composable for parsing attack parameters from entities and items
- * Handles the complex attack_parameters object structure with nested effects
+ * Composable for parsing attack and trigger effect data from entities and items.
  */
 
-/**
- * Parse effects from an entity (stream, projectile, etc.)
- * @param {Object} entity - The entity object (stream, projectile, etc.)
- * @param {Object} context - The factorio data context
- * @returns {Array} Array of nested effect statistics
- */
-function parseEntityEffects(entity, context, damageModifier = 1, effects = []) {
-  if (!entity) return effects
+function asArray(value) {
+  if (!value) return []
+  return Array.isArray(value) ? value : [value]
+}
 
-  // Handle action (recursive parsing)
-  if (entity.action) {
-    const actions = Array.isArray(entity.action) ? entity.action : [entity.action]
-    actions.forEach(action => {
-      if (action && action.action_delivery) {
-        parseActionDeliveryEffects(
-          action.action_delivery,
-          context,
-          action.type,
-          action,
-          damageModifier,
-          effects
-        )
-      }
-    })
-  }
+function formatNumber(value, decimals = 2) {
+  if (typeof value !== 'number' || Number.isNaN(value)) return String(value)
+  if (Number.isInteger(value)) return String(value)
+  return value.toFixed(decimals).replace(/\.?0+$/, '')
+}
 
-  // Handle initial_action (recursive parsing)
-  if (entity.initial_action) {
-    const initialActions = Array.isArray(entity.initial_action)
-      ? entity.initial_action
-      : [entity.initial_action]
-    console.log('DEBUG: Processing initial_action:', initialActions.length, 'actions')
-    initialActions.forEach(action => {
-      if (action && action.action_delivery) {
-        console.log('DEBUG: Processing action type:', action.type, 'with radius:', action.radius)
-        parseActionDeliveryEffects(
-          action.action_delivery,
-          context,
-          action.type,
-          action,
-          damageModifier,
-          effects
-        )
-      }
-    })
-  }
+function toSecondsLabel(ticksOrSeconds, assumeTicks = true) {
+  const seconds = assumeTicks ? ticksOrSeconds / 60 : ticksOrSeconds
+  return `${formatNumber(seconds)} seconds`
+}
 
-  // Area of effect
-  if (entity.area_of_effect) {
-    effects.push({
+function ensureAreaStatistic(statistics, radius) {
+  let areaStat = statistics.find(
+    stat => stat.label === 'Area of effect size' && Number(stat.value) === Number(radius)
+  )
+  if (!areaStat) {
+    areaStat = {
       label: 'Area of effect size',
-      value: entity.area_of_effect
+      value: radius,
+      children: []
+    }
+    statistics.push(areaStat)
+  }
+  if (!Array.isArray(areaStat.children)) areaStat.children = []
+  return areaStat
+}
+
+function resolveEntityReference(delivery) {
+  if (!delivery) return null
+  if (delivery.type === 'stream') return delivery.stream
+  if (delivery.type === 'beam') return delivery.beam
+  if (
+    delivery.type === 'projectile' ||
+    delivery.type === 'artillery' ||
+    delivery.type === 'instant'
+  ) {
+    return delivery.projectile
+  }
+  return null
+}
+
+function parseStickerEffect(stickerName, context) {
+  const stickerEntity = context.factorioData.entity?.[stickerName]
+  if (!stickerEntity) return []
+
+  const children = []
+  if (stickerEntity.duration_in_ticks) {
+    children.push({ label: 'Duration', value: toSecondsLabel(stickerEntity.duration_in_ticks, true) })
+  }
+  if (stickerEntity.target_movement_modifier_from !== undefined) {
+    children.push({
+      label: 'Movement speed',
+      value: `${formatNumber(stickerEntity.target_movement_modifier_from * 100)}%`
     })
   }
-
-  // Lifetime
-  if (entity.lifetime) {
-    effects.push({
-      label: 'Lifetime',
-      value: `${entity.lifetime / 60} seconds`
+  if (stickerEntity.vehicle_speed_modifier_from !== undefined) {
+    children.push({
+      label: 'Vehicle speed',
+      value: `${formatNumber(stickerEntity.vehicle_speed_modifier_from * 100)}%`
     })
   }
+  return children
+}
 
-  // Handle effects array - but don't process if we already have nested actions
-  if (entity.effects && Array.isArray(entity.effects) && !entity.action) {
-    entity.effects.forEach((effect, _index) => {
-      const effectStats = []
+function parseEffectDescriptor(effect, context, damageModifier, statistics, actionData = null, visited = null) {
+  if (!effect) return
 
-      if (effect.type === 'damage') {
-        const damagePerSecond = effect.damage_amount * 60 * damageModifier
-        effectStats.push({
+  // Entity "effects" arrays may use damage_amount/damage_type instead of nested damage object.
+  const damageAmount = effect.damage?.amount ?? effect.damage_amount
+  const damageType = effect.damage?.type ?? effect.damage_type
+  if ((effect.type === 'damage' || damageAmount !== undefined) && damageType) {
+    const totalDamage = Number(damageAmount || 0) * damageModifier
+    if (actionData?.type === 'area' && actionData.radius !== undefined) {
+      const areaStat = ensureAreaStatistic(statistics, actionData.radius)
+      areaStat.children.push({
+        label: 'Damage',
+        value: `${formatNumber(totalDamage)}/${damageType}`
+      })
+    } else {
+      statistics.push({
+        label: 'Damage',
+        value: `${formatNumber(totalDamage)}/${damageType}`
+      })
+    }
+  }
+
+  if (effect.type === 'speed' && effect.speed_modifier !== undefined) {
+    const children = [
+      {
+        label: 'Movement speed',
+        value: `${formatNumber(effect.speed_modifier * 100)}%`
+      }
+    ]
+    if (effect.duration !== undefined) {
+      children.push({
+        label: 'Duration',
+        value: toSecondsLabel(effect.duration, false)
+      })
+    }
+    statistics.push({ label: 'Applies effect', children })
+  }
+
+  if (effect.type === 'create-sticker' && effect.sticker) {
+    const stickerChildren = parseStickerEffect(effect.sticker, context)
+    if (stickerChildren.length > 0) {
+      statistics.push({ label: 'Applies effect', children: stickerChildren })
+    }
+  }
+
+  if ((effect.type === 'create-fire' || effect.type === 'create-entity') && effect.entity_name) {
+    const createdEntity = context.factorioData.entity?.[effect.entity_name]
+    const createdChildren = []
+
+    if (effect.duration !== undefined) {
+      createdChildren.push({
+        label: 'Lifetime',
+        value: toSecondsLabel(effect.duration, true)
+      })
+    }
+
+    if (effect.damage?.amount !== undefined && effect.damage?.type) {
+      createdChildren.push({
+        label: 'Damage',
+        value: `${formatNumber(effect.damage.amount * 60 * damageModifier)}/${effect.damage.type}`
+      })
+    }
+
+    if (createdEntity) {
+      parseEntityEffects(createdEntity, context, damageModifier, createdChildren, visited)
+      if (createdEntity.damage_per_tick?.amount !== undefined && createdEntity.damage_per_tick?.type) {
+        createdChildren.push({
           label: 'Damage',
-          value: `${damagePerSecond}/${effect.damage_type}`
+          value: `${formatNumber(createdEntity.damage_per_tick.amount * 60 * damageModifier)}/${createdEntity.damage_per_tick.type}`
         })
       }
+    }
 
-      if (effect.type === 'speed') {
-        effectStats.push({
-          label: 'Movement speed',
-          value: `${(effect.speed_modifier * 100).toFixed(1)}%`
-        })
-      }
-
-      if (effect.duration) {
-        effectStats.push({
-          label: 'Duration',
-          value: `${effect.duration} seconds`
-        })
-      }
-
-      if (effectStats.length > 0) {
-        effects.push({
-          label: `Applies effect`,
-          children: effectStats
-        })
-      }
-    })
+    if (createdChildren.length > 0) {
+      const createdLabel =
+        createdEntity?.displayName ||
+        (effect.entity_name.includes('acid')
+          ? 'Acid splash'
+          : effect.entity_name.includes('fire')
+            ? 'Fire'
+            : effect.entity_name)
+      statistics.push({
+        label: `Creates: 1 x ${createdLabel}`,
+        children: createdChildren
+      })
+    }
   }
 
-  // Handle created entities (like fire)
+  if (effect.type === 'nested-result' && effect.action) {
+    processAction(effect.action, context, damageModifier, statistics, visited)
+  }
+
+  if (effect.action) {
+    processAction(effect.action, context, damageModifier, statistics, visited)
+  }
+}
+
+function parseEntityEffects(
+  entity,
+  context,
+  damageModifier = 1,
+  statistics = [],
+  visited = new Set()
+) {
+  if (!entity || !context?.factorioData) return statistics
+  if (entity.name && visited.has(entity.name)) return statistics
+  if (entity.name) visited.add(entity.name)
+
+  asArray(entity.action).forEach(action =>
+    processAction(action, context, damageModifier, statistics, visited)
+  )
+  asArray(entity.initial_action).forEach(action =>
+    processAction(action, context, damageModifier, statistics, visited)
+  )
+
+  if (entity.area_of_effect !== undefined) {
+    ensureAreaStatistic(statistics, entity.area_of_effect)
+  }
+  if (entity.lifetime !== undefined) {
+    statistics.push({ label: 'Lifetime', value: toSecondsLabel(entity.lifetime, true) })
+  }
+  if (entity.initial_lifetime !== undefined) {
+    statistics.push({ label: 'Lifetime', value: toSecondsLabel(entity.initial_lifetime, true) })
+  }
+
+  asArray(entity.effects).forEach(effect =>
+    parseEffectDescriptor(effect, context, damageModifier, statistics, null, visited)
+  )
+
+  if (entity.on_damage_tick_effect?.action_delivery) {
+    parseActionDeliveryEffects(
+      entity.on_damage_tick_effect.action_delivery,
+      context,
+      { type: 'direct' },
+      damageModifier,
+      statistics,
+      visited
+    )
+  }
+
   if (entity.created_effect) {
     const createdEntity = context.factorioData.entity?.[entity.created_effect]
     if (createdEntity) {
-      const createdStats = []
-
-      if (createdEntity.lifetime) {
-        createdStats.push({
-          label: 'Lifetime',
-          value: `${createdEntity.lifetime / 60} seconds`
-        })
-      }
-
-      if (createdEntity.effects && Array.isArray(createdEntity.effects)) {
-        createdEntity.effects.forEach(effect => {
-          if (effect.type === 'damage') {
-            const damagePerSecond = effect.damage_amount * 60 * damageModifier
-            createdStats.push({
-              label: 'Damage',
-              value: `${damagePerSecond}/${effect.damage_type}`
-            })
-          }
-        })
-      }
-
-      if (createdStats.length > 0) {
-        effects.push({
+      const createdChildren = []
+      parseEntityEffects(createdEntity, context, damageModifier, createdChildren, visited)
+      if (createdChildren.length > 0) {
+        statistics.push({
           label: `Creates: 1 x ${createdEntity.displayName || entity.created_effect}`,
-          children: createdStats
+          children: createdChildren
         })
       }
     }
   }
 
-  return effects
+  if (entity.name) visited.delete(entity.name)
+  return statistics
 }
 
-/**
- * Parse action delivery effects - simply loop through all actions and let recursive parsing handle hierarchy
- * @param {Object} delivery - The action_delivery object
- * @param {Object} context - The factorio data context
- * @returns {Array} Array of effect statistics
- */
 function parseActionDeliveryEffects(
   delivery,
   context,
-  actionType = null,
   actionData = null,
   damageModifier = 1,
-  effects = []
+  statistics = [],
+  visited = new Set()
 ) {
-  if (!delivery) return effects
+  asArray(delivery).forEach(oneDelivery => {
+    if (!oneDelivery) return
 
-  // Handle stream delivery - recursively parse stream entity
-  if (delivery.type === 'stream' && delivery.stream) {
-    const streamEntity = context.factorioData.entity?.[delivery.stream]
-    if (streamEntity) {
-      console.log('DEBUG: Processing stream entity:', delivery.stream)
-      console.log('DEBUG: Stream entity initial_action:', streamEntity.initial_action)
-      parseEntityEffects(streamEntity, context, damageModifier, effects)
-    }
-  }
-
-  // Handle projectile delivery
-  if (delivery.type === 'projectile' && delivery.projectile) {
-    const projectileEntity = context.factorioData.entity?.[delivery.projectile]
-    if (projectileEntity) {
-      parseEntityEffects(projectileEntity, context, damageModifier, effects)
-    }
-  }
-
-  // Handle beam delivery
-  if (delivery.type === 'beam' && delivery.beam) {
-    const beamEntity = context.factorioData.entity?.[delivery.beam]
-    if (beamEntity) {
-      parseEntityEffects(beamEntity, context, damageModifier, effects)
-    }
-  }
-
-  // Handle target_effects for ALL delivery types target_effects might not be an array
-  const targetEffects = Array.isArray(delivery.target_effects)
-    ? delivery.target_effects
-    : delivery.target_effects
-      ? [delivery.target_effects]
-      : []
-  if (targetEffects && targetEffects.length > 0) {
-    targetEffects.forEach((effect, _index) => {
-      if (effect.type === 'damage') {
-        // Direct damage effect
-        const damageAmount = effect.damage?.amount || 0
-        const damageType = effect.damage?.type || 'unknown'
-        const totalDamage = damageAmount * damageModifier
-
-        // Check if this is part of an area action
-        if (actionType === 'area' && actionData && actionData.radius) {
-          // This is AOE damage - create area of effect entry
-          const areaChildren = []
-          areaChildren.push({
-            label: 'Damage',
-            value: `${totalDamage}/${damageType}`
-          })
-
-          effects.push({
-            label: 'Area of effect size',
-            value: actionData.radius,
-            children: areaChildren
-          })
-        } else {
-          // Direct damage effect
-          effects.push({
-            label: 'Damage',
-            value: `${totalDamage}/${damageType}`
-          })
-        }
-      }
-
-      if (effect.type === 'create-fire' && effect.entity_name) {
-        // Create fire/acid effect with nested properties
-        const createsChildren = []
-
-        // Check if the effect itself has properties
-        if (effect.duration) {
-          createsChildren.push({
-            label: 'Lifetime',
-            value: `${effect.duration / 60} seconds`
-          })
-        }
-        if (effect.damage?.amount) {
-          const damagePerSecond = effect.damage.amount * 60
-          createsChildren.push({
-            label: 'Damage',
-            value: `${damagePerSecond}/${effect.damage.type}`
-          })
-        }
-
-        // If no properties on the effect, try to resolve the entity reference
-        if (createsChildren.length === 0 && context.factorioData.entity?.[effect.entity_name]) {
-          const fireEntity = context.factorioData.entity[effect.entity_name]
-
-          // Extract lifetime from fire entity
-          if (fireEntity.initial_lifetime) {
-            createsChildren.push({
-              label: 'Lifetime',
-              value: `${fireEntity.initial_lifetime / 60} seconds`
-            })
-          }
-
-          // For acid splash, calculate total damage over lifetime from on_damage_tick_effect
-          if (
-            fireEntity.on_damage_tick_effect &&
-            fireEntity.on_damage_tick_effect.action_delivery
-          ) {
-            const onDamageDelivery = fireEntity.on_damage_tick_effect.action_delivery
-            if (onDamageDelivery.target_effects) {
-              const damageEffect = onDamageDelivery.target_effects.find(e => e.type === 'damage')
-              if (damageEffect && damageEffect.damage) {
-                // Calculate damage per second (without damage modifier for fire entity)
-                const damagePerTick = damageEffect.damage.amount
-                const damagePerSecond = (damagePerTick * 60 * damageModifier) / 10
-                createsChildren.push({
-                  label: 'Damage',
-                  value: `${damagePerSecond}s/${damageEffect.damage.type}`
-                })
-              }
-            }
-          } else if (fireEntity.damage_per_tick?.amount !== undefined) {
-            // Extract damage from fire entity for non-acid splash or when damage_per_tick > 0
-            const damagePerSecond = fireEntity.damage_per_tick.amount * 60 * damageModifier
-            createsChildren.push({
-              label: 'Damage',
-              value: `${damagePerSecond}/${fireEntity.damage_per_tick.type}`
-            })
-          }
-          if (
-            fireEntity.on_damage_tick_effect &&
-            fireEntity.on_damage_tick_effect.action_delivery
-          ) {
-            const onDamageDelivery = fireEntity.on_damage_tick_effect.action_delivery
-            if (onDamageDelivery.target_effects) {
-              const stickerEffect = onDamageDelivery.target_effects.find(
-                e => e.type === 'create-sticker' && e.sticker
-              )
-              const damageEffect = onDamageDelivery.target_effects.find(e => e.type === 'damage')
-
-              if (stickerEffect || damageEffect) {
-                const appliesChildren = []
-
-                // Add sticker effects
-                if (stickerEffect && context.factorioData.entity?.[stickerEffect.sticker]) {
-                  const stickerEntity = context.factorioData.entity[stickerEffect.sticker]
-
-                  // Extract duration from sticker
-                  if (stickerEntity.duration_in_ticks) {
-                    const durationSeconds = stickerEntity.duration_in_ticks / 60
-                    appliesChildren.push({
-                      label: 'Duration',
-                      value: `${durationSeconds} seconds`
-                    })
-                  }
-
-                  // Extract movement speed modifier from sticker
-                  if (stickerEntity.target_movement_modifier_from !== undefined) {
-                    const speedPercent = stickerEntity.target_movement_modifier_from * 100
-                    appliesChildren.push({
-                      label: 'Movement speed',
-                      value: `${speedPercent}%`
-                    })
-                  }
-
-                  // Extract vehicle speed modifier from sticker
-                  if (stickerEntity.vehicle_speed_modifier_from !== undefined) {
-                    const vehicleSpeedPercent = stickerEntity.vehicle_speed_modifier_from * 100
-                    appliesChildren.push({
-                      label: 'Vehicle speed',
-                      value: `${vehicleSpeedPercent}%`
-                    })
-                  }
-                }
-                /*
-                // Add damage to applies effect
-                if (damageEffect && damageEffect.damage) {
-                  const damageAmount = damageEffect.damage.amount || 0
-                  const damageType = damageEffect.damage.type || 'unknown'
-                  const totalDamage = damageAmount * damageModifier
-                  const acidDamagePerSecond = totalDamage * 1.2
-
-                  appliesChildren.push({
-                    label: 'Damage',
-                    value: `${acidDamagePerSecond}/${damageType}`
-                  })
-                }
-                */
-                if (appliesChildren.length > 0) {
-                  createsChildren.push({
-                    label: 'Applies effect',
-                    children: appliesChildren
-                  })
-                }
-              }
-            }
-          }
-        }
-
-        // Determine the correct entity name for display
-        let entityDisplayName = 'Fire'
-        if (effect.entity_name.includes('acid')) {
-          entityDisplayName = 'Acid splash'
-        } else if (effect.entity_name.includes('fire')) {
-          entityDisplayName = 'Fire'
-        }
-
-        effects.push({
-          label: `Creates: 1 x ${entityDisplayName}`,
-          children: createsChildren
+    const entityName = resolveEntityReference(oneDelivery)
+    if (entityName) {
+      const referencedEntity = context.factorioData.entity?.[entityName]
+      if (referencedEntity) {
+        parseEntityEffects(referencedEntity, context, damageModifier, statistics, visited)
+      } else {
+        statistics.push({
+          label: `Creates: 1 x ${entityName}`
         })
       }
-    })
-  }
+    }
 
-  return effects
+    asArray(oneDelivery.source_effects).forEach(effect =>
+      parseEffectDescriptor(effect, context, damageModifier, statistics, actionData, visited)
+    )
+    asArray(oneDelivery.target_effects).forEach(effect =>
+      parseEffectDescriptor(effect, context, damageModifier, statistics, actionData, visited)
+    )
+  })
+
+  return statistics
 }
 
-// This is a trigger https://lua-api.factorio.com/latest/types/Trigger.html
-function processAction(action, context, damageModifier, statistics) {
-  if (action.type === 'area') {
-    //Area has radius which interests us
-    statistics.push({
-      label: 'Area of effect size',
-      value: action.radius
-    })
-  } else if (action.type === 'area') {
+function processAction(action, context, damageModifier, statistics, visited = new Set()) {
+  if (!action) return
+
+  if (action.type === 'area' && action.radius !== undefined) {
+    ensureAreaStatistic(statistics, action.radius)
   }
-  if (action.type === 'line') {
-  } else if (action.type === 'direct') {
-  }
-  // Process action delivery to get effects
+
   if (action.action_delivery) {
     parseActionDeliveryEffects(
       action.action_delivery,
       context,
-      action.type,
       action,
       damageModifier,
-      statistics
+      statistics,
+      visited
     )
   }
 }
 
-/**
- * Parse attack parameters and extract relevant statistics
- * @param {Object} attackParameters - The attack_parameters object
- * @param {Object} context - The factorio data context
- * @param {boolean} isArtillery - Whether this is artillery (affects labels)
- * @returns {Object} Object containing statistics array
- */
 export function parseAttackParameters(attackParameters, context, _isArtillery = false) {
-  if (!attackParameters) return null
+  if (!attackParameters || !context?.factorioData) return null
 
   const statistics = []
   const damageModifier = attackParameters.damage_modifier || 1
+  const actions = [
+    ...asArray(attackParameters.ammo_type?.action),
+    ...asArray(attackParameters.action)
+  ]
 
-  // Handle ammo_type - flatten actions and process effects
-  if (attackParameters.ammo_type) {
-    const ammoType = attackParameters.ammo_type
-    // Flatten and process all actions
-    if (ammoType.action) {
-      const actions = Array.isArray(ammoType.action) ? ammoType.action : [ammoType.action]
-      for (const action of actions) {
-        processAction(action, context, damageModifier, statistics)
-      }
+  if (actions.length === 0 && attackParameters.action_delivery) {
+    actions.push({ type: 'direct', action_delivery: attackParameters.action_delivery })
+  }
+
+  for (const action of actions) {
+    processAction(action, context, damageModifier, statistics)
+  }
+
+  return statistics.length > 0 ? { statistics } : null
+}
+
+export function parseCapsuleAction(capsuleAction, context) {
+  if (!capsuleAction) return null
+  if (capsuleAction.attack_parameters) {
+    const parsed = parseAttackParameters(capsuleAction.attack_parameters, context, false)
+    if (parsed?.statistics?.length > 0) return parsed
+  }
+
+  const statistics = []
+  if (capsuleAction.radius !== undefined) {
+    statistics.push({
+      label: 'Area of effect size',
+      value: capsuleAction.radius
+    })
+  }
+  if (capsuleAction.type === 'equipment-remote' && capsuleAction.equipment) {
+    statistics.push({ label: 'Remote equipment', value: capsuleAction.equipment })
+  }
+  if (capsuleAction.type === 'artillery-remote' && capsuleAction.flare) {
+    statistics.push({ label: 'Targets with', value: capsuleAction.flare })
+  }
+
+  return statistics.length > 0 ? { statistics } : null
+}
+
+function formatGenericEffectKey(key) {
+  return String(key)
+    .replace(/[_-]+/g, ' ')
+    .replace(/\b\w/g, char => char.toUpperCase())
+}
+
+function formatGenericEffectValue(value) {
+  if (typeof value === 'boolean') return value ? 'Yes' : 'No'
+  if (typeof value === 'number') {
+    if (Math.abs(value) <= 2) {
+      return `${formatNumber(value * 100)}%`
     }
+    return formatNumber(value)
   }
-  return {
-    statistics
+  if (Array.isArray(value)) return value.map(entry => formatGenericEffectValue(entry)).join(', ')
+  if (value && typeof value === 'object') return JSON.stringify(value)
+  return value
+}
+
+export function parseGenericItemEffect(effectData) {
+  if (!effectData) return null
+  if (typeof effectData !== 'object' || Array.isArray(effectData)) {
+    return { statistics: [{ label: 'Effect', value: String(effectData) }] }
   }
+
+  const statistics = Object.entries(effectData).map(([key, value]) => ({
+    label: formatGenericEffectKey(key),
+    value: formatGenericEffectValue(value)
+  }))
+
+  return statistics.length > 0 ? { statistics } : null
 }
 
 export default {
-  parseAttackParameters
+  parseAttackParameters,
+  parseCapsuleAction,
+  parseGenericItemEffect
 }

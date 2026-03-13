@@ -1,5 +1,9 @@
 import { labels, sectionTypes } from '../detailsDataTypes.js'
-import { parseAttackParameters } from '../useAttackParametersParser.js'
+import {
+  parseAttackParameters,
+  parseCapsuleAction,
+  parseGenericItemEffect
+} from '../useAttackParametersParser.js'
 
 /**
  * Item rules - unified format for both statistics and sections
@@ -270,10 +274,19 @@ export const itemRules = [
       if (data.item?.attack_parameters) {
         return parseAttackParameters(data.item.attack_parameters, context, false)
       }
-      // Otherwise, return the raw effect data
-      return data.item?.effect
+      if (data.item?.capsule_action) {
+        return parseCapsuleAction(data.item.capsule_action, context)
+      }
+      // Normalize raw effect objects (module/item effects) into Effect statistics
+      if (data.item?.effect !== undefined) {
+        return parseGenericItemEffect(data.item.effect)
+      }
+      return null
     },
-    condition: data => data.item?.effect !== undefined || data.item?.attack_parameters !== undefined
+    condition: data =>
+      data.item?.effect !== undefined ||
+      data.item?.attack_parameters !== undefined ||
+      data.item?.capsule_action !== undefined
   },
   {
     name: sectionTypes.generates_equipment_grid_electricity,

@@ -1,10 +1,10 @@
 {
-  "generated": "2026-03-13T20:33:55.860Z",
+  "generated": "2026-03-13T21:36:47.977Z",
   "summary": {
-    "totalPrototypes": 10301,
-    "totalErrors": 1,
-    "totalRulesExecuted": 17213,
-    "totalRulesFailed": 1,
+    "totalPrototypes": 10302,
+    "totalErrors": 0,
+    "totalRulesExecuted": 17353,
+    "totalRulesFailed": 0,
     "successRate": "100.0"
   },
   "ruleTypeStats": {
@@ -65,11 +65,11 @@
       "failed": 0
     },
     "entity": {
-      "executed": 2130,
+      "executed": 2124,
       "failed": 0
     },
     "item": {
-      "executed": 1825,
+      "executed": 1809,
       "failed": 0
     },
     "recipe": {
@@ -197,7 +197,7 @@
       "failed": 0
     },
     "technology": {
-      "executed": 671,
+      "executed": 833,
       "failed": 0
     },
     "tips-and-tricks-item-category": {
@@ -245,8 +245,6 @@
       "failed": 0
     }
   },
-  "prototypeFailures": {
-    "entity:petroleum-generator": "Cannot read properties of null (reading 'normalizedValue')"
-  },
+  "prototypeFailures": {},
   "recommendations": []
 }
