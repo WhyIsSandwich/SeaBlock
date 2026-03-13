@@ -1,6 +1,7 @@
 # Architecture Brief
 
 This brief describes how SeaBlock data flows from extraction to the Factoriopedia UI, and where production-critical boundaries exist.
+For a deeper pipeline review with prioritized remediation actions, see `docs/governance/factorio-data-pipeline-review.md`.
 
 ## Document Control
 

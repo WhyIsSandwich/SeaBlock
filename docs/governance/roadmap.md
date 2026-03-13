@@ -21,41 +21,49 @@ This roadmap consolidates existing planning docs and in-code TODO signals into a
 
 ## Now (0-1 Month)
 
-1. **Stabilize runtime/debug behavior**
+1. **Fix runtime loader correctness and concurrency**
+   - Normalize organized-data key usage (`recipe`/`technology` contract alignment) and add request dedupe/race protection in data loading.
+   - Source evidence: `src/composables/useFactorioData.js`.
+
+2. **Stabilize runtime/debug behavior**
    - Remove runtime `debugger` and noisy logs from production paths.
    - Source evidence: `src/components/FactorioSceneEngine.js`, `src/composables/useFactorioData.js`, `src/composables/useFactorioPrototypeMapping.js`.
 
-2. **Close highest-impact details-rule gaps**
-   - Implement missing unlock/effect/research-derived values in details rules.
+3. **Close highest-impact details-rule gaps**
+   - Implement missing unlock/effect/research-derived values and null-safety hardening in details rules.
    - Source evidence: `src/composables/useDetailsData/recipeRules.js`, `src/composables/useDetailsData/entityRules.js`, `src/composables/useDetailsData/technologyRules.js`.
 
-3. **Harden deploy and validation gates**
+4. **Harden deploy and validation gates**
    - Restrict deploy triggers and add required lint/build checks in workflow sequence.
    - Source evidence: `.github/workflows/deploy.yml`, `docs/governance/developer-guidelines.md`.
 
-4. **Document and enforce generated data contract**
+5. **Document and enforce generated data contract**
    - Formalize expectations for `docs/public/data/*.json` and schema-impact change process.
-   - Source evidence: `scripts/process-factorio-data.js`, `docs/governance/developer-guidelines.md`.
+   - Source evidence: `scripts/process-factorio-data.js`, `docs/governance/developer-guidelines.md`, `docs/governance/factorio-data-pipeline-review.md`.
 
 ## Next (1-3 Months)
 
-1. **Improve rendering mapping coverage**
+1. **Improve pipeline processing performance**
+   - Reduce synchronous hot-loop IO and introduce bounded concurrency in icon metadata/resize pipeline.
+   - Source evidence: `scripts/process-factorio-data.js`.
+
+2. **Improve rendering mapping coverage**
    - Complete critical TODOs and prototype handler coverage in rendering mapping.
    - Source evidence: `src/composables/useFactorioRenderingMapping.js`.
 
-2. **Resolve open browser-renderer parity work**
+3. **Resolve open browser-renderer parity work**
    - Address pending custom containers/YAML enhancements and remaining parity tasks.
    - Source evidence: `docs/governance/key-issues.md`, runtime TODO markers.
 
-3. **Modularize high-risk monolith files**
+4. **Modularize high-risk monolith files**
    - Extract `DetailsPane.vue` and major scripts into bounded modules.
    - Source evidence: `docs/.vitepress/components/DetailsPane.vue`, `scripts/process-factorio-data.js`, `scripts/orchestrate-factorio-processing.js`.
 
-4. **Formalize contributor standards in one entry path**
+5. **Formalize contributor standards in one entry path**
    - Consolidate contributor workflow and quality policy references from README/docs.
    - Source evidence: `README.md`, `docs/governance/editing-guidelines.md`, `docs/governance/developer-guidelines.md`.
 
-5. **Documentation governance cleanup**
+6. **Documentation governance cleanup**
    - Migrate residual useful content from legacy docs, then deprecate and remove obsolete guidance files.
    - Source evidence: `docs/governance/legacy-doc-retirement.md`.
    - Milestones:
@@ -81,10 +89,13 @@ This roadmap consolidates existing planning docs and in-code TODO signals into a
 
 ```mermaid
 flowchart LR
-  stabilizeRuntime[StabilizeRuntime] --> detailsParity[DetailsRuleParity]
+  loaderCorrectness[LoaderCorrectnessAndConcurrency] --> stabilizeRuntime[StabilizeRuntime]
+  loaderCorrectness --> detailsParity[DetailsRuleParity]
   stabilizeRuntime --> ciHardening[CIAndDeployHardening]
+  detailsParity --> pipelinePerf[PipelinePerformance]
   detailsParity --> renderingCoverage[RenderingCoverage]
   ciHardening --> modularization[MonolithModularization]
+  pipelinePerf --> modularization
   renderingCoverage --> performanceTrack[PerformanceTrack]
   modularization --> docsExpansion[DocsExpansion]
 ```

@@ -154,6 +154,14 @@ const resolvedTitle = computed(() => {
 })
 
 const resolvedAriaLabel = computed(() => resolvedTitle.value || null)
+const slotPadding = computed(() => {
+  const numericSize = Number(props.size) || 32
+  if (numericSize <= 20) return '1px'
+  if (numericSize <= 28) return '2px'
+  if (numericSize <= 40) return '3px'
+  if (numericSize <= 56) return '4px'
+  return '6px'
+})
 
 // Methods
 function handleClick() {
@@ -180,19 +188,25 @@ function handleClick() {
   min-height: v-bind(size + 'px');
   max-width: v-bind(size + 'px');
   max-height: v-bind(size + 'px');
-  /* Factorio button styling */
-  background: linear-gradient(to bottom, #3a3a3a, #2a2a2a);
-  border: 1px solid #4a4a4a;
+  background: linear-gradient(to bottom, #474747, #2d2d2d);
+  border: 1px solid #5e5e5e;
+  border-top-color: #787878;
+  border-left-color: #747474;
+  border-right-color: #3a3a3a;
+  border-bottom-color: #303030;
   border-radius: 2px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.45),
+    0 1px 2px rgba(0, 0, 0, 0.35);
   transition:
-    background-color 0.2s ease,
+    background 0.15s ease,
     border-color 0.2s ease,
-    box-shadow 0.2s ease;
+    box-shadow 0.2s ease,
+    transform 0.1s ease;
   position: relative;
   flex-shrink: 0;
-  /* Padding calculation based on actual size prop to match grid */
-  padding: v-bind('Math.max(2, Math.floor(size * 0.125)) + "px"');
+  padding: v-bind(slotPadding);
   box-sizing: border-box;
 }
 
@@ -201,24 +215,39 @@ function handleClick() {
 }
 
 .clickable:hover {
-  background: #ffa207;
-  border-color: #ffa207;
+  background: linear-gradient(to bottom, #575757, #373737);
+  border-top-color: #8a8a8a;
+  border-left-color: #858585;
+  border-right-color: #4b4b4b;
+  border-bottom-color: #3e3e3e;
   box-shadow:
-    0 0 8px rgba(255, 200, 100, 0.4),
-    0 2px 4px rgba(0, 0, 0, 0.4);
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.45),
+    0 0 0 1px rgba(255, 190, 95, 0.35),
+    0 2px 4px rgba(0, 0, 0, 0.45);
 }
 
 .clickable:focus-visible {
   outline: 2px solid #ffd28a;
   outline-offset: 1px;
-  background: #ffa207;
-  border-color: #ffa207;
+  background: linear-gradient(to bottom, #5a5a5a, #3a3a3a);
+  border-top-color: #8f8f8f;
+  border-left-color: #898989;
+  border-right-color: #4f4f4f;
+  border-bottom-color: #434343;
 }
 
 .selected {
-  background: #ffa207;
-  border-color: #ffa207;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  background: linear-gradient(to bottom, #5a4a30, #3d301f);
+  border-top-color: #d4a55b;
+  border-left-color: #ca9a52;
+  border-right-color: #7d5a2f;
+  border-bottom-color: #6a4a26;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 232, 180, 0.2),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.5),
+    0 0 0 1px rgba(255, 176, 74, 0.5),
+    0 1px 2px rgba(0, 0, 0, 0.4);
 }
 
 .emptyCell {
@@ -248,7 +277,7 @@ function handleClick() {
 }
 
 .selected .iconLabel {
-  color: #cc6600;
+  color: #ffd28a;
   font-weight: 500;
 }
 </style>

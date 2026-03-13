@@ -345,7 +345,8 @@ export const entityRules = [
     forType: 'entity',
     shownInTooltip: true,
     getValue: data => data.item?.stack_size,
-    condition: data => data.item?.stack_size !== undefined
+    condition: (data, context) =>
+      data.item?.stack_size !== undefined && !context.types?.includes('item')
   },
 
   // Section rules
