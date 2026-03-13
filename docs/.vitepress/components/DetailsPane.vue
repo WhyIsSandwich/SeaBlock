@@ -4,11 +4,10 @@
       <!-- Item Header with Controls and Tabs -->
       <div :class="$style.itemHeader">
         <div :class="$style.headerTitle">
-          <IconButton
-            :type="getPrimaryType(selectedItem)"
-            :name="selectedItem.name"
+          <SpriteIcon
+            :sprite-key="`${getPrimaryType(selectedItem)}-${selectedItem.name}`"
             :size="36"
-            :clickable="false"
+            :title="formattedDisplayName"
           />
           <h3>{{ formattedDisplayName }} ({{ itemTypeLabel }})</h3>
         </div>
@@ -194,7 +193,6 @@ import { useFactorioData } from '../../../src/index.js'
 import { useDetailsData } from '../../../src/composables/useDetailsData.js'
 
 import SpriteIcon from './SpriteIcon.vue'
-import IconButton from './IconButton.vue'
 import FactorioSprite from './FactorioSprite.vue'
 import Statistics from './Statistics.vue'
 import DetailsPaneSection from './DetailsPaneSection.vue'

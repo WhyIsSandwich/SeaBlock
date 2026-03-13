@@ -630,13 +630,8 @@ onUnmounted(() => {
   padding: 4px 6px;
   border-radius: 2px;
   cursor: pointer;
-  transition: background-color 0.2s ease;
   font-size: 12px;
   color: #cccccc;
-}
-
-.tooltip-sections :deep(.itemEntry:hover) {
-  background-color: #333333;
 }
 
 .tooltip-sections :deep(.gridItem) {

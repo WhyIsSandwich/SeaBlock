@@ -3,7 +3,7 @@
   <template v-else-if="section.type === 'technology_cost'">
     <div :class="$style.section">
       <h4 :class="$style.sectionTitle">{{ section.label }}</h4>
-      <div v-if="section.items?.length > 0" style="display: flex; align-items: center; gap: 4px">
+      <div v-if="section.items?.length > 0" :class="$style.technologyCostRow">
         <IconButton
           v-for="item in section.items"
           :key="`${item.type}-${item.name}`"
@@ -14,16 +14,8 @@
           @click="handleItemClick(item)"
           :show-tooltip="showTooltip"
         />
-        <span
-          style="text-align: center; display: flex; vertical-align: middle; align-items: center"
-        >
-          🕛{{ section.statistics[1].value }}
-        </span>
-        <span
-          style="text-align: center; display: flex; vertical-align: middle; align-items: center"
-        >
-          x {{ section.statistics[0].value }}
-        </span>
+        <span :class="$style.technologyCostStat"> 🕛{{ section.statistics[1].value }} </span>
+        <span :class="$style.technologyCostStat"> x {{ section.statistics[0].value }} </span>
       </div>
     </div>
   </template>
@@ -333,8 +325,8 @@ export default {
 
 <style module>
 .section {
-  margin-bottom: 16px;
-  padding: 10px;
+  margin-bottom: 12px;
+  padding: 8px;
   background: #1f1f1f;
   border-radius: 2px;
   border: 1px solid #3f3f3f;
@@ -344,19 +336,34 @@ export default {
 }
 
 .sectionTitle {
-  margin: 0 0 8px 0;
+  margin: 0 0 6px 0;
   color: #f2c15a;
   font-size: 14px;
   font-weight: 700;
   text-transform: capitalize;
   border-bottom: 1px solid #494949;
-  padding-bottom: 4px;
+  padding-bottom: 3px;
+}
+
+.technologyCostRow {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.technologyCostStat {
+  display: inline-flex;
+  align-items: center;
+  text-align: center;
+  color: #d9d9d9;
+  font-size: 13px;
+  line-height: 1;
 }
 
 .itemsList {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
 }
 
 .itemsGrid {
@@ -367,7 +374,7 @@ export default {
   background: #1f1f1f;
   border: 1px solid #3d3d3d;
   border-radius: 2px;
-  padding: 2px;
+  padding: 1px;
   box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 
@@ -385,15 +392,10 @@ export default {
 .itemEntry {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 4px 8px;
-  border-radius: 3px;
+  gap: 6px;
+  padding: 3px 6px;
+  border-radius: 2px;
   cursor: pointer;
-  transition: background-color 0.2s ease;
-}
-
-.itemEntry:hover {
-  background-color: #3a3a3a;
 }
 
 .gridItem {
@@ -427,22 +429,17 @@ export default {
 .unlockTechnologies {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 .technologyEntry {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 8px;
+  gap: 10px;
+  padding: 6px;
   background: #1f1f1f;
   border: 1px solid #3f3f3f;
   border-radius: 2px;
-  transition: background-color 0.2s ease;
-}
-
-.technologyEntry:hover {
-  background: #2a2a2a;
 }
 
 .technologyPanel {
@@ -525,6 +522,6 @@ export default {
   font-size: 14px;
   font-weight: 500;
   flex: 1;
-  padding-left: 8px;
+  padding-left: 6px;
 }
 </style>
