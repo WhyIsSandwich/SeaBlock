@@ -533,9 +533,8 @@ onUnmounted(() => {
   border: 1px solid #444444;
   border-radius: 4px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
-  max-width: 620px;
-  min-width: 200px;
-  width: max-content;
+  inline-size: fit-content;
+  max-inline-size: min(560px, calc(100vw - 16px));
   z-index: 9999;
   opacity: 0;
   transform: translateY(-4px);
@@ -554,10 +553,12 @@ onUnmounted(() => {
 .tooltip-content {
   padding: 12px 16px;
   color: #cccccc;
+  display: grid;
+  gap: 8px;
 }
 
 .tooltip-header {
-  margin-bottom: 6px;
+  margin: 0;
 }
 
 .tooltip-title {
@@ -571,8 +572,9 @@ onUnmounted(() => {
 .tooltip-description {
   font-size: 13px;
   color: #cccccc;
-  margin-bottom: 8px;
+  margin: 0;
   line-height: 1.4;
+  overflow-wrap: anywhere;
 }
 
 .tooltip-description p {
@@ -580,7 +582,7 @@ onUnmounted(() => {
 }
 
 .tooltip-sections {
-  margin-top: 8px;
+  margin-top: 0;
 }
 
 .tooltip-sections :deep(.section) {
