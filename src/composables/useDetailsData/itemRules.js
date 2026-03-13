@@ -172,6 +172,19 @@ export const itemRules = [
     getValue: data => data.item?.stack_size,
     condition: data => data.item?.stack_size !== undefined
   },
+  {
+    name: 'Effects',
+    order: 14,
+    type: 'statistics',
+    forType: 'item',
+    shownInTooltip: true,
+    getValue: data => {
+      const parsed = parseGenericItemEffect(data.item?.effect)
+      if (!parsed?.statistics?.length) return null
+      return { children: parsed.statistics }
+    },
+    condition: data => data.item?.type === 'module' && data.item?.effect !== undefined
+  },
 
   // Section rules
   {
@@ -280,17 +293,14 @@ export const itemRules = [
       if (data.item?.capsule_action) {
         return parseCapsuleAction(data.item.capsule_action, context)
       }
-      // Normalize raw effect objects (module/item effects) into Effect statistics
-      if (data.item?.effect !== undefined) {
-        return parseGenericItemEffect(data.item.effect)
-      }
       return null
     },
     condition: data =>
-      data.item?.effect !== undefined ||
-      data.item?.attack_parameters !== undefined ||
+      data.item?.type !== 'gun' &&
+      (data.item?.attack_parameters !== undefined ||
       data.item?.ammo_type !== undefined ||
       data.item?.capsule_action !== undefined
+      )
   },
   {
     name: sectionTypes.generates_equipment_grid_electricity,

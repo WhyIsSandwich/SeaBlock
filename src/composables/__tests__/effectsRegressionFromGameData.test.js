@@ -85,6 +85,19 @@ describe('effects regression from game data', () => {
     return flattenStatistics(effectSection.statistics)
   }
 
+  function detailsForPrototype(baseType, prototypeName) {
+    const prototype = factorioData[baseType]?.[prototypeName]
+    expect(prototype, `Missing prototype: ${baseType}.${prototypeName}`).toBeDefined()
+    const unifiedObject = {
+      [baseType]: prototype,
+      displayName: prototype.displayName,
+      description: prototype.description
+    }
+    return getDetailsData([baseType], unifiedObject, false, factorioData, {
+      excludeHiddenFromFactorioData: true
+    })
+  }
+
   const cases = [
     {
       baseType: 'equipment',
@@ -105,7 +118,6 @@ describe('effects regression from game data', () => {
       baseType: 'entity',
       name: 'bob-plasma-turret-1',
       expectedLines: [
-        'Projectile range: 100',
         'Area of effect size: 8',
         ' - Damage: 180 Plasma',
         ' - Damage: 108 Electric',
@@ -154,4 +166,21 @@ describe('effects regression from game data', () => {
       }
     })
   }
+
+  it('does not render an Effect section for gun items', () => {
+    const details = detailsForPrototype('item', 'submachine-gun')
+    const effectSection = details.sections.find(
+      section => section.type === 'effect' || section.label === 'Effect'
+    )
+    expect(effectSection).toBeUndefined()
+  })
+
+  it('renders module effects as top-level statistics', () => {
+    const details = detailsForPrototype('item', 'speed-module')
+    const effectsStat = details.statistics.find(stat => stat.label === 'Effects')
+    expect(effectsStat).toBeDefined()
+    const children = effectsStat.children || []
+    expect(children.some(child => child.label === 'Speed')).toBe(true)
+    expect(children.some(child => child.label === 'Consumption')).toBe(true)
+  })
 })

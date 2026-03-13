@@ -48,7 +48,7 @@ function formatInfiniteTechnologyDisplayName(prototypeName, displayName, technol
  * OUTPUT FILES:
  * - data.json: Original data-raw with minimal transforms (icon paths -> spritemap refs), compact
  * - locale-{lang}.json: Language-specific localization { lang, type: {name: {n: "", d: ""}} }, compact
- * - spritemap.json + spritemap.png: Skyline-packed, deduplicated icon atlas (max 64x64), compact
+ * - spritemap.json + spritemap.png + spritemap.webp: Skyline-packed, deduplicated icon atlas (max 64x64), compact
  * - type-mapping.json: Maps which prototypes belong to which type hierarchies, compact
  */
 
@@ -738,6 +738,18 @@ class FactorioDataProcessorRefactored {
       const spritemapImageFile = path.join(this.outputPath, 'spritemap.png')
       fs.writeFileSync(spritemapImageFile, spritemapBuffer)
       console.log(`✓ Generated spritemap image: ${spritemapImageFile}`)
+
+      // Write WebP variant for production/CDN delivery
+      const spritemapWebpFile = path.join(this.outputPath, 'spritemap.webp')
+      await sharp(spritemapBuffer)
+        .webp({
+          quality: 95,
+          lossless: false,
+          effort: 6,
+          smartSubsample: true
+        })
+        .toFile(spritemapWebpFile)
+      console.log(`✓ Generated spritemap WebP: ${spritemapWebpFile}`)
 
       // Write JSON (compact format for speed/size)
       const spritemapFile = path.join(this.outputPath, 'spritemap.json')

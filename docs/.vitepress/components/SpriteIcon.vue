@@ -21,6 +21,7 @@ import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { withBase } from 'vitepress'
 
 import { loadSpritemapData } from '../../../src/index.js'
+import { getPublicDataUrl } from '../../../src/components/spriteCache.js'
 
 // Props
 const props = defineProps({
@@ -116,6 +117,11 @@ const iconStyle = computed(() => {
     return {}
   }
 
+  const isDev = Boolean(import.meta.env?.DEV)
+  const spriteImageFile = isDev
+    ? spritemapData.value.image
+    : spritemapData.value.image.replace('.png', '.webp')
+  const spriteImageUrl = getPublicDataUrl(spriteImageFile, withBase)
   const scale = spriteScale.value
   const scaledWidth = spriteData.value.width * scale
   const scaledHeight = spriteData.value.height * scale
@@ -123,7 +129,7 @@ const iconStyle = computed(() => {
   const style = {
     width: `${scaledWidth}px`,
     height: `${scaledHeight}px`,
-    backgroundImage: `url(${withBase(`/data/${spritemapData.value.image.replace('.png', '.webp')}`)})`,
+    backgroundImage: `url(${spriteImageUrl})`,
     backgroundPosition: `-${spriteData.value.x * scale}px -${spriteData.value.y * scale}px`,
     backgroundSize: `${spritemapData.value.width * scale}px ${spritemapData.value.height * scale}px`,
     backgroundRepeat: 'no-repeat',
@@ -133,7 +139,7 @@ const iconStyle = computed(() => {
   // Add color if color prop is provided
   if (props.color) {
     // Use CSS mask approach: set background color and use sprite as mask
-    const baseUrl = withBase(`/data/${spritemapData.value.image}`)
+    const baseUrl = spriteImageUrl
     const scaledSheetWidth = spritemapData.value.width * scale
     const scaledSheetHeight = spritemapData.value.height * scale
     const scaledX = spriteData.value.x * scale

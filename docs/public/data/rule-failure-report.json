@@ -1,9 +1,9 @@
 {
-  "generated": "2026-03-13T22:10:15.903Z",
+  "generated": "2026-03-13T23:00:41.386Z",
   "summary": {
-    "totalPrototypes": 10302,
+    "totalPrototypes": 10641,
     "totalErrors": 0,
-    "totalRulesExecuted": 17450,
+    "totalRulesExecuted": 17379,
     "totalRulesFailed": 0,
     "successRate": "100.0"
   },
@@ -65,15 +65,15 @@
       "failed": 0
     },
     "entity": {
-      "executed": 2139,
+      "executed": 2123,
       "failed": 0
     },
     "item": {
-      "executed": 1884,
+      "executed": 1853,
       "failed": 0
     },
     "recipe": {
-      "executed": 11951,
+      "executed": 11934,
       "failed": 0
     },
     "quality": {
@@ -81,7 +81,7 @@
       "failed": 0
     },
     "fluid": {
-      "executed": 582,
+      "executed": 585,
       "failed": 0
     },
     "tile": {
@@ -197,7 +197,7 @@
       "failed": 0
     },
     "technology": {
-      "executed": 833,
+      "executed": 823,
       "failed": 0
     },
     "tips-and-tricks-item-category": {
@@ -241,6 +241,10 @@
       "failed": 0
     },
     "deliver-category": {
+      "executed": 0,
+      "failed": 0
+    },
+    "custom-event": {
       "executed": 0,
       "failed": 0
     }

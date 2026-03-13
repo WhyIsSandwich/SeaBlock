@@ -49,6 +49,10 @@ const renderRichText = computed(() => {
 
 <style scoped>
 /* Factorio game objects are now handled by IconButton component */
+.factorio-richtext {
+  white-space: pre-line;
+}
+
 .factorio-richtext :deep(.factorio-richtext-tag-ref) {
   opacity: 0.8;
   border-bottom: 1px dotted var(--vp-c-border);

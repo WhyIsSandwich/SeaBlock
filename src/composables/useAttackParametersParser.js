@@ -280,15 +280,6 @@ function parseActionDeliveryEffects(
     if (entityName) {
       const referencedEntity = getPrototypeFromContext(context, 'entity', entityName)
       if (referencedEntity) {
-        if (
-          (oneDelivery.type === 'projectile' || oneDelivery.type === 'artillery') &&
-          referencedEntity.max_range !== undefined
-        ) {
-          statistics.push({
-            label: 'Projectile range',
-            value: referencedEntity.max_range
-          })
-        }
         parseEntityEffects(referencedEntity, context, damageModifier, statistics, visited)
       } else {
         statistics.push({
@@ -332,13 +323,6 @@ export function parseAttackParameters(attackParameters, context, _isArtillery = 
 
   const statistics = []
   const damageModifier = attackParameters.damage_modifier || 1
-  if (attackParameters.type === 'projectile' && attackParameters.range !== undefined) {
-    // Match in-game display for projectile stream range where applicable.
-    statistics.push({
-      label: 'Projectile range',
-      value: attackParameters.range * 2
-    })
-  }
   const actions = [
     ...asArray(attackParameters.ammo_type?.action),
     ...asArray(attackParameters.action)
