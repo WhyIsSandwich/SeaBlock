@@ -3,6 +3,12 @@
 /**
  * Factorio Data Processing Orchestrator
  *
+ * @deprecated Prefer standalone scripts. See scripts/README.md and scripts/CONTAINER.md.
+ * - Extract: extract-factorio-data.sh / .ps1
+ * - Process: process-factorio-data.js --script-output PATH
+ * - Tooltips: generate-tooltips.js
+ * - Graphics: copy-mod-graphics.js -g PATH -u PATH
+ *
  * Interactive script that guides users through the complete Factorio data processing pipeline.
  * Handles directory detection, path mapping, and execution of various processing steps.
  */
@@ -25,8 +31,7 @@ class FactorioProcessingOrchestrator {
     this.config = {
       gameFolder: null,
       userFolder: null,
-      dataDumpsPath: './data-dumps',
-      outputPath: './docs/public/data'
+      dataDumpsPath: './data-dumps'
     }
     this.selectedSteps = []
     this.cliArgs = this.parseCommandLineArgs()
@@ -73,8 +78,10 @@ class FactorioProcessingOrchestrator {
    * Show help information
    */
   showHelp() {
-    console.log('🎮 Factorio Data Processing Orchestrator')
-    console.log('==========================================')
+    console.log('🎮 Factorio Data Processing Orchestrator (deprecated)')
+    console.log('======================================================')
+    console.log('')
+    console.log('Prefer standalone scripts. See scripts/README.md and scripts/CONTAINER.md.')
     console.log('')
     console.log('Usage: node scripts/orchestrate-factorio-processing.js [options]')
     console.log('')
@@ -110,8 +117,10 @@ class FactorioProcessingOrchestrator {
       return
     }
 
-    console.log('🎮 Factorio Data Processing Orchestrator')
-    console.log('==========================================')
+    console.log('🎮 Factorio Data Processing Orchestrator (deprecated)')
+    console.log('======================================================')
+    console.log('')
+    console.log('⚠️  Prefer standalone scripts. See scripts/README.md and scripts/CONTAINER.md.')
     console.log('')
     console.log('This script will guide you through processing Factorio data for SeaBlock.')
     console.log('It handles directory detection, path mapping, and execution of processing steps.')
@@ -363,6 +372,8 @@ class FactorioProcessingOrchestrator {
     const showMappingGuide = await this.askQuestion('Show container mapping guide? (y/n): ')
     if (showMappingGuide.toLowerCase() === 'y' || showMappingGuide.toLowerCase() === 'yes') {
       this.showContainerMappingGuide()
+      console.log('Full guide: scripts/CONTAINER.md')
+      console.log('')
     }
 
     console.log('')

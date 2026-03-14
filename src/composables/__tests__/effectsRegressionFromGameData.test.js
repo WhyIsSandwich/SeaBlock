@@ -51,7 +51,7 @@ describe('effects regression from game data', () => {
   let getDetailsData
 
   beforeAll(() => {
-    const dataPath = path.join(process.cwd(), 'docs/public/data/data.json')
+    const dataPath = path.join(process.cwd(), 'generated/data/dev/data.json')
     const rawData = JSON.parse(fs.readFileSync(dataPath, 'utf8'))
     const { subtypeToBaseType } = useFactorioPrototypeMapping()
 

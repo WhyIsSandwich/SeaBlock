@@ -18,7 +18,7 @@ This document is the canonical engineering contribution guide for SeaBlock runti
 - Use short-lived feature/fix branches from the primary integration branch.
 - Keep PRs focused on one concern (pipeline, runtime composables, rendering, or docs UI).
 - Include impact notes for:
-  - data contracts in `docs/public/data/`
+  - data contracts in `generated/data/dev/`
   - rendering behavior changes
   - details rules output changes
 
@@ -50,7 +50,7 @@ If touching data pipeline scripts, also run the relevant script(s) and validate 
 
 ## Data Contract Policy
 
-- Treat generated files under `docs/public/data/` as runtime contracts.
+- Treat generated files under `generated/data/dev/` as runtime contracts.
 - Any schema-affecting change must include:
   - update notes in PR description
   - downstream verification in composables/rules affected by the change

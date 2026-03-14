@@ -12,8 +12,8 @@ async function createRealImageLoader() {
   // In a real Node.js environment, you might use canvas or sharp
   // For now, we'll create a mock that simulates image loading
   return filename => {
-    // Simulate loading from /public/data folder
-    const fullPath = `/public/data/${filename}`
+    // Simulate loading from generated/data/dev (assetResolver path)
+    const fullPath = `/generated/data/dev/${filename}`
     console.log(`Loading image: ${fullPath}`)
 
     // Create a mock image that simulates loading
@@ -320,11 +320,11 @@ describe('FactorioAnimationEngine', () => {
   })
 
   describe('Image Loading', () => {
-    test('should load images from /public/data folder', () => {
+    test('should load images from generated/data/dev folder', () => {
       const imageLoader = mockImageLoader
       const img = imageLoader('test-sprite.png')
 
-      expect(img.src).toBe('/public/data/test-sprite.png')
+      expect(img.src).toBe('/generated/data/dev/test-sprite.png')
       expect(img.width).toBe(64)
       expect(img.height).toBe(64)
       expect(img.complete).toBe(false) // Initially not loaded
@@ -342,7 +342,7 @@ describe('FactorioAnimationEngine', () => {
       const imageLoader = mockImageLoader
       const img = imageLoader('nonexistent.png')
 
-      expect(img.src).toBe('/public/data/nonexistent.png')
+      expect(img.src).toBe('/generated/data/dev/nonexistent.png')
 
       // Test error handling
       return new Promise(resolve => {

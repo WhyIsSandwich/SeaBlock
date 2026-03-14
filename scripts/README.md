@@ -1,96 +1,81 @@
 # Factorio Data Processing Scripts
 
-This directory contains cross-platform scripts to extract, process, and optimize Factorio data for the SeaBlock project.
+Cross-platform scripts to extract, process, and optimize Factorio data for the SeaBlock project.
 
-## 🎯 Quick Start (Recommended)
+## Pipeline Structure (Fork)
 
-**`orchestrate-factorio-processing.js`** - Interactive orchestration script that guides you through the entire process:
+The pipeline forms a **fork**. Graphics and the Processor chain are independent; they share output folder `generated/data/dev` but nothing else.
+
+| Branch | Scripts | Input | Output |
+|--------|---------|-------|--------|
+| **Processor chain** | Extract → Process → Tooltips | Machine with Factorio, or script-output | data.json, locale, spritemap, en-tooltips.json |
+| **Graphics chain** | copy-mod-graphics → convert-to-webp | Copy of Factorio folder (mods) | Mod PNGs → WebP → Cloudflare |
+
+- **Extract** - Runs on machine with Factorio (needs exe)
+- **Graphics** - Uses copy of Factorio folder (mods)
+- **Process** - Uses script-output (from Extract or copy)
+- **Tooltips** - Needs Processor output
+
+See [CONTAINER.md](CONTAINER.md) for running in Docker/dev containers.
+
+## Quick Start
+
+### Processor Chain (JSON, spritemap, tooltips)
 
 ```bash
-node scripts/orchestrate-factorio-processing.js
+# 1. Extract (on machine with Factorio)
+./scripts/extract-factorio-data.sh   # or .ps1 on Windows
+
+# 2. Process (uses script-output)
+node scripts/process-factorio-data.js --script-output /path/to/script-output
+
+# 3. Tooltips (optional, reads process output)
+node scripts/generate-tooltips.js
 ```
 
-This script will:
+### Graphics Chain (mod PNGs)
 
-- Auto-detect your Factorio installation
-- Guide you through directory mapping
-- Let you select which processing steps to run
-- Execute everything automatically
+```bash
+node scripts/copy-mod-graphics.js -g /path/to/factorio -u /path/to/userdata -o ./generated/data/dev
+```
 
 ## Available Scripts
 
-### Main Processing Scripts
+### Processor Chain
 
-- **`orchestrate-factorio-processing.js`** - Interactive orchestration script (recommended)
-- **`process-factorio-data.js`** - Core data processing engine (outputs to `generated/data/dev` by default)
-- **`generate-tooltips.js`** - Generate `en-tooltips.json` from process output (default: `generated/data/dev`)
-- **`productionize-spritemap-webp.js`** - Generate production `spritemap.webp` from `spritemap.png`
-- **`publish-generated-data.js`** - Publish generated data to CDN (see `.env.example` for prod config)
-- **`convert-to-webp.js`** - PNG to WebP conversion for graphics (default: `generated/data/dev`)
-- **`copy-mod-graphics.js`** - Copy PNG files from mods to `generated/data/dev` (served at `/generated/data/dev` in dev)
+- **`process-factorio-data.js`** - Core processor (data.json, locale, spritemap). Input: script-output.
+- **`generate-tooltips.js`** - Generates en-tooltips.json from process output.
+- **`productionize-spritemap-webp.js`** - spritemap.png → spritemap.webp for production.
+- **`publish-generated-data.js`** - Publish to CDN (see `.env.example`).
 
-### Data Extraction Scripts
+### Graphics Chain
 
-#### Linux/macOS/Git Bash
+- **`copy-mod-graphics.js`** - Copy mod PNGs to `generated/data/dev`.
+- **`convert-to-webp.js`** - PNG → WebP for graphics.
 
-- **`extract-factorio-data.sh`** - Bash script for Unix-like systems
+### Extraction (needs Factorio on machine)
 
-#### Windows
+- **`extract-factorio-data.sh`** - Linux/macOS/Git Bash
+- **`extract-factorio-data.ps1`** - Windows PowerShell (recommended)
+- **`extract-factorio-data.cmd`** - Windows Command Prompt
 
-- **`extract-factorio-data.cmd`** - Batch script for Windows Command Prompt
-- **`extract-factorio-data.ps1`** - PowerShell script for Windows (recommended)
+### Deprecated
+
+- **`orchestrate-factorio-processing.js`** - Use standalone scripts above.
 
 ## Usage
 
-### Orchestration Script (Recommended)
+### Processor Scripts
 
-The orchestration script provides an interactive experience:
-
-```bash
-node scripts/orchestrate-factorio-processing.js
-```
-
-**Features:**
-
-- Auto-detects Factorio installation paths
-- Handles both standard and Steam installations
-- Maps user vs game directories automatically
-- Interactive step selection
-- Command-line parameter support
-- Comprehensive error handling
-
-**Command-line Options:**
-
-- `-g, --game-folder PATH` - Path to Factorio game folder
-- `-u, --user-folder PATH` - Path to Factorio user folder (optional)
-- `-s, --steps STEPS` - Comma-separated list of steps to run
-- `-h, --help` - Show help message
-
-**Examples:**
+#### process-factorio-data.js
 
 ```bash
-# Interactive mode (recommended)
-node scripts/orchestrate-factorio-processing.js
-
-# Skip interactive prompts
-node scripts/orchestrate-factorio-processing.js -g /path/to/factorio -s extract,process,tooltips
-
-# Run only graphics copying
-node scripts/orchestrate-factorio-processing.js -g /factorio -s graphics
-
-# Show help
-node scripts/orchestrate-factorio-processing.js --help
+node scripts/process-factorio-data.js --script-output /path/to/script-output [--output ./generated/data/dev] [--locale en] [--tooltips]
 ```
 
-**Processing Steps:**
-
-1. **Extract Factorio Data** - Runs Factorio data extraction commands
-2. **Process Raw Data** - Converts raw data to structured JSON
-3. **Generate Tooltips** - Creates en-tooltips.json from process output
-4. **Copy Mod Graphics** - Copies PNG files from mods to `generated/data/dev`
-5. **All Steps** - Runs complete pipeline (recommended)
-
-### Individual Scripts
+- `--script-output` - Path to Factorio script-output (required)
+- `--output` - Output directory (default: generated/data/dev)
+- `--tooltips` - Run generate-tooltips.js after processing
 
 #### Tooltip Generator
 
@@ -205,7 +190,7 @@ extract-factorio-data.cmd -p "C:\Program Files\Factorio\bin\x64\factorio.exe" -l
 
 ## Directory Structure Mapping
 
-The orchestration script automatically handles different Factorio installation types:
+Factorio installations vary by setup:
 
 ### Standard Installation (Game Folder Only)
 
@@ -233,16 +218,9 @@ The orchestration script automatically handles different Factorio installation t
 └── script-output/                # Factorio output
 ```
 
-The script automatically detects your setup and maps directories accordingly.
+Pass `-g` (game folder) and `-u` (user folder, if separate) to copy-mod-graphics.js.
 
 ## What the Scripts Do
-
-### Orchestration Script
-
-1. **Auto-detect Factorio installation** - Searches common installation paths
-2. **Map directory structure** - Handles user vs game folder separation
-3. **Interactive step selection** - Choose which processing steps to run
-4. **Execute processing pipeline** - Runs selected steps automatically
 
 ### Mod Graphics Copier
 

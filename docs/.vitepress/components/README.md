@@ -175,23 +175,17 @@ Validates animation data structure.
 
 ## Testing
 
-Run the test suite:
+Run the test suite with vitest:
 
 ```bash
-node run-tests.js
-```
-
-Run the comprehensive test suite:
-
-```bash
-node FactorioAnimationEngine.test.js
+npm run test
 ```
 
 The test suite includes:
 
 - **Realistic Mocking**: Canvas operations are tracked and logged
 - **DOM Changes**: Style and class changes are simulated and verified
-- **Image Loading**: Simulates loading from `/public/data` folder
+- **Image Loading**: Simulates loading from `generated/data/dev` (via assetResolver)
 - **Performance Testing**: Frame calculation performance benchmarks
 - **Integration Testing**: Complete animation data processing
 

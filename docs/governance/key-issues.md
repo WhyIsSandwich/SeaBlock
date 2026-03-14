@@ -80,7 +80,7 @@ This report prioritizes repo-wide implementation issues by production impact and
 9. **P2 - Data contract assumptions are under-documented**
    - **Status**: `Planned`
    - **Owner area**: `Pipeline`
-   - **Evidence**: Runtime composables/rules rely on generated artifacts in `docs/public/data/` but formal schema expectations are spread across scripts/comments.
+   - **Evidence**: Runtime composables/rules rely on generated artifacts in `generated/data/dev/` but formal schema expectations are spread across scripts/comments.
    - **Risk**: Silent regressions when generation behavior drifts from runtime expectations.
    - **Recommended fix**: Maintain a pipeline contract document and add lightweight contract validation checks.
 

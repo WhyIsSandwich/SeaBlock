@@ -15,7 +15,7 @@ For a deeper pipeline review with prioritized remediation actions, see `docs/gov
 ## System Components
 
 - **Data extraction and orchestration**: `scripts/orchestrate-factorio-processing.js`, extraction scripts, and graphics copy/convert scripts.
-- **Core transformation pipeline**: `scripts/process-factorio-data.js` generates runtime artifacts in `docs/public/data/`.
+- **Core transformation pipeline**: `scripts/process-factorio-data.js` generates runtime artifacts in `generated/data/dev/`.
 - **Tooltip derivation pipeline**: `scripts/generate-tooltips.js` computes `en-tooltips.json` using the same rules framework used by runtime details rendering.
 - **Runtime data composables**: `src/composables/useFactorioData.js`, `src/composables/useUnifiedObjects.js`, `src/composables/useFactorioPrototypeMapping.js`.
 - **Details rules engine**: `src/composables/useDetailsData/rulesEngine.js` and type-specific rules in `src/composables/useDetailsData/`.
@@ -28,7 +28,7 @@ For a deeper pipeline review with prioritized remediation actions, see `docs/gov
 flowchart LR
   factorioRuntime[FactorioRuntimeOutput] --> orchestration[OrchestrationScripts]
   orchestration --> processPipeline[ProcessFactorioData]
-  processPipeline --> publicData[DocsPublicDataJSON]
+  processPipeline --> publicData[GeneratedDataDevJSON]
   publicData --> runtimeLoaders[RuntimeDataComposables]
   runtimeLoaders --> unifiedModel[UnifiedObjectModel]
   unifiedModel --> rulesEngine[DetailsRulesEngine]
@@ -47,6 +47,6 @@ flowchart LR
 
 ## Coupling and Risk Notes
 
-- `useFactorioData` and details rules rely on stable keys and schema from generated files in `docs/public/data/`; schema drift can silently break UI behavior.
+- `useFactorioData` and details rules rely on stable keys and schema from generated files in `generated/data/dev/`; schema drift can silently break UI behavior.
 - The monolithic UI surface in `docs/.vitepress/components/DetailsPane.vue` increases regression risk for unrelated edits.
 - Debug and global side effects currently leak into runtime (`window.structure`, resize observer on `window`, direct console/debugger usage in runtime engines).

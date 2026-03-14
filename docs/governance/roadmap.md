@@ -38,7 +38,7 @@ This roadmap consolidates existing planning docs and in-code TODO signals into a
    - Source evidence: `.github/workflows/deploy.yml`, `docs/governance/developer-guidelines.md`.
 
 5. **Document and enforce generated data contract**
-   - Formalize expectations for `docs/public/data/*.json` and schema-impact change process.
+   - Formalize expectations for `generated/data/dev/*.json` and schema-impact change process.
    - Source evidence: `scripts/process-factorio-data.js`, `docs/governance/developer-guidelines.md`, `docs/governance/factorio-data-pipeline-review.md`.
 
 6. **Prototype end-to-end CI asset pipeline**

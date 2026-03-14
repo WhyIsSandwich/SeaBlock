@@ -15,7 +15,7 @@ describe('useAttackParametersParser', () => {
 
   beforeAll(async () => {
     // Load organized data using relative path from project root
-    const dataPath = path.join(process.cwd(), 'docs/public/data/data.json')
+    const dataPath = path.join(process.cwd(), 'generated/data/dev/data.json')
     const rawData = JSON.parse(fs.readFileSync(dataPath, 'utf8'))
 
     const { useFactorioPrototypeMapping } = await import('../useFactorioPrototypeMapping.js')

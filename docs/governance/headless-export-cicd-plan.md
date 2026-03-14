@@ -35,7 +35,7 @@ flowchart LR
   orchestrator --> poller[SentinelPoller]
   poller --> rconQuit[RconQuit]
   rconQuit --> processor[process-factorio-data.js]
-  processor --> siteArtifacts[docs/public/data]
+  processor --> siteArtifacts[generated/data/dev]
   siteArtifacts --> ciChecks[CIContractAndBuildChecks]
 ```
 
@@ -123,7 +123,7 @@ This plan intentionally targets end-to-end CI/CD ownership of generated assets, 
 2. **Process**
    - Run `scripts/process-factorio-data.js` against generated `script-output`.
 3. **Validate**
-   - Run schema checks for generated files in `docs/public/data`.
+   - Run schema checks for generated files in `generated/data/dev`.
    - Run lint/build/tests.
 4. **Publish**
    - Deploy only if extraction + processing + validation pass.
@@ -137,7 +137,7 @@ This plan intentionally targets end-to-end CI/CD ownership of generated assets, 
   - exporter JSON files
   - sentinel/manifest files
   - server logs
-  - processed `docs/public/data` outputs
+  - processed `generated/data/dev` outputs
 
 ### Suggested Quality Gates
 

@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs'
+import path from 'node:path'
 
 import { h } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
@@ -161,10 +162,9 @@ describe('factorioRichText renderer', () => {
 
 describe('factorioRichText data completeness', () => {
   it('covers all encountered tag names in generated locale and tooltips data', () => {
-    const locale = JSON.parse(readFileSync('/workspaces/SeaBlock/docs/public/data/locale-en.json', 'utf8'))
-    const tooltips = JSON.parse(
-      readFileSync('/workspaces/SeaBlock/docs/public/data/en-tooltips.json', 'utf8')
-    )
+    const dataDir = path.join(process.cwd(), 'generated/data/dev')
+    const locale = JSON.parse(readFileSync(path.join(dataDir, 'locale-en.json'), 'utf8'))
+    const tooltips = JSON.parse(readFileSync(path.join(dataDir, 'en-tooltips.json'), 'utf8'))
     const strings = []
     collectStrings(locale, strings)
     collectStrings(tooltips, strings)
