@@ -41,6 +41,10 @@ This roadmap consolidates existing planning docs and in-code TODO signals into a
    - Formalize expectations for `docs/public/data/*.json` and schema-impact change process.
    - Source evidence: `scripts/process-factorio-data.js`, `docs/governance/developer-guidelines.md`, `docs/governance/factorio-data-pipeline-review.md`.
 
+6. **Prototype end-to-end CI asset pipeline**
+   - Implement server-mode exporter handshake (sentinel + RCON quit) as part of automating the full `export -> processing -> validation -> publish` path, and define migration gates away from `.cfg` fallback paths.
+   - Source evidence: `docs/governance/headless-export-cicd-plan.md`, `scripts/orchestrate-factorio-processing.js`, `scripts/process-factorio-data.js`.
+
 ## Next (1-3 Months)
 
 1. **Improve pipeline processing performance**
