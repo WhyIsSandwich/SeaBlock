@@ -18,6 +18,12 @@ const CONFIG = {
   // WebP quality (0-100, higher = better quality, larger file)
   quality: 95,
 
+  // cwebp method 0-6 (higher = slower, better compression)
+  method: 6,
+
+  // Per-file overrides: { 'spritemap.png': { quality: 95, method: 6 } }
+  fileOverrides: {},
+
   // Maximum parallel processes (default to CPU count, but cap at 8 for memory efficiency)
   maxConcurrency: Math.min(os.cpus().length, 8),
 
@@ -26,6 +32,12 @@ const CONFIG = {
 
   // Whether to overwrite existing WebP files
   overwrite: false,
+
+  // Whether to include spritemap.png
+  includeSpritemap: true,
+
+  // When true, only convert spritemap.png (skip graphics)
+  spritemapOnly: false,
 
   // Progress reporting interval
   progressInterval: 100
@@ -60,26 +72,62 @@ class WebPConverter {
   }
 
   async findPngFiles() {
+    const files = []
+
+    if (this.config.spritemapOnly) {
+      const spritemapPath = path.join(this.config.sourceDir, 'spritemap.png')
+      if (fs.existsSync(spritemapPath)) {
+        files.push(spritemapPath)
+      }
+      console.log(`📁 Found ${files.length} spritemap file(s)`)
+      return files
+    }
+
     console.log('🔍 Scanning for PNG files in */graphics/* directories...')
 
     const findCommand = `find "${this.config.sourceDir}" -path "*/graphics/*" -name "*.png" -type f`
     const { stdout } = await execAsync(findCommand)
 
-    const files = stdout
+    const graphicsFiles = stdout
       .trim()
       .split('\n')
       .filter(file => file.length > 0)
+
+    files.push(...graphicsFiles)
+
+    if (this.config.includeSpritemap) {
+      const spritemapPath = path.join(this.config.sourceDir, 'spritemap.png')
+      if (fs.existsSync(spritemapPath) && !files.includes(spritemapPath)) {
+        files.push(spritemapPath)
+      }
+    }
+
     console.log(`📁 Found ${files.length} PNG files in graphics subdirectories`)
 
     return files
   }
 
+  getCompressionOptions(pngPath) {
+    const basename = path.basename(pngPath)
+    const defaults = { quality: this.config.quality, method: this.config.method }
+    const override = this.config.fileOverrides[basename]
+    return override ? { ...defaults, ...override } : defaults
+  }
+
   async shouldConvertFile(pngPath) {
     const webpPath = pngPath.replace(/\.png$/i, '.webp')
 
-    // Check if WebP already exists
-    if (!this.config.overwrite && fs.existsSync(webpPath)) {
-      return false
+    // Skip only when WebP exists and PNG mtime <= WebP mtime
+    if (!this.config.overwrite) {
+      try {
+        const pngStat = await fs.promises.stat(pngPath)
+        const webpStat = await fs.promises.stat(webpPath)
+        if (webpStat.mtimeMs >= pngStat.mtimeMs) {
+          return false
+        }
+      } catch {
+        // WebP doesn't exist or inaccessible - continue to convert
+      }
     }
 
     // Check if PNG file is readable
@@ -93,15 +141,15 @@ class WebPConverter {
 
   async convertFile(pngPath) {
     const webpPath = pngPath.replace(/\.png$/i, '.webp')
-    const tempWebpPath = `${webpPath  }.tmp`
+    const tempWebpPath = `${webpPath}.tmp`
+    const { quality, method } = this.getCompressionOptions(pngPath)
 
     try {
       // Create output directory if it doesn't exist
       const outputDir = path.dirname(webpPath)
       await fs.promises.mkdir(outputDir, { recursive: true })
 
-      // Convert PNG to WebP using external process
-      const command = `cwebp -q ${this.config.quality} -m 6 "${pngPath}" -o "${tempWebpPath}"`
+      const command = `cwebp -q ${quality} -m ${method} "${pngPath}" -o "${tempWebpPath}"`
       await execAsync(command)
 
       // Move temp file to final location
@@ -272,6 +320,10 @@ async function main() {
       case '-q':
         config.quality = parseInt(args[++i])
         break
+      case '--method':
+      case '-m':
+        config.method = parseInt(args[++i])
+        break
       case '--concurrency':
       case '-c':
         config.maxConcurrency = parseInt(args[++i])
@@ -281,6 +333,27 @@ async function main() {
         break
       case '--overwrite':
         config.overwrite = true
+        break
+      case '--no-spritemap':
+        config.includeSpritemap = false
+        break
+      case '--spritemap-only':
+        config.spritemapOnly = true
+        config.includeSpritemap = true
+        break
+      case '--spritemap-quality':
+        config.fileOverrides = config.fileOverrides ?? {}
+        config.fileOverrides['spritemap.png'] = {
+          ...config.fileOverrides['spritemap.png'],
+          quality: parseInt(args[++i])
+        }
+        break
+      case '--spritemap-method':
+        config.fileOverrides = config.fileOverrides ?? {}
+        config.fileOverrides['spritemap.png'] = {
+          ...config.fileOverrides['spritemap.png'],
+          method: parseInt(args[++i])
+        }
         break
       case '--help':
       case '-h':
@@ -292,16 +365,17 @@ Usage: node convert-to-webp.js [options]
 Options:
   -s, --source <path>        Source directory (default: ${DEFAULT_GRAPHICS_SOURCE})
   -q, --quality <number>     WebP quality (0-100, default: 95)
+  -m, --method <number>      cwebp method 0-6 (default: 6)
   -c, --concurrency <number> Max parallel processes (default: CPU count)
   --no-preserve              Remove original PNG files after conversion
   --overwrite                Overwrite existing WebP files
+  --no-spritemap             Skip spritemap.png (graphics only)
+  --spritemap-only           Only convert spritemap.png (skip graphics)
+  --spritemap-quality N      Override quality for spritemap.png
+  --spritemap-method N       Override cwebp method (0-6) for spritemap.png
   -h, --help                 Show this help message
 
-Examples:
-  node convert-to-webp.js
-  node convert-to-webp.js --source ./generated/data/dev
-  node convert-to-webp.js --quality 90 --concurrency 8
-  node convert-to-webp.js --no-preserve --overwrite
+  Uses cwebp for all PNGs. Per-file overrides via fileOverrides config or --spritemap-* flags.
         `)
         process.exit(0)
         break

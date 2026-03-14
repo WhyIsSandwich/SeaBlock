@@ -45,13 +45,13 @@ node scripts/copy-mod-graphics.js -g /path/to/factorio -u /path/to/userdata -o .
 
 - **`process-factorio-data.js`** - Core processor (data.json, locale, spritemap). Input: script-output.
 - **`generate-tooltips.js`** - Generates en-tooltips.json from process output.
-- **`productionize-spritemap-webp.js`** - spritemap.png → spritemap.webp for production.
+- **`convert-to-webp.js`** - PNG → WebP for graphics and spritemap. Per-file compression overrides via `--spritemap-quality`, `--spritemap-method`, or `fileOverrides` config.
 - **`publish-generated-data.js`** - Publish to CDN (see `.env.example`).
 
 ### Graphics Chain
 
 - **`copy-mod-graphics.js`** - Copy mod PNGs to `generated/data/dev`.
-- **`convert-to-webp.js`** - PNG → WebP for graphics.
+- **`convert-to-webp.js`** - PNG → WebP for graphics and spritemap.
 
 ### Extraction (needs Factorio on machine)
 
@@ -62,6 +62,7 @@ node scripts/copy-mod-graphics.js -g /path/to/factorio -u /path/to/userdata -o .
 ### Deprecated
 
 - **`orchestrate-factorio-processing.js`** - Use standalone scripts above.
+- **`productionize-spritemap-webp.js`** - Use `convert-to-webp.js --spritemap-only` instead.
 
 ## Usage
 

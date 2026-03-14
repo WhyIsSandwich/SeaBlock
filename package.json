@@ -15,7 +15,7 @@
     "format": "prettier --write .",
     "type-check": "vue-tsc --noEmit",
     "process-data": "node scripts/process-factorio-data.js",
-    "process-data:webp": "node scripts/productionize-spritemap-webp.js",
+    "process-data:webp": "node scripts/convert-to-webp.js --spritemap-only",
     "process-data:production": "npm run process-data && npm run process-data:webp",
     "publish-data": "node scripts/publish-generated-data.js",
     "publish-data:dry-run": "node scripts/publish-generated-data.js --dry-run"

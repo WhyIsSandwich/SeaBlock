@@ -1,50 +1,36 @@
 #!/usr/bin/env node
 
-import fs from 'fs'
-import path from 'path'
+/**
+ * Generate WebP spritemap for production delivery.
+ *
+ * DEPRECATED: Use convert-to-webp.js --spritemap-only instead.
+ * This script is a thin wrapper that delegates to convert-to-webp.
+ */
 
-import sharp from 'sharp'
+import path from 'path'
+import { spawn } from 'child_process'
+import { fileURLToPath } from 'url'
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 const DEFAULT_DATA_DIR = './generated/data/dev'
 const DEFAULT_INPUT = `${DEFAULT_DATA_DIR}/spritemap.png`
-const DEFAULT_OUTPUT = `${DEFAULT_DATA_DIR}/spritemap.webp`
 
 function parseArgs(argv) {
   const args = argv.slice(2)
-  const options = {
-    input: DEFAULT_INPUT,
-    output: DEFAULT_OUTPUT,
-    quality: 95
-  }
+  const options = { input: DEFAULT_INPUT, output: null, quality: 95, help: false }
 
   for (let i = 0; i < args.length; i++) {
-    const arg = args[i]
-    if (arg === '--input' && i + 1 < args.length) {
-      options.input = args[i + 1]
-      i++
-      continue
-    }
-    if (arg === '--output' && i + 1 < args.length) {
-      options.output = args[i + 1]
-      i++
-      continue
-    }
-    if (arg === '--quality' && i + 1 < args.length) {
-      const parsed = Number.parseInt(args[i + 1], 10)
-      if (Number.isNaN(parsed) || parsed < 1 || parsed > 100) {
-        throw new Error('Invalid quality value. Use a number between 1 and 100.')
-      }
-      options.quality = parsed
-      i++
-      continue
-    }
-    if (arg === '--help' || arg === '-h') {
+    if (args[i] === '--input' && i + 1 < args.length) {
+      options.input = args[++i]
+    } else if (args[i] === '--output' && i + 1 < args.length) {
+      options.output = args[++i]
+    } else if (args[i] === '--quality' && i + 1 < args.length) {
+      options.quality = parseInt(args[++i], 10)
+    } else if (args[i] === '--help' || args[i] === '-h') {
       options.help = true
-      continue
     }
-    throw new Error(`Unknown argument: ${arg}`)
   }
-
   return options
 }
 
@@ -56,57 +42,51 @@ function printHelp() {
   console.log('')
   console.log('Options:')
   console.log(`  --input PATH     Input PNG path (default: ${DEFAULT_INPUT})`)
-  console.log(`  --output PATH    Output WebP path (default: ${DEFAULT_OUTPUT})`)
+  console.log('  --output PATH    Output WebP path (optional, defaults to input with .webp)')
   console.log('  --quality N      WebP quality 1-100 (default: 95)')
   console.log('  -h, --help       Show this help text')
-}
-
-export async function generateSpritemapWebp({
-  input = DEFAULT_INPUT,
-  output = DEFAULT_OUTPUT,
-  quality = 95
-} = {}) {
-  const resolvedInput = path.resolve(input)
-  const resolvedOutput = path.resolve(output)
-
-  if (!fs.existsSync(resolvedInput)) {
-    throw new Error(`Input PNG not found: ${resolvedInput}`)
-  }
-
-  const outputDir = path.dirname(resolvedOutput)
-  if (!fs.existsSync(outputDir)) {
-    fs.mkdirSync(outputDir, { recursive: true })
-  }
-
-  await sharp(resolvedInput)
-    .webp({
-      quality,
-      lossless: false,
-      effort: 6,
-      smartSubsample: true
-    })
-    .toFile(resolvedOutput)
-
-  return { input: resolvedInput, output: resolvedOutput, quality }
+  console.log('')
+  console.log('Note: Prefer "node scripts/convert-to-webp.js --source DIR --spritemap-only"')
 }
 
 async function main() {
-  try {
-    const options = parseArgs(process.argv)
-    if (options.help) {
-      printHelp()
-      process.exit(0)
-    }
+  const options = parseArgs(process.argv)
 
-    console.log('Generating spritemap WebP for production...')
-    const result = await generateSpritemapWebp(options)
-    console.log(`✓ Generated spritemap WebP: ${result.output}`)
-  } catch (error) {
-    console.error(`✗ Failed to generate spritemap WebP: ${error.message}`)
-    process.exit(1)
+  if (options.help) {
+    printHelp()
+    process.exit(0)
   }
+
+  const sourceDir = path.resolve(path.dirname(options.input))
+  const convertScript = path.join(__dirname, 'convert-to-webp.js')
+
+  const args = [
+    convertScript,
+    '--source',
+    sourceDir,
+    '--spritemap-only',
+    '--spritemap-quality',
+    String(options.quality)
+  ]
+
+  if (options.output) {
+    console.warn('--output is ignored; convert-to-webp writes to <source>/spritemap.webp')
+  }
+
+  return new Promise((resolve, reject) => {
+    const child = spawn('node', args, {
+      stdio: 'inherit',
+      cwd: process.cwd()
+    })
+
+    child.on('close', code => {
+      if (code === 0) resolve()
+      else reject(new Error(`convert-to-webp exited with code ${code}`))
+    })
+  })
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
-  main()
-}
+main().catch(err => {
+  console.error(`✗ Failed to generate spritemap WebP: ${err.message}`)
+  process.exit(1)
+})

@@ -46,7 +46,10 @@ const CONFIG = {
   adaptiveConcurrency: true, // Reduce concurrency on rate limits
 
   // Content type for WebP files
-  contentType: 'image/webp'
+  contentType: 'image/webp',
+
+  // Optional prefix for R2 keys (e.g. prod/abc123/)
+  prefix: null
 }
 
 class CloudflareUploader {
@@ -167,7 +170,7 @@ class CloudflareUploader {
   async enumerateExistingFiles() {
     console.log('🔍 Enumerating existing files in bucket...')
 
-    const existingFiles = new Set()
+    const existingEtags = new Map()
     let continuationToken = null
     let totalEnumerated = 0
 
@@ -179,6 +182,9 @@ class CloudflareUploader {
           queryParams.set('continuation-token', continuationToken)
         }
         queryParams.set('list-type', '2') // Use version 2 of the API
+        if (this.config.prefix) {
+          queryParams.set('prefix', this.config.prefix)
+        }
 
         const fullUri = `${uri}?${queryParams.toString()}`
         const timestamp = new Date().toISOString().replace(/[:-]|\.\d{3}/g, '')
@@ -201,12 +207,12 @@ class CloudflareUploader {
         }
 
         const xmlText = await response.text()
-        const files = this.parseListObjectsResponse(xmlText)
+        const entries = this.parseListObjectsResponse(xmlText)
 
-        files.forEach(file => {
-          existingFiles.add(file)
+        for (const { key, etag } of entries) {
+          existingEtags.set(key, etag)
           totalEnumerated++
-        })
+        }
 
         // Check for continuation token
         const continuationMatch = xmlText.match(
@@ -220,7 +226,7 @@ class CloudflareUploader {
       } while (continuationToken)
 
       console.log(`✓ Found ${totalEnumerated} existing files in bucket`)
-      return existingFiles
+      return existingEtags
     } catch (error) {
       console.error('❌ Failed to enumerate existing files:', error.message)
       console.log('⚠️  Falling back to per-file existence checks')
@@ -229,14 +235,20 @@ class CloudflareUploader {
   }
 
   parseListObjectsResponse(xmlText) {
-    const files = []
-    const keyMatches = xmlText.matchAll(/<Key>([^<]+)<\/Key>/g)
+    const entries = []
+    const contentsBlocks = xmlText.matchAll(/<Contents>([\s\S]*?)<\/Contents>/g)
 
-    for (const match of keyMatches) {
-      files.push(match[1])
+    for (const match of contentsBlocks) {
+      const block = match[1]
+      const keyMatch = block.match(/<Key>([^<]+)<\/Key>/)
+      const etagMatch = block.match(/<ETag>([^<]*)<\/ETag>/)
+      if (keyMatch && etagMatch) {
+        const etag = etagMatch[1].replace(/^"|"$/g, '') // Strip quotes from ETag
+        entries.push({ key: keyMatch[1], etag })
+      }
     }
 
-    return files
+    return entries
   }
 
   async findWebpFiles() {
@@ -255,9 +267,21 @@ class CloudflareUploader {
   }
 
   getRelativePath(absolutePath) {
-    // Convert absolute path to relative path starting from the graphics directory
-    const relativePath = path.relative(this.config.sourceDir, absolutePath)
-    return relativePath
+    const base = path.relative(this.config.sourceDir, absolutePath)
+    if (this.config.prefix) {
+      return `${this.config.prefix}/${base}`.replace(/\/+/g, '/')
+    }
+    return base
+  }
+
+  getContentType(filePath) {
+    const ext = path.extname(filePath).toLowerCase()
+    const types = {
+      '.webp': 'image/webp',
+      '.png': 'image/png',
+      '.json': 'application/json'
+    }
+    return types[ext] ?? 'application/octet-stream'
   }
 
   // Generate AWS signature for S3-compatible API
@@ -306,23 +330,23 @@ class CloudflareUploader {
     return kSigning
   }
 
-  async fileExistsInBucket(key) {
-    // If overwrite is enabled, always upload (don't check if exists)
-    if (this.config.overwrite) {
+  async shouldSkipUpload(key, fileContent) {
+    if (this.config.overwrite || !this.config.skipExisting) {
       return false
     }
 
-    // If skipExisting is disabled, always upload
-    if (!this.config.skipExisting) {
+    const localMd5 = crypto.createHash('md5').update(fileContent).digest('hex')
+
+    // Use enumerated ETags when available (no extra API calls)
+    if (this.existingEtags) {
+      const remoteEtag = this.existingEtags.get(key)
+      if (remoteEtag && remoteEtag === localMd5) {
+        return true
+      }
       return false
     }
 
-    // If we have enumerated files, use the Set for fast lookup
-    if (this.existingFiles) {
-      return this.existingFiles.has(key)
-    }
-
-    // Fallback to per-file HEAD request
+    // Fallback: HEAD request to get ETag when enumeration failed
     try {
       const uri = `/${this.config.bucketName}/${key}`
       const headers = {
@@ -338,32 +362,34 @@ class CloudflareUploader {
         headers
       })
 
-      return response.ok
+      if (!response.ok) return false
+      const remoteEtag = response.headers.get('etag')?.replace(/^"|"$/g, '')
+      return remoteEtag === localMd5
     } catch (error) {
       return false
     }
   }
 
-  async uploadFile(webpPath, retryCount = 0) {
-    const relativePath = this.getRelativePath(webpPath)
-    const key = relativePath
+  async uploadFile(filePath, retryCount = 0) {
+    const key = this.getRelativePath(filePath)
 
     try {
-      // Check if file already exists
-      if (await this.fileExistsInBucket(key)) {
-        return { success: true, webpPath, key, action: 'skipped' }
-      }
+      // Read file content first (needed for MD5 comparison and upload)
+      const fileContent = await fs.promises.readFile(filePath)
 
-      // Read file content
-      const fileContent = await fs.promises.readFile(webpPath)
+      // Content-aware skip: compare local MD5 with remote ETag
+      if (await this.shouldSkipUpload(key, fileContent)) {
+        return { success: true, webpPath: filePath, key, action: 'skipped' }
+      }
 
       // Prepare upload
       const uri = `/${this.config.bucketName}/${key}`
       const timestamp = new Date().toISOString().replace(/[:-]|\.\d{3}/g, '')
 
+      const contentType = this.getContentType(filePath)
       const headers = {
         Host: new URL(this.config.endpoint).host,
-        'Content-Type': this.config.contentType,
+        'Content-Type': contentType,
         'Content-Length': fileContent.length.toString(),
         'Cache-Control': 'public, max-age=31536000',
         'x-amz-date': timestamp,
@@ -405,28 +431,28 @@ class CloudflareUploader {
             )
             await new Promise(resolve => setTimeout(resolve, delay))
             this.stats.retries++
-            return this.uploadFile(webpPath, retryCount + 1)
+            return this.uploadFile(filePath, retryCount + 1)
           }
         }
 
         throw new Error(`Upload failed: ${response.status} ${response.statusText} - ${errorText}`)
       }
 
-      return { success: true, webpPath, key, action: 'uploaded' }
+      return { success: true, webpPath: filePath, key, action: 'uploaded' }
     } catch (error) {
       // Retry on network errors or other transient issues
       if (retryCount < this.config.maxRetries && this.isRetryableError(error)) {
         const delay =
           this.config.retryDelay * Math.pow(this.config.retryBackoffMultiplier, retryCount)
         console.log(
-          `🔄 Retrying ${webpPath} in ${delay}ms (attempt ${retryCount + 1}/${this.config.maxRetries})`
+          `🔄 Retrying ${filePath} in ${delay}ms (attempt ${retryCount + 1}/${this.config.maxRetries})`
         )
         await new Promise(resolve => setTimeout(resolve, delay))
         this.stats.retries++
-        return this.uploadFile(webpPath, retryCount + 1)
+        return this.uploadFile(filePath, retryCount + 1)
       }
 
-      return { success: false, webpPath, key, error: error.message }
+      return { success: false, webpPath: filePath, key, error: error.message }
     }
   }
 
@@ -519,13 +545,21 @@ class CloudflareUploader {
     )
   }
 
-  async upload() {
+  async upload(options = {}) {
     console.log('🚀 Starting Cloudflare R2 upload with worker-based high throughput...')
 
     this.stats.startTime = Date.now()
 
     // Check dependencies
     await this.checkDependencies()
+
+    // Load credentials from env if not in config
+    this.config.bucketName ??= process.env.R2_BUCKET
+    this.config.accountId ??= process.env.R2_ACCOUNT_ID
+    this.config.accessKeyId ??= process.env.R2_ACCESS_KEY_ID
+    this.config.secretAccessKey ??= process.env.R2_SECRET_ACCESS_KEY
+    this.config.endpoint ??= process.env.R2_ENDPOINT
+    this.config.prefix ??= process.env.R2_PREFIX
 
     // Prompt for missing credentials only
     const missingCredentials = []
@@ -548,22 +582,22 @@ class CloudflareUploader {
       `⚙️  Configuration: Bucket=${this.config.bucketName}, Workers=${this.config.maxConcurrency}, Mode=${overwriteMode}`
     )
 
-    // Enumerate existing files (unless overwrite mode)
+    // Enumerate existing files with ETags (unless overwrite mode)
     if (!this.config.overwrite && this.config.skipExisting) {
-      this.existingFiles = await this.enumerateExistingFiles()
+      this.existingEtags = await this.enumerateExistingFiles()
     }
 
-    // Find all WebP files
-    const webpFiles = await this.findWebpFiles()
-    this.stats.total = webpFiles.length
+    // Get file list: use provided files or find WebP files in graphics dirs
+    const filesToUpload = options?.files ?? (await this.findWebpFiles())
+    this.stats.total = filesToUpload.length
 
     if (this.stats.total === 0) {
-      console.log('ℹ️  No WebP files found to upload')
+      console.log('ℹ️  No files found to upload')
       return
     }
 
     // Dispatch files to workers
-    await this.dispatchWorkers(webpFiles)
+    await this.dispatchWorkers(filesToUpload)
 
     this.stats.endTime = Date.now()
     this.printSummary()
@@ -628,6 +662,14 @@ async function main() {
       case '--no-skip':
         config.skipExisting = false
         break
+      case '--prefix':
+      case '-p':
+        config.prefix = args[++i]
+        break
+      case '--source':
+      case '-s':
+        config.sourceDir = path.resolve(args[++i])
+        break
       case '--help':
       case '-h':
         console.log(`
@@ -643,10 +685,14 @@ Options:
   -b, --bucket <name>           R2 bucket name (skip interactive prompt)
   -a, --account-id <id>         Cloudflare account ID (skip interactive prompt)
   -e, --endpoint <url>          R2 endpoint URL (skip interactive prompt)
+  -p, --prefix <path>           R2 key prefix (e.g. prod/abc123/)
+  -s, --source <path>           Source directory (default: generated/data/dev)
   -c, --concurrency <number>   Max parallel uploads (default: CPU count)
   --overwrite, --force          Overwrite existing files (force upload all)
   --no-skip                     Don't skip existing files (upload all, but don't force overwrite)
   -h, --help                    Show this help message
+
+  Credentials can also be set via env: R2_BUCKET, R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_ENDPOINT, R2_PREFIX
 
 Examples:
   node upload-to-cloudflare.js
