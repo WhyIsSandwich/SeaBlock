@@ -4,6 +4,7 @@ import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import crypto from 'crypto'
+import { execFileSync } from 'child_process'
 
 import sharp from 'sharp'
 
@@ -59,6 +60,7 @@ class FactorioDataProcessorRefactored {
     this.locale = locale // Language code (e.g., 'en', 'de', 'fr')
     this.rawData = null
     this.localeData = {}
+    this.localeKeyMap = {}
 
     // Spritemap management
     this.spritemap = {} // key -> { x, y, width, height }
@@ -68,6 +70,253 @@ class FactorioDataProcessorRefactored {
 
     // Type hierarchy tracking
     this.typeHierarchy = {} // type -> array of prototype names
+  }
+
+  /**
+   * Build a lookup map for raw locale keys from Factorio cfg locale files.
+   * Example key: "factoriopedia-description.asteroid-collector"
+   *
+   * NOTE:
+   * This is a fallback path kept for compatibility with current script-output dumps.
+   * Ideally we should not scan game/mod locale files directly here. The preferred long-term
+   * approach is for script-output JSON artifacts to already contain localized
+   * `factoriopedia_description` values so this resolver can be removed.
+   */
+  loadLocaleKeyMap() {
+    console.log(`Loading locale key map for language: ${this.locale}...`)
+
+    const factorioRoot = path.resolve(this.scriptOutputPath, '..')
+    const localeDirs = []
+
+    const dataPath = path.join(factorioRoot, 'data')
+    if (fs.existsSync(dataPath)) {
+      for (const entry of fs.readdirSync(dataPath, { withFileTypes: true })) {
+        if (!entry.isDirectory()) continue
+        const localeDir = path.join(dataPath, entry.name, 'locale', this.locale)
+        if (fs.existsSync(localeDir)) localeDirs.push(localeDir)
+      }
+    }
+
+    const modsPath = path.join(factorioRoot, 'mods')
+    const modZipFiles = []
+    if (fs.existsSync(modsPath)) {
+      for (const entry of fs.readdirSync(modsPath, { withFileTypes: true })) {
+        if (entry.isDirectory()) {
+          const localeDir = path.join(modsPath, entry.name, 'locale', this.locale)
+          if (fs.existsSync(localeDir)) localeDirs.push(localeDir)
+          continue
+        }
+        if (entry.isFile() && entry.name.endsWith('.zip')) {
+          modZipFiles.push(path.join(modsPath, entry.name))
+        }
+      }
+    }
+
+    let parsedFiles = 0
+    let parsedKeys = 0
+    for (const localeDir of localeDirs.sort((a, b) => a.localeCompare(b))) {
+      const cfgFiles = fs
+        .readdirSync(localeDir)
+        .filter(fileName => fileName.endsWith('.cfg'))
+        .sort((a, b) => a.localeCompare(b))
+
+      for (const cfgFile of cfgFiles) {
+        const cfgPath = path.join(localeDir, cfgFile)
+        try {
+          const content = fs.readFileSync(cfgPath, 'utf8')
+          parsedKeys += this.parseLocaleCfg(content)
+          parsedFiles++
+        } catch (error) {
+          console.warn(`⚠ Failed to parse locale cfg ${cfgPath}:`, error.message)
+        }
+      }
+    }
+
+    for (const zipPath of modZipFiles.sort((a, b) => a.localeCompare(b))) {
+      const { files, keys } = this.loadLocaleFromZip(zipPath)
+      parsedFiles += files
+      parsedKeys += keys
+    }
+
+    console.log(`✓ Loaded ${parsedKeys} locale keys from ${parsedFiles} cfg files`)
+  }
+
+  loadLocaleFromZip(zipPath) {
+    let parsedFiles = 0
+    let parsedKeys = 0
+    try {
+      const zipEntriesOutput = execFileSync('unzip', ['-Z1', zipPath], {
+        encoding: 'utf8',
+        maxBuffer: 20 * 1024 * 1024
+      })
+      const zipEntries = zipEntriesOutput.split(/\r?\n/).filter(Boolean)
+      const localePathSegment = `/locale/${this.locale}/`
+      const localeCfgEntries = zipEntries.filter(
+        entry =>
+          entry.includes(localePathSegment) &&
+          entry.endsWith('.cfg') &&
+          !entry.endsWith('/info.cfg') &&
+          !entry.endsWith('/settings.cfg')
+      )
+
+      for (const entry of localeCfgEntries) {
+        try {
+          const content = execFileSync('unzip', ['-p', zipPath, entry], {
+            encoding: 'utf8',
+            maxBuffer: 20 * 1024 * 1024
+          })
+          parsedKeys += this.parseLocaleCfg(content)
+          parsedFiles++
+        } catch (error) {
+          console.warn(`⚠ Failed to read locale cfg ${entry} from ${zipPath}:`, error.message)
+        }
+      }
+    } catch (error) {
+      console.warn(`⚠ Failed to list locale files in ${zipPath}:`, error.message)
+    }
+
+    return { files: parsedFiles, keys: parsedKeys }
+  }
+
+  parseLocaleCfg(content) {
+    const lines = content.split(/\r?\n/)
+    let currentSection = null
+    let added = 0
+
+    for (const rawLine of lines) {
+      const line = rawLine.trim()
+      if (!line || line.startsWith(';') || line.startsWith('#')) continue
+
+      if (line.startsWith('[') && line.endsWith(']')) {
+        currentSection = line.slice(1, -1).trim()
+        continue
+      }
+
+      const separatorIndex = line.indexOf('=')
+      if (separatorIndex === -1 || !currentSection) continue
+
+      const key = line.slice(0, separatorIndex).trim()
+      const value = this.unescapeLocaleCfgValue(line.slice(separatorIndex + 1).trim())
+      if (!key) continue
+
+      this.localeKeyMap[`${currentSection}.${key}`] = value
+      added++
+    }
+
+    return added
+  }
+
+  unescapeLocaleCfgValue(value) {
+    if (!value || !value.includes('\\')) return value
+
+    let result = ''
+    let isEscaped = false
+
+    for (const char of value) {
+      if (isEscaped) {
+        switch (char) {
+          case 'n':
+            result += '\n'
+            break
+          case 't':
+            result += '\t'
+            break
+          case 'r':
+            result += '\r'
+            break
+          case '\\':
+            result += '\\'
+            break
+          case '=':
+            result += '='
+            break
+          case ';':
+            result += ';'
+            break
+          case '#':
+            result += '#'
+            break
+          default:
+            // Unknown escape sequence: preserve the escaped character.
+            result += char
+            break
+        }
+        isEscaped = false
+        continue
+      }
+
+      if (char === '\\') {
+        isEscaped = true
+      } else {
+        result += char
+      }
+    }
+
+    // Preserve trailing backslash when present.
+    if (isEscaped) {
+      result += '\\'
+    }
+
+    return result
+  }
+
+  resolveLocalisedString(value, depth = 0) {
+    if (value === null || value === undefined) return null
+    if (depth > 20) return null
+
+    if (typeof value === 'string') {
+      return this.localeKeyMap[value] ?? value
+    }
+
+    if (Array.isArray(value)) {
+      if (value.length === 0) return null
+      const [head, ...rest] = value
+
+      if (head === '') {
+        const parts = rest
+          .map(part => this.resolveLocalisedString(part, depth + 1))
+          .filter(part => part !== null && part !== undefined && part !== '')
+        if (parts.length === 0) return null
+        return parts.join('\n')
+      }
+
+      if (typeof head === 'string') {
+        const template = this.localeKeyMap[head]
+        const args = rest.map(arg => this.resolveLocalisedString(arg, depth + 1) ?? '')
+        if (template) {
+          let resolved = template
+          args.forEach((arg, index) => {
+            const placeholder = `__${index + 1}__`
+            resolved = resolved.split(placeholder).join(arg)
+          })
+          return resolved
+        }
+
+        if (args.length === 0) return head
+        return [head, ...args].filter(Boolean).join(' ')
+      }
+
+      return rest
+        .map(part => this.resolveLocalisedString(part, depth + 1))
+        .filter(Boolean)
+        .join(' ')
+    }
+
+    if (typeof value === 'number' || typeof value === 'boolean') {
+      return String(value)
+    }
+
+    return null
+  }
+
+  hasOnlyUnresolvedLocaleTokens(value) {
+    if (typeof value !== 'string') return false
+    const lines = value
+      .split('\n')
+      .map(line => line.trim())
+      .filter(Boolean)
+    if (lines.length === 0) return false
+    return lines.every(line => /^[a-z0-9-]+\.[a-z0-9-]+$/i.test(line))
   }
 
   /**
@@ -400,6 +649,20 @@ class FactorioDataProcessorRefactored {
 
         // Clone the prototype data (shallow copy + deep copy for nested objects we'll modify)
         const processedPrototype = { ...prototypeData }
+
+        if (processedPrototype.factoriopedia_description !== undefined) {
+          const resolvedFactoriopediaDescription = this.resolveLocalisedString(
+            processedPrototype.factoriopedia_description
+          )
+          if (
+            resolvedFactoriopediaDescription !== null &&
+            !this.hasOnlyUnresolvedLocaleTokens(resolvedFactoriopediaDescription)
+          ) {
+            processedPrototype.factoriopedia_description = resolvedFactoriopediaDescription
+          } else {
+            processedPrototype.factoriopedia_description = null
+          }
+        }
 
         // Add to type hierarchy tracking
         const prototypeType = prototypeData.type || categoryKey
@@ -814,6 +1077,7 @@ class FactorioDataProcessorRefactored {
       // Load data
       this.loadRawData()
       this.loadLocaleData()
+      this.loadLocaleKeyMap()
 
       // Process prototypes
       const { data, typeMapping } = this.processPrototypes()

@@ -65,4 +65,18 @@ const renderRichText = computed(() => {
 .factorio-richtext :deep(.factorio-richtext-quality) {
   opacity: 0.8;
 }
+
+.factorio-richtext :deep(.factorio-richtext-reference-inline) {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2em;
+  vertical-align: text-bottom;
+  color: #7edb78;
+  cursor: pointer;
+}
+
+.factorio-richtext :deep(.factorio-richtext-reference-label) {
+  opacity: 0.95;
+  color: #7edb78;
+}
 </style>

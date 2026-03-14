@@ -92,12 +92,20 @@
       </div>
       <!-- Details Tab Content -->
       <div v-if="activeTab === 'details'">
-        <FactorioRichText :text="selectedItem.description" />
-        <!-- Statistics -->
-        <Statistics
-          v-if="detailsData.statistics?.length > 0"
-          :statistics="detailsData.statistics"
-        />
+        <div
+          v-if="selectedItem?.description || detailsData.statistics?.length > 0"
+          :class="$style.detailsInfoBox"
+        >
+          <div v-if="selectedItem?.description" :class="$style.detailsDescription">
+            <FactorioRichText :text="selectedItem.description" />
+          </div>
+          <!-- Statistics -->
+          <Statistics
+            v-if="detailsData.statistics?.length > 0"
+            :statistics="detailsData.statistics"
+            :embedded="true"
+          />
+        </div>
 
         <template
           v-for="(section, sectionIndex) in detailsData.sections"
@@ -584,6 +592,26 @@ const formattedDisplayName = computed(() => {
   box-shadow:
     inset 0 0 0 1px #3a3a3a,
     inset 0 1px 4px rgba(0, 0, 0, 0.55);
+}
+
+.detailsInfoBox {
+  margin-bottom: 12px;
+  padding: 10px;
+  background: linear-gradient(135deg, #2d2d2d, #252525);
+  border-radius: 2px;
+  border: 1px solid #3f3f3f;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.03),
+    inset 0 1px 2px rgba(0, 0, 0, 0.35);
+  display: grid;
+  gap: 8px;
+}
+
+.detailsDescription {
+  color: #cccccc;
+  font-size: 13px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
 }
 
 .usageDescription {

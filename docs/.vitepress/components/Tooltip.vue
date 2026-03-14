@@ -40,18 +40,24 @@
                   </div>
                 </div>
                 <div
-                  v-if="tooltipData?.description"
-                  class="tooltip-description"
-                  :class="{
-                    'tooltip-error': hasError
-                  }"
+                  v-if="tooltipData?.description || tooltipData.statistics?.length > 0"
+                  class="tooltip-info-box"
                 >
-                  <FactorioRichText :text="tooltipData.description" />
+                  <div
+                    v-if="tooltipData?.description"
+                    class="tooltip-description"
+                    :class="{
+                      'tooltip-error': hasError
+                    }"
+                  >
+                    <FactorioRichText :text="tooltipData.description" />
+                  </div>
+                  <Statistics
+                    v-if="tooltipData.statistics?.length > 0"
+                    :statistics="tooltipData.statistics"
+                    :embedded="true"
+                  />
                 </div>
-                <Statistics
-                  v-if="tooltipData.statistics?.length > 0"
-                  :statistics="tooltipData.statistics"
-                />
                 <!-- Render sections using DetailsPaneSection components -->
                 <div v-if="tooltipData?.sections?.length" class="tooltip-sections">
                   <DetailsPaneSection
@@ -577,6 +583,19 @@ onUnmounted(() => {
   margin: 0;
   line-height: 1.4;
   overflow-wrap: anywhere;
+}
+
+.tooltip-info-box {
+  margin-bottom: 12px;
+  padding: 10px;
+  background: linear-gradient(135deg, #2d2d2d, #252525);
+  border-radius: 2px;
+  border: 1px solid #3f3f3f;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.03),
+    inset 0 1px 2px rgba(0, 0, 0, 0.35);
+  display: grid;
+  gap: 8px;
 }
 
 .tooltip-description p {

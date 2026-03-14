@@ -372,13 +372,78 @@ function resolveFactorioFontStyle(fontName) {
   return { fontFamily, ...profile }
 }
 
+function clampNumber(value, min, max) {
+  return Math.min(max, Math.max(min, value))
+}
+
+function normalizeFactorioColor(colorValue) {
+  const raw = String(colorValue || '').trim()
+  if (!raw) return raw
+
+  if (raw.startsWith('#')) return raw
+  if (/^(rgb|rgba|hsl|hsla|lab|lch|oklab|oklch|color|var)\(/i.test(raw)) return raw
+
+  const parts = raw.split(',').map(part => part.trim())
+  if (!(parts.length === 3 || parts.length === 4)) return raw
+
+  const numeric = parts.map(part => Number(part))
+  if (numeric.some(value => Number.isNaN(value))) return raw
+
+  const hasByteRange = numeric.slice(0, 3).some(value => Math.abs(value) > 1)
+  const [rRaw, gRaw, bRaw] = numeric
+  const r = hasByteRange ? clampNumber(Math.round(rRaw), 0, 255) : clampNumber(Math.round(rRaw * 255), 0, 255)
+  const g = hasByteRange ? clampNumber(Math.round(gRaw), 0, 255) : clampNumber(Math.round(gRaw * 255), 0, 255)
+  const b = hasByteRange ? clampNumber(Math.round(bRaw), 0, 255) : clampNumber(Math.round(bRaw * 255), 0, 255)
+
+  if (parts.length === 3) {
+    return `rgb(${r}, ${g}, ${b})`
+  }
+
+  const alphaRaw = numeric[3]
+  const alpha = hasByteRange ? clampNumber(alphaRaw / 255, 0, 1) : clampNumber(alphaRaw, 0, 1)
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`
+}
+
+function humanizeReferenceName(value) {
+  return String(value || '')
+    .replace(/[-_]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .replace(/\b\w/g, letter => letter.toUpperCase())
+}
+
+function formatReferenceTypeLabel(tagName) {
+  const labelByTag = {
+    item: 'Item',
+    entity: 'Entity',
+    technology: 'Technology',
+    recipe: 'Recipe',
+    'item-group': 'Item Group',
+    fluid: 'Fluid',
+    tile: 'Tile',
+    'virtual-signal': 'Virtual Signal',
+    achievement: 'Achievement',
+    equipment: 'Equipment',
+    planet: 'Planet',
+    'space-location': 'Space Location',
+    'space-platform': 'Space Platform'
+  }
+  return labelByTag[tagName] || humanizeReferenceName(tagName)
+}
+
+function formatInlineReferenceLabel(token) {
+  const typeLabel = formatReferenceTypeLabel(token.tagName)
+  const objectLabel = humanizeReferenceName(token.name)
+  return `[${typeLabel}: ${objectLabel}]`
+}
+
 function createContainerNode(token) {
   switch (token.tagName) {
     case 'color':
       return {
         __container: true,
         tag: 'span',
-        props: { style: { color: token.argsValue } },
+        props: { style: { color: normalizeFactorioColor(token.argsValue) } },
         children: [],
         tagName: token.tagName
       }
@@ -418,16 +483,41 @@ function renderReferenceToken(token, components) {
   if (!RENDERABLE_ICON_TAGS.has(token.tagName)) {
     return h('span', { class: 'factorio-richtext-tag-ref', title: 'Tag is not interactive in web view.' }, token.rawTag)
   }
-  if (!components.IconButton) {
-    return h('span', { class: 'factorio-richtext-tag-ref' }, `[${token.tagName}=${token.name}]`)
+  const inlineLabel = formatInlineReferenceLabel(token)
+  if (!components.IconButton || !components.SpriteIcon) {
+    return h('span', { class: 'factorio-richtext-tag-ref', title: inlineLabel }, inlineLabel)
   }
-  return h(components.IconButton, {
-    type: token.tagName,
-    name: token.name,
-    size: 18,
-    clickable: false,
-    showTooltip: false
-  })
+
+  return h(
+    components.IconButton,
+    {
+      type: token.tagName,
+      name: token.name,
+      size: 16,
+      clickable: true,
+      showTooltip: true
+    },
+    {
+      container: slotProps =>
+        h(
+          'span',
+          {
+            class: 'factorio-richtext-reference-inline',
+            title: slotProps?.title || inlineLabel,
+            'aria-label': slotProps?.['aria-label'] || inlineLabel,
+            onClick: slotProps?.click
+          },
+          [
+            h(components.SpriteIcon, {
+              spriteKey: `${token.tagName}-${token.name}`,
+              size: 16,
+              title: inlineLabel
+            }),
+            h('span', { class: 'factorio-richtext-reference-label' }, inlineLabel)
+          ]
+        )
+    }
+  )
 }
 
 function renderMetaToken(token, components) {

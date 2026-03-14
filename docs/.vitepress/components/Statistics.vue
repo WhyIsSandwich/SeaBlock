@@ -1,5 +1,5 @@
 <template>
-  <div :class="$style.statistics">
+  <div :class="[$style.statistics, { [$style.embedded]: embedded }]">
     <div v-for="stat in statistics" :key="stat.label" :class="$style.statItem">
       <strong
         >{{ stat.label }}{{ stat.value ? ': ' : ''
@@ -36,6 +36,10 @@ export default {
     statistics: {
       type: Array,
       required: true
+    },
+    embedded: {
+      type: Boolean,
+      default: false
     }
   }
 }
@@ -51,6 +55,14 @@ export default {
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.03),
     inset 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+
+.embedded {
+  margin-bottom: 0;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
 }
 
 .statItem {

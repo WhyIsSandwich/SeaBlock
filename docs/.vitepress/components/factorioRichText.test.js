@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs'
 
+import { h } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
 
 import {
@@ -126,6 +127,35 @@ describe('factorioRichText renderer', () => {
     expect(tinyBoldStyle.fontFamily).toContain('default-tiny-bold')
     expect(tinyBoldStyle.fontWeight).toBe(700)
     expect(tinyBoldStyle.fontSize).toBe('0.78em')
+  })
+
+  it('normalizes comma-separated Factorio colors into CSS rgb()', () => {
+    const parsed = parseFactorioRichText('[color=255,230,192]Drops[/color]')
+    const { nodes, diagnostics } = renderFactorioRichTextTokens(parsed.tokens)
+    expect(diagnostics).toEqual([])
+
+    const colorNode = nodes.find(node => typeof node !== 'string')
+    expect(colorNode).toBeTruthy()
+    expect(colorNode.props?.style?.color).toBe('rgb(255, 230, 192)')
+  })
+
+  it('renders item references as tooltip-enabled inline icon references', () => {
+    const parsed = parseFactorioRichText('x [item=iron-plate] y')
+    const IconButtonStub = { name: 'IconButtonStub', render: () => h('span') }
+    const SpriteIconStub = { name: 'SpriteIconStub', render: () => h('span') }
+    const { nodes, diagnostics } = renderFactorioRichTextTokens(parsed.tokens, {
+      IconButton: IconButtonStub,
+      SpriteIcon: SpriteIconStub
+    })
+    expect(diagnostics).toEqual([])
+
+    const richNode = nodes.find(
+      node => typeof node !== 'string' && node.type === IconButtonStub && node.props?.type === 'item'
+    )
+    expect(richNode).toBeTruthy()
+    expect(richNode.props?.showTooltip).toBe(true)
+    expect(richNode.props?.clickable).toBe(true)
+    expect(typeof richNode.children?.container).toBe('function')
   })
 })
 

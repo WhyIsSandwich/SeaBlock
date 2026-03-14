@@ -4,10 +4,84 @@
  */
 
 export function useUnifiedObjects() {
+  const aliasResolutionPriority = ['recipe', 'item', 'entity', 'fluid', 'tile']
+
   function shouldExcludeFromUnified(prototype) {
     return Boolean(
       prototype?.hidden || prototype?.hidden_in_factoriopedia || prototype?.hidden_from_factorio
     )
+  }
+
+  function getFactoriopediaAlternativeForKey(key, factorioData) {
+    const allTypes = Object.keys(factorioData || {})
+    const prioritizedTypes = [
+      ...aliasResolutionPriority.filter(type => allTypes.includes(type)),
+      ...allTypes.filter(type => !aliasResolutionPriority.includes(type))
+    ]
+
+    for (const type of prioritizedTypes) {
+      const prototype = factorioData?.[type]?.[key]
+      if (!prototype || shouldExcludeFromUnified(prototype)) continue
+      if (
+        typeof prototype.factoriopedia_alternative === 'string' &&
+        prototype.factoriopedia_alternative.length > 0
+      ) {
+        return prototype.factoriopedia_alternative
+      }
+    }
+
+    return null
+  }
+
+  function resolveFactoriopediaKey(key, factorioData, maxDepth = 10) {
+    let resolvedKey = key
+    const visited = new Set()
+    let depth = 0
+
+    while (resolvedKey && !visited.has(resolvedKey) && depth <= maxDepth) {
+      visited.add(resolvedKey)
+      const alternative = getFactoriopediaAlternativeForKey(resolvedKey, factorioData)
+      if (!alternative || alternative === resolvedKey) {
+        break
+      }
+      resolvedKey = alternative
+      depth++
+    }
+
+    return resolvedKey
+  }
+
+  function getFirstPresentPropertyValue(prototypes, prop) {
+    for (const prototype of prototypes) {
+      if (!prototype) continue
+      if (Object.prototype.hasOwnProperty.call(prototype, prop)) {
+        return prototype[prop]
+      }
+    }
+    return undefined
+  }
+
+  function getFirstNonNullishPropertyValue(prototypes, prop) {
+    for (const prototype of prototypes) {
+      if (!prototype) continue
+      const value = prototype[prop]
+      if (value !== undefined && value !== null) {
+        return value
+      }
+    }
+    return undefined
+  }
+
+  function getUnifiedDescription(prototypes) {
+    const factoriopediaDescription = getFirstNonNullishPropertyValue(
+      prototypes,
+      'factoriopedia_description'
+    )
+    if (factoriopediaDescription !== undefined) {
+      return factoriopediaDescription
+    }
+
+    return getFirstNonNullishPropertyValue(prototypes, 'description')
   }
 
   function getRecipePrimaryProduct(recipe, factorioData) {
@@ -38,10 +112,11 @@ export function useUnifiedObjects() {
    */
   function createUnifiedObjectByKey(key, factorioData) {
     if (!key || !factorioData) return []
+    const resolvedKey = resolveFactoriopediaKey(key, factorioData)
 
     const allTypes = {}
     for (const prototype of Object.keys(factorioData)) {
-      allTypes[prototype] = factorioData[prototype][key]
+      allTypes[prototype] = factorioData[prototype][resolvedKey]
     }
     // Start with the base data for this key (ignore hidden entries when unifying)
     const item = shouldExcludeFromUnified(allTypes.item) ? null : allTypes.item
@@ -142,8 +217,8 @@ export function useUnifiedObjects() {
       if (recipe) {
         //Check if the recipe is compatible with the fluid
         if (
-          recipe.main_product === key ||
-          (recipe.results?.length === 1 && recipe.results?.[0]?.name === key)
+          recipe.main_product === resolvedKey ||
+          (recipe.results?.length === 1 && recipe.results?.[0]?.name === resolvedKey)
         ) {
           unifiedObject.recipe = recipe
           unifiedObject.types.push('recipe')
@@ -163,8 +238,8 @@ export function useUnifiedObjects() {
       if (!recipeUsed && recipe) {
         //Check if the recipe is compatible with the item
         if (
-          recipe.main_product === key ||
-          (recipe.results?.length === 1 && recipe.results?.[0]?.name === key)
+          recipe.main_product === resolvedKey ||
+          (recipe.results?.length === 1 && recipe.results?.[0]?.name === resolvedKey)
         ) {
           unifiedObject.recipe = recipe
           unifiedObject.types.push('recipe')
@@ -175,9 +250,9 @@ export function useUnifiedObjects() {
         //Check if the entity is compatible with the item
         const results = entity?.minable?.results
         if (
-          item.place_result === key ||
-          results == key ||
-          results?.every(item => item.name === key)
+          item.place_result === resolvedKey ||
+          results == resolvedKey ||
+          results?.every(item => item.name === resolvedKey)
         ) {
           unifiedObject.entity = entity
           unifiedObject.types.push('entity')
@@ -189,7 +264,7 @@ export function useUnifiedObjects() {
         const tileName = item.place_as_tile.result
         unifiedObject.tile = factorioData.tile[tileName]
         unifiedObject.types.push('tile')
-        if (tileName === key) {
+        if (tileName === resolvedKey) {
           tileUsed = true
         }
       }
@@ -278,13 +353,25 @@ export function useUnifiedObjects() {
           object.fluid?.[prop] ||
           object.tile?.[prop]
       })
+      // Treat explicit null as a valid top-priority value for factoriopedia_alternative.
+      object.factoriopedia_alternative = getFirstPresentPropertyValue(
+        [object.recipe, object.item, object.entity, object.fluid, object.tile],
+        'factoriopedia_alternative'
+      )
+      object.description = getUnifiedDescription([
+        object.recipe,
+        object.item,
+        object.entity,
+        object.fluid,
+        object.tile
+      ])
       object.id =
         object.recipe?.name ||
         object.item?.name ||
         object.entity?.name ||
         object.fluid?.name ||
         object.tile?.name ||
-        key
+        resolvedKey
       // Organization properties with hierarchy
       object.subgroup =
         object.item?.subgroup ||
@@ -301,7 +388,7 @@ export function useUnifiedObjects() {
         object.recipe?.order ||
         object.entity?.order ||
         object.tile?.order ||
-        key
+        resolvedKey
 
       // Factoriopedia categorizes recipes by primary product when recipe subgroup is missing.
       if (object.recipe) {

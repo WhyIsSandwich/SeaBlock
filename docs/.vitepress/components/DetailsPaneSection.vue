@@ -1,124 +1,160 @@
 <template>
-  <template v-if="section.type === ''" />
-  <template v-else-if="section.type === 'technology_cost'">
-    <div :class="$style.section">
-      <h4 :class="$style.sectionTitle">{{ section.label }}</h4>
-      <div v-if="section.items?.length > 0" :class="$style.technologyCostRow">
-        <IconButton
-          v-for="item in section.items"
-          :key="`${item.type}-${item.name}`"
-          :type="item.type"
-          :name="item.name"
-          :size="getIconSize()"
-          :clickable="true"
-          @click="handleItemClick(item)"
-          :show-tooltip="showTooltip"
-        />
-        <span :class="$style.technologyCostStat"> 🕛{{ section.statistics[1].value }} </span>
-        <span :class="$style.technologyCostStat"> x {{ section.statistics[0].value }} </span>
-      </div>
-    </div>
-  </template>
-  <template v-else-if="section.type === 'unlock_technologies'">
-    <div :class="$style.section">
-      <h4 :class="$style.sectionTitle">{{ section.label }}</h4>
-      <div v-if="section.items?.length > 0" :class="$style.unlockList">
+  <template v-if="shouldRenderSection">
+    <template v-if="section.type === ''" />
+    <template v-else-if="section.type === 'technology_cost'">
+      <div :class="$style.section">
+        <h4 :class="$style.sectionTitle">
+          {{ section.label }}
+        </h4>
         <div
-          v-for="item in section.items"
-          :key="`${item.type}-${item.name}`"
-          :class="$style.unlockRow"
+          v-if="sectionEntries.length > 0"
+          :class="$style.technologyCostRow"
         >
-          <!-- Left side: game-style technology panel -->
           <IconButton
-            :type="item.type"
-            :name="item.name"
-            :size="128"
-            :clickable="true"
-            :show-tooltip="showTooltip"
-            @click="handleItemClick(item)"
-          >
-            <template #container="{ title, click, spriteKey }">
-              <div :class="$style.unlockPanel" :title="title" @click="click">
-                <div :class="$style.unlockIconPanel">
-                  <SpriteIcon v-if="spriteKey" :sprite-key="spriteKey" :size="128" />
-                </div>
-                <div :class="$style.unlockLevel">
-                  <span v-if="getTechnologyLevel(item.name)" :class="$style.unlockLevelBadge">
-                    {{ getTechnologyLevel(item.name) }}
-                  </span>
-                </div>
-                <div :class="$style.unlockSciencePacks">
-                  <SpriteIcon
-                    v-for="pack in item.items"
-                    :key="pack.name"
-                    :sprite-key="`${pack.type || 'item'}-${pack.name}`"
-                    :size="20"
-                  />
-                </div>
-              </div>
-            </template>
-          </IconButton>
-          <div :class="$style.unlockName">
-            {{ getItemLabel(item) || item.name }}
-          </div>
-        </div>
-      </div>
-    </div>
-  </template>
-  <template v-else-if="section.type === 'crafting_time'">
-    <div :class="$style.section">🕛{{ section.statistics[0]?.value }} s Crafting time</div>
-  </template>
-  <template v-else>
-    <div :class="$style.section">
-      <h4 :class="$style.sectionTitle">{{ section.label }}</h4>
-
-      <!-- Statistics for this section -->
-      <Statistics v-if="section.statistics?.length > 0" :statistics="section.statistics" />
-
-      <!-- Items for this section -->
-      {{ section.items?.length > 0 && section.itemsLabel ? section.itemsLabel + ':' : null }}
-      <div
-        v-if="section.items?.length > 0"
-        :class="getItemsContainerClass()"
-        :style="getGridContainerStyle()"
-        ref="gridContainer"
-      >
-        <!-- Use composable's grid structure -->
-        <div v-if="isGridLayout" :style="getGridSubgroupStyle()">
-          <IconButton
-            v-for="item in section.items"
+            v-for="item in sectionEntries"
             :key="`${item.type}-${item.name}`"
-            :style="getGridItemStyle()"
-            :size="getGridButtonSize()"
             :type="item.type"
             :name="item.name"
+            :size="getIconSize()"
             :clickable="true"
             :show-tooltip="showTooltip"
             @click="handleItemClick(item)"
           />
+          <span :class="$style.technologyCostStat"> 🕛{{ section.statistics[1].value }} </span>
+          <span :class="$style.technologyCostStat"> x {{ section.statistics[0].value }} </span>
         </div>
-        <!-- List layout without subgroup wrapper -->
-        <template v-else>
+      </div>
+    </template>
+    <template v-else-if="section.type === 'unlock_technologies'">
+      <div :class="$style.section">
+        <h4 :class="$style.sectionTitle">
+          {{ section.label }}
+        </h4>
+        <div
+          v-if="sectionEntries.length > 0"
+          :class="$style.unlockList"
+        >
           <div
-            v-for="item in section.items"
+            v-for="item in sectionEntries"
             :key="`${item.type}-${item.name}`"
-            :class="getItemEntryClass()"
+            :class="$style.unlockRow"
           >
+            <!-- Left side: game-style technology panel -->
             <IconButton
               :type="item.type"
               :name="item.name"
-              :size="getListIconSize()"
+              :size="128"
+              :clickable="true"
+              :show-tooltip="showTooltip"
+              @click="handleItemClick(item)"
+            >
+              <template #container="{ title, click, spriteKey }">
+                <div
+                  :class="$style.unlockPanel"
+                  :title="title"
+                  @click="click"
+                >
+                  <div :class="$style.unlockIconPanel">
+                    <SpriteIcon
+                      v-if="spriteKey"
+                      :sprite-key="spriteKey"
+                      :size="128"
+                    />
+                  </div>
+                  <div :class="$style.unlockLevel">
+                    <span
+                      v-if="getTechnologyLevel(item.name)"
+                      :class="$style.unlockLevelBadge"
+                    >
+                      {{ getTechnologyLevel(item.name) }}
+                    </span>
+                  </div>
+                  <div :class="$style.unlockSciencePacks">
+                    <SpriteIcon
+                      v-for="pack in item.items"
+                      :key="pack.name"
+                      :sprite-key="`${pack.type || 'item'}-${pack.name}`"
+                      :size="20"
+                    />
+                  </div>
+                </div>
+              </template>
+            </IconButton>
+            <div :class="$style.unlockName">
+              {{ getItemLabel(item) || item.name }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </template>
+    <template v-else-if="section.type === 'crafting_time'">
+      <div :class="$style.section">
+        🕛{{ section.statistics[0]?.value }} s Crafting time
+      </div>
+    </template>
+    <template v-else>
+      <div :class="$style.section">
+        <h4 :class="$style.sectionTitle">
+          {{ section.label }}
+        </h4>
+
+        <!-- Statistics for this section -->
+        <Statistics
+          v-if="section.statistics?.length > 0"
+          :statistics="section.statistics"
+        />
+
+        <!-- Items for this section -->
+        {{ sectionEntries.length > 0 && section.itemsLabel ? section.itemsLabel + ':' : null }}
+        <div
+          v-if="sectionEntries.length > 0"
+          ref="gridContainer"
+          :class="getItemsContainerClass()"
+          :style="getGridContainerStyle()"
+        >
+          <!-- Use composable's grid structure -->
+          <div
+            v-if="isGridLayout"
+            :style="getGridSubgroupStyle()"
+          >
+            <IconButton
+              v-for="item in sectionEntries"
+              :key="`${item.type}-${item.name}`"
+              :style="getGridItemStyle()"
+              :size="getGridButtonSize()"
+              :type="item.type"
+              :name="item.name"
               :clickable="true"
               :show-tooltip="showTooltip"
               @click="handleItemClick(item)"
             />
-            <span v-if="shouldShowLabel()" :class="$style.itemLabel">{{
-              getDisplayLabel(item)
-            }}</span>
           </div>
-        </template>
+          <!-- List layout without subgroup wrapper -->
+          <template v-else>
+            <div
+              v-for="item in sectionEntries"
+              :key="`${item.type}-${item.name}`"
+              :class="getItemEntryClass()"
+            >
+              <IconButton
+                :type="item.type"
+                :name="item.name"
+                :size="getListIconSize()"
+                :clickable="true"
+                :show-tooltip="showTooltip"
+                @click="handleItemClick(item)"
+              />
+              <span
+                v-if="shouldShowLabel()"
+                :class="$style.itemLabel"
+              >
+                {{ getDisplayLabel(item) }}
+              </span>
+            </div>
+          </template>
+        </div>
       </div>
-    </div>
+    </template>
   </template>
 </template>
 
@@ -164,9 +200,6 @@ export default {
     const gridContainerWidth = ref(0)
     const gridContainer = ref(null)
 
-    // Use the grid composable for section grids
-    const itemCount = ref(0)
-
     const sectionGrid = computed(() =>
       useFactorioGrid({
         containerWidth: gridContainerWidth.value,
@@ -187,10 +220,40 @@ export default {
     }
   },
   computed: {
+    sectionEntries() {
+      if (Array.isArray(this.section?.items)) {
+        return this.section.items
+      }
+      if (Array.isArray(this.section?.children)) {
+        return this.section.children
+      }
+      return []
+    },
+    hasStatistics() {
+      return Array.isArray(this.section?.statistics) && this.section.statistics.length > 0
+    },
+    hasSectionChildren() {
+      return this.sectionEntries.length > 0
+    },
+    shouldRenderSection() {
+      if (!this.section || this.section.type === '') {
+        return false
+      }
+
+      if (this.section.type === 'crafting_time') {
+        return this.hasStatistics
+      }
+
+      if (this.section.type === 'technology_cost' || this.section.type === 'unlock_technologies') {
+        return this.hasSectionChildren
+      }
+
+      return this.hasStatistics || this.hasSectionChildren
+    },
     isGridLayout() {
       if (this.visualContext === 'tooltip' && this.section.itemsType === 'grid') {
-        const hasTextualLabels = Array.isArray(this.section.items)
-          ? this.section.items.some(
+        const hasTextualLabels = Array.isArray(this.sectionEntries)
+          ? this.sectionEntries.some(
               item => typeof item?.label === 'string' && item.label.trim().length > 0
             )
           : false
@@ -301,7 +364,7 @@ export default {
     getGridSubgroupStyle() {
       if (this.visualContext === 'tooltip') {
         const maxColumns = 10
-        const itemCount = this.section?.items?.length || 1
+        const itemCount = this.sectionEntries.length || 1
         const columns = Math.min(itemCount, maxColumns)
         return {
           display: 'grid',
@@ -333,7 +396,6 @@ export default {
       return true
     },
     updateItemCount() {
-      this.itemCount = this.section?.items?.length || 0
       // Force grid recalculation when item count changes
       this.$nextTick(() => {
         if (this.gridContainer && this.gridContainerWidth === 0) {

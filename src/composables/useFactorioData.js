@@ -308,8 +308,20 @@ function createFactorioDataInstance() {
 
     // Process each key to get all possible unified objects
 
-    // Filter out items that have a factoriopedia alternative
-    allItems = allItems.filter(item => !item.factoriopedia_alternative)
+    // Keep recipe-category prototypes out of the browse grid.
+    allItems = allItems.filter(
+      item => item.source !== 'recipe-category' && !item.types?.includes('recipe-category')
+    )
+
+    // Alias resolution can map different prototype keys to the same canonical unified object.
+    // Deduplicate here so category grids don't render duplicate entries.
+    const seenUnifiedItems = new Set()
+    allItems = allItems.filter(item => {
+      const dedupeKey = `${item.name}|${item.source}|${item.types?.join(',')}`
+      if (seenUnifiedItems.has(dedupeKey)) return false
+      seenUnifiedItems.add(dedupeKey)
+      return true
+    })
 
     // Group items by subgroup
     const itemGroups = {}
@@ -455,9 +467,14 @@ function createFactorioDataInstance() {
    */
   function createUnifiedSelectionObject(type, name, _data = null) {
     const { createUnifiedObjectByKey } = useUnifiedObjects()
-
     const objects = createUnifiedObjectByKey(name, organizedData.value)
-    return objects.find(object => object.types.includes(type))
+    if (!objects || objects.length === 0) return null
+
+    return (
+      objects.find(object => object.types.includes(type)) ||
+      objects.find(object => object.source === type) ||
+      objects[0]
+    )
   }
 
   return {
