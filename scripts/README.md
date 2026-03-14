@@ -22,9 +22,12 @@ This script will:
 ### Main Processing Scripts
 
 - **`orchestrate-factorio-processing.js`** - Interactive orchestration script (recommended)
-- **`process-factorio-data.js`** - Core data processing engine
-- **`convert-png-to-webp.js`** - PNG to WebP conversion for animations
-- **`copy-mod-graphics.js`** - Copy PNG files from mods to data-dumps/graphics
+- **`process-factorio-data.js`** - Core data processing engine (outputs to `generated/data/dev` by default)
+- **`generate-tooltips.js`** - Generate `en-tooltips.json` from process output (default: `generated/data/dev`)
+- **`productionize-spritemap-webp.js`** - Generate production `spritemap.webp` from `spritemap.png`
+- **`publish-generated-data.js`** - Publish generated data to CDN (see `.env.example` for prod config)
+- **`convert-to-webp.js`** - PNG to WebP conversion for graphics (default: `generated/data/dev`)
+- **`copy-mod-graphics.js`** - Copy PNG files from mods to `generated/data/dev` (served at `/generated/data/dev` in dev)
 
 ### Data Extraction Scripts
 
@@ -70,7 +73,7 @@ node scripts/orchestrate-factorio-processing.js
 node scripts/orchestrate-factorio-processing.js
 
 # Skip interactive prompts
-node scripts/orchestrate-factorio-processing.js -g /path/to/factorio -s extract,process
+node scripts/orchestrate-factorio-processing.js -g /path/to/factorio -s extract,process,tooltips
 
 # Run only graphics copying
 node scripts/orchestrate-factorio-processing.js -g /factorio -s graphics
@@ -83,15 +86,41 @@ node scripts/orchestrate-factorio-processing.js --help
 
 1. **Extract Factorio Data** - Runs Factorio data extraction commands
 2. **Process Raw Data** - Converts raw data to structured JSON
-3. **Convert PNG to WebP** - Optimizes animation files
-4. **Copy Mod Graphics** - Copies PNG files from mods to data-dumps/graphics
+3. **Generate Tooltips** - Creates en-tooltips.json from process output
+4. **Copy Mod Graphics** - Copies PNG files from mods to `generated/data/dev`
 5. **All Steps** - Runs complete pipeline (recommended)
 
 ### Individual Scripts
 
+#### Tooltip Generator
+
+**`generate-tooltips.js`** - Generates `en-tooltips.json` using the same rules as runtime details. Requires `data.json` and `locale-en.json` from `process-factorio-data.js`.
+
+```bash
+# Default: reads/writes generated/data/dev
+node scripts/generate-tooltips.js
+
+# Custom output path
+node scripts/generate-tooltips.js --output ./generated/data/dev
+
+# Or run after process-factorio-data
+node scripts/process-factorio-data.js --script-output /path/to/script-output --tooltips
+```
+
+**Options:** `--output PATH`, `-o PATH`, `--verbose`, `-v`
+
+#### WebP Converter (Graphics)
+
+**`convert-to-webp.js`** - Converts PNG files in `*/graphics/*` directories to WebP. Default source: `generated/data/dev`. Use `--source` for custom paths.
+
+```bash
+node scripts/convert-to-webp.js
+node scripts/convert-to-webp.js --source ./data-dumps/graphics
+```
+
 #### Mod Graphics Copier
 
-**`copy-mod-graphics.js`** - Interactive script that copies all PNG files from Factorio mods to data-dumps/graphics following the **modname** naming pattern.
+**`copy-mod-graphics.js`** - Interactive script that copies all PNG files from Factorio mods to `generated/data/dev` following the **modname** naming pattern. Served by Vite at `/generated/data/dev` in dev. Shares the same output folder as process-factorio-data so entity graphics resolve correctly.
 
 ```bash
 node scripts/copy-mod-graphics.js
@@ -111,6 +140,7 @@ node scripts/copy-mod-graphics.js
 
 - `-g, --game-folder PATH` - Path to Factorio game folder
 - `-u, --user-folder PATH` - Path to Factorio user folder (optional)
+- `-o, --output PATH` - Output directory (default: `generated/data/dev`)
 - `-h, --help` - Show help message
 
 **Examples:**
@@ -123,7 +153,7 @@ node scripts/copy-mod-graphics.js
 node scripts/copy-mod-graphics.js -g /path/to/factorio
 
 # With separate user folder
-node scripts/copy-mod-graphics.js -g /factorio -u /userdata
+node scripts/copy-mod-graphics.js -g /factorio -u /userdata -o ./generated/data/dev
 
 # Show help
 node scripts/copy-mod-graphics.js --help
@@ -135,7 +165,7 @@ node scripts/copy-mod-graphics.js --help
 2. **Specific Mods** - Handles space-age, quality, and elevated-rails mods
 3. **User Mods** - Extracts and processes mods from userdata or game folder
 4. **Mod Name Extraction** - Reads modinfo.json to get proper mod names
-5. **Directory Organization** - Creates **modname** folders in data-dumps/graphics
+5. **Directory Organization** - Creates **modname** folders in `generated/data/dev`
 
 #### Data Extraction Scripts
 
@@ -234,6 +264,15 @@ The script automatically detects your setup and maps directories accordingly.
    - `--dump-icon-sprites` - Exports all icon sprites as PNG files
 4. **Find output** - Locates Factorio's script output folder
 5. **Report results** - Shows extracted files and directory size
+
+## Generated Output Structure
+
+Processed data is written to `generated/` (git-ignored):
+
+- `generated/data/dev/` - Dev output (default). Served by VitePress dev server at `/generated/data/dev/`.
+- `generated/data/prod/<hash>/` - Production output for CDN publishing. Use `--output` when running the pipeline.
+
+Set `VITE_ASSET_*` env vars (see `.env.example`) for production builds after publishing.
 
 ## Output
 

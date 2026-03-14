@@ -1,6 +1,9 @@
 <template>
   <div :class="$style.detailsPane">
-    <div v-if="selectedItem" :class="$style.itemDetails">
+    <div
+      v-if="selectedItem"
+      :class="$style.itemDetails"
+    >
       <!-- Item Header with Controls and Tabs -->
       <div :class="$style.itemHeader">
         <div :class="$style.headerTitle">
@@ -19,7 +22,10 @@
             >
               Details
             </button>
-            <button :class="{ [$style.active]: activeTab === 'raws' }" @click="activeTab = 'raws'">
+            <button
+              :class="{ [$style.active]: activeTab === 'raws' }"
+              @click="activeTab = 'raws'"
+            >
               Raws
             </button>
           </div>
@@ -48,8 +54,14 @@
               >
                 History
               </button>
-              <div v-if="showHistoryDropdown" :class="$style.historyDropdown">
-                <div v-if="historyItems.length === 0" :class="$style.historyEmpty">
+              <div
+                v-if="showHistoryDropdown"
+                :class="$style.historyDropdown"
+              >
+                <div
+                  v-if="historyItems.length === 0"
+                  :class="$style.historyEmpty"
+                >
                   No recent items
                 </div>
                 <div
@@ -61,10 +73,10 @@
                   <SpriteIcon
                     v-if="
                       item.type === 'item' ||
-                      item.type === 'recipe' ||
-                      item.type === 'technology' ||
-                      item.type === 'fluid' ||
-                      item.type === 'tile'
+                        item.type === 'recipe' ||
+                        item.type === 'technology' ||
+                        item.type === 'fluid' ||
+                        item.type === 'tile'
                     "
                     :sprite-key="`${item.type}-${item.name}`"
                     :size="32"
@@ -79,7 +91,10 @@
       </div>
 
       <!-- Large Item Image (for entities and items) -->
-      <div v-if="selectedItem.entity" :class="$style.itemImageContainer">
+      <div
+        v-if="selectedItem.entity"
+        :class="$style.itemImageContainer"
+      >
         <FactorioSprite
           v-if="selectedItem.entity"
           :key="type + name"
@@ -96,7 +111,10 @@
           v-if="selectedItem?.description || detailsData.statistics?.length > 0"
           :class="$style.detailsInfoBox"
         >
-          <div v-if="selectedItem?.description" :class="$style.detailsDescription">
+          <div
+            v-if="selectedItem?.description"
+            :class="$style.detailsDescription"
+          >
             <FactorioRichText :text="selectedItem.description" />
           </div>
           <!-- Statistics -->
@@ -115,7 +133,10 @@
         </template>
       </div>
       <!-- Raws Tab Content -->
-      <div v-if="activeTab === 'raws'" :class="$style.rawsContent">
+      <div
+        v-if="activeTab === 'raws'"
+        :class="$style.rawsContent"
+      >
         <RawSection
           v-if="selectedItem?.recipe"
           title="Recipe Data"
@@ -181,7 +202,10 @@
       </div>
 
       <!-- No Selection State -->
-      <div v-if="!selectedItem" :class="$style.noSelection">
+      <div
+        v-if="!selectedItem"
+        :class="$style.noSelection"
+      >
         <div :class="$style.noSelectionContent">
           <h3>Select an item to view details</h3>
           <p>

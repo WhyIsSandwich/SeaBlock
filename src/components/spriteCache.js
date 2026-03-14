@@ -2,22 +2,19 @@
 let spritemapCache = null
 let spritemapCachePromise = null
 
-const DEFAULT_PUBLIC_DATA_BASE_URL = 'https://factorio.whyissandwich.workers.dev'
+import { resolveDataUrl, resolveSpriteImageUrl } from './assetResolver.js'
 
+/** @deprecated Use resolveDataUrl from assetResolver. Kept for compatibility. */
 export function getPublicDataUrl(relativePath, withBase) {
-  const normalizedPath = relativePath.replace(/^\/+/, '')
-  const isDev = Boolean(import.meta.env?.DEV)
-
-  if (isDev) {
-    return withBase(`/data/${normalizedPath}`)
-  }
-
-  const configuredBase = import.meta.env?.VITE_PUBLIC_DATA_BASE_URL || DEFAULT_PUBLIC_DATA_BASE_URL
-  const trimmedBase = configuredBase.replace(/\/+$/, '')
-  return `${trimmedBase}/${normalizedPath}`
+  return resolveDataUrl(relativePath, withBase)
 }
 
-export async function loadSpritemapData(withBase) {
+/** Resolve sprite sheet image URL (format from build config). */
+export function getSpriteImageUrl(imageBasename, withBase) {
+  return resolveSpriteImageUrl(imageBasename, withBase)
+}
+
+export function loadSpritemapData(withBase) {
   if (spritemapCache) {
     return spritemapCache
   }
@@ -26,7 +23,7 @@ export async function loadSpritemapData(withBase) {
     return spritemapCachePromise
   }
 
-  spritemapCachePromise = fetch(getPublicDataUrl('spritemap.json', withBase))
+  spritemapCachePromise = fetch(resolveDataUrl('spritemap.json', withBase))
     .then(response => {
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`)

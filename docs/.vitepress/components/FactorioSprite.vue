@@ -1,5 +1,8 @@
 <template>
-  <div class="factorio-sprite-container" :style="containerStyle">
+  <div
+    class="factorio-sprite-container"
+    :style="containerStyle"
+  >
     <!-- All animations use canvas -->
     <canvas
       ref="spriteCanvas"
@@ -17,8 +20,14 @@
         :title="isPaused ? 'Play animation' : 'Pause animation'"
         @click="togglePause"
       >
-        <span v-if="isPaused" class="play-icon">▶</span>
-        <span v-else class="pause-icon">⏸</span>
+        <span
+          v-if="isPaused"
+          class="play-icon"
+        >▶</span>
+        <span
+          v-else
+          class="pause-icon"
+        >⏸</span>
       </button>
     </div>
   </div>
@@ -26,8 +35,10 @@
 
 <script>
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
+import { withBase } from 'vitepress'
 
 import { createFactorioAnimationEngine } from '../../../src/index.js'
+import { resolveAssetUrl } from '../../../src/components/assetResolver.js'
 
 export default {
   name: 'FactorioSprite',
@@ -118,9 +129,7 @@ export default {
       animationEngine.value = createFactorioAnimationEngine({
         loadImage: filename => {
           const img = new Image()
-          // Convert Factorio path to public path using the mapping
-          const publicPath = `https://factorio.whyissandwich.workers.dev/${filename.replace('.png', '.webp')}`
-          img.src = publicPath
+          img.src = resolveAssetUrl(filename, withBase)
           return img
         },
         applyDOMChanges: _mutation => {

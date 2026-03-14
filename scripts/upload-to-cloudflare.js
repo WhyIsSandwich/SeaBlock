@@ -11,9 +11,11 @@ import readline from 'readline'
 const execAsync = promisify(exec)
 
 // Configuration
+const DEFAULT_GRAPHICS_SOURCE = './generated/data/dev'
+
 const CONFIG = {
-  // Source directory
-  sourceDir: '/workspaces/SeaBlock/data-dumps/graphics',
+  // Source directory (WebP files in */graphics/* subdirs)
+  sourceDir: path.resolve(process.cwd(), DEFAULT_GRAPHICS_SOURCE),
 
   // Cloudflare R2 configuration (will be set from console input)
   bucketName: null,

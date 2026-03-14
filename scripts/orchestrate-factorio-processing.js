@@ -87,7 +87,7 @@ class FactorioProcessingOrchestrator {
     console.log('Available steps:')
     console.log('  extract    - Extract data from Factorio')
     console.log('  process    - Process raw data to JSON')
-    console.log('  convert    - Convert PNG to WebP')
+    console.log('  tooltips   - Generate en-tooltips.json (requires process output)')
     console.log('  graphics   - Copy mod graphics')
     console.log('  all        - Run all steps (default)')
     console.log('')
@@ -132,7 +132,7 @@ class FactorioProcessingOrchestrator {
       console.log('✅ All processing steps completed successfully!')
       console.log('')
       console.log('Next steps:')
-      console.log('- Check the generated files in docs/public/data/')
+      console.log('- Check the generated files in generated/data/dev/')
       console.log('- Run the development server to see the results')
       console.log('')
     } catch (error) {
@@ -626,7 +626,7 @@ class FactorioProcessingOrchestrator {
       '1. Extract Factorio Data (--dump-data, --dump-prototype-locale, --dump-icon-sprites)'
     )
     console.log('2. Process Raw Data (convert to JSON, generate spritemap, etc.)')
-    console.log('3. Convert PNG to WebP (optimize animations)')
+    console.log('3. Generate Tooltips (en-tooltips.json from process output)')
     console.log('4. Copy Mod Graphics (copy PNG files from mods)')
     console.log('5. All Steps (recommended for first run)')
     console.log('6. Custom selection')
@@ -642,13 +642,13 @@ class FactorioProcessingOrchestrator {
         this.selectedSteps = ['process']
         break
       case '3':
-        this.selectedSteps = ['convert']
+        this.selectedSteps = ['tooltips']
         break
       case '4':
         this.selectedSteps = ['graphics']
         break
       case '5':
-        this.selectedSteps = ['extract', 'process', 'convert', 'graphics']
+        this.selectedSteps = ['extract', 'process', 'tooltips', 'graphics']
         break
       case '6':
         this.selectedSteps = await this.selectCustomSteps()
@@ -673,14 +673,14 @@ class FactorioProcessingOrchestrator {
       steps.push('extract')
     }
 
-    const process = await this.askQuestion('Process raw data? (y/n): ')
-    if (process.toLowerCase() === 'y' || process.toLowerCase() === 'yes') {
+    const processStep = await this.askQuestion('Process raw data? (y/n): ')
+    if (processStep.toLowerCase() === 'y' || processStep.toLowerCase() === 'yes') {
       steps.push('process')
     }
 
-    const convert = await this.askQuestion('Convert PNG to WebP? (y/n): ')
-    if (convert.toLowerCase() === 'y' || convert.toLowerCase() === 'yes') {
-      steps.push('convert')
+    const tooltips = await this.askQuestion('Generate tooltips? (y/n): ')
+    if (tooltips.toLowerCase() === 'y' || tooltips.toLowerCase() === 'yes') {
+      steps.push('tooltips')
     }
 
     const graphics = await this.askQuestion('Copy mod graphics? (y/n): ')
@@ -713,9 +713,9 @@ class FactorioProcessingOrchestrator {
           // eslint-disable-next-line no-await-in-loop
           await this.processRawData()
           break
-        case 'convert':
+        case 'tooltips':
           // eslint-disable-next-line no-await-in-loop
-          await this.convertPNGToWebP()
+          await this.generateTooltips()
           break
         case 'graphics':
           // eslint-disable-next-line no-await-in-loop
@@ -769,8 +769,10 @@ class FactorioProcessingOrchestrator {
     const processorPath = path.join(__dirname, 'process-factorio-data.js')
 
     // Pass the detected script output path to the processor
+    const outputPath = path.join(process.cwd(), 'generated', 'data', 'dev')
     console.log(`   📁 Using script output path: ${this.config.scriptOutput}`)
-    const args = [processorPath, '--script-output', this.config.scriptOutput]
+    console.log(`   📁 Output path: ${outputPath}`)
+    const args = [processorPath, '--script-output', this.config.scriptOutput, '--output', outputPath]
 
     try {
       await this.runCommand('node', args)
@@ -782,18 +784,20 @@ class FactorioProcessingOrchestrator {
   }
 
   /**
-   * Convert PNG files to WebP
+   * Generate en-tooltips.json using generate-tooltips.js
    */
-  async convertPNGToWebP() {
-    console.log('🖼️  Converting PNG to WebP...')
+  async generateTooltips() {
+    console.log('📝 Generating tooltips...')
 
-    const converterPath = path.join(__dirname, 'convert-png-to-webp.js')
+    const tooltipsPath = path.join(__dirname, 'generate-tooltips.js')
+    const outputPath = path.join(process.cwd(), 'generated', 'data', 'dev')
+    const args = [tooltipsPath, '--output', outputPath]
 
     try {
-      await this.runCommand('node', [converterPath])
-      console.log('   ✅ PNG to WebP conversion completed')
+      await this.runCommand('node', args)
+      console.log('   ✅ Tooltip generation completed')
     } catch (error) {
-      console.error('   ❌ PNG to WebP conversion failed:', error.message)
+      console.error('   ❌ Tooltip generation failed:', error.message)
       throw error
     }
   }
@@ -870,7 +874,8 @@ class FactorioProcessingOrchestrator {
 
     try {
       // Run the graphics copier script with the same config
-      const args = []
+      const outputPath = path.join(process.cwd(), 'generated', 'data', 'dev')
+      const args = ['-o', outputPath]
       if (this.config.gameFolder) {
         args.push('-g', this.config.gameFolder)
       }

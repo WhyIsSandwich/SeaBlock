@@ -21,7 +21,7 @@ import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { withBase } from 'vitepress'
 
 import { loadSpritemapData } from '../../../src/index.js'
-import { getPublicDataUrl } from '../../../src/components/spriteCache.js'
+import { getSpriteImageUrl } from '../../../src/components/spriteCache.js'
 
 // Props
 const props = defineProps({
@@ -117,11 +117,7 @@ const iconStyle = computed(() => {
     return {}
   }
 
-  const isDev = Boolean(import.meta.env?.DEV)
-  const spriteImageFile = isDev
-    ? spritemapData.value.image
-    : spritemapData.value.image.replace('.png', '.webp')
-  const spriteImageUrl = getPublicDataUrl(spriteImageFile, withBase)
+  const spriteImageUrl = getSpriteImageUrl(spritemapData.value.image, withBase)
   const scale = spriteScale.value
   const scaledWidth = spriteData.value.width * scale
   const scaledHeight = spriteData.value.height * scale

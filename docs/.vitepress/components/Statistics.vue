@@ -1,21 +1,42 @@
 <template>
   <div :class="[$style.statistics, { [$style.embedded]: embedded }]">
-    <div v-for="stat in statistics" :key="stat.label" :class="$style.statItem">
-      <strong
-        >{{ stat.label }}{{ stat.value ? ': ' : ''
-        }}<FactorioRichText v-if="stat.value" :text="stat.value"
+    <div
+      v-for="stat in statistics"
+      :key="stat.label"
+      :class="$style.statItem"
+    >
+      <strong>{{ stat.label }}{{ stat.value ? ': ' : ''
+      }}<FactorioRichText
+        v-if="stat.value"
+        :text="stat.value"
       /></strong>
       <template v-if="stat.children">
-        <ul v-if="stat.children.length > 0" :class="$style.resistanceList">
-          <li v-for="child in stat.children" :key="child.label">
-            <strong
-              >{{ child.label }}{{ child.value ? ': ' : ''
-              }}<FactorioRichText v-if="child.value" :text="child.value"
+        <ul
+          v-if="stat.children.length > 0"
+          :class="$style.resistanceList"
+        >
+          <li
+            v-for="child in stat.children"
+            :key="child.label"
+          >
+            <strong>{{ child.label }}{{ child.value ? ': ' : ''
+            }}<FactorioRichText
+              v-if="child.value"
+              :text="child.value"
             /></strong>
-            <ul v-if="child?.children?.length > 0" :class="$style.resistanceList">
-              <li v-for="grandchild in child.children" :key="grandchild.label">
+            <ul
+              v-if="child?.children?.length > 0"
+              :class="$style.resistanceList"
+            >
+              <li
+                v-for="grandchild in child.children"
+                :key="grandchild.label"
+              >
                 {{ grandchild.label }}{{ grandchild.value ? ': ' : '' }}
-                <FactorioRichText v-if="grandchild.value" :text="grandchild.value" />
+                <FactorioRichText
+                  v-if="grandchild.value"
+                  :text="grandchild.value"
+                />
               </li>
             </ul>
           </li>

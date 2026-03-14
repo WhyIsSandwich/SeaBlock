@@ -3,8 +3,8 @@
 /**
  * Factorio Mod Graphics Copier
  *
- * Copies all PNG files from Factorio mods to data-dumps/graphics folder
- * following the __modname__ naming pattern.
+ * Copies all PNG files from Factorio mods to generated/data/dev folder
+ * following the __modname__ naming pattern. Served by Vite at /generated/data/dev in dev.
  *
  * Handles:
  * - Core game data (data/core => __core__, data/base => __base__)
@@ -21,13 +21,14 @@ import { spawn } from 'child_process'
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
+const DEFAULT_GRAPHICS_PATH = './generated/data/dev'
+
 class ModGraphicsCopier {
   constructor() {
     this.config = {
       gameFolder: null,
       userFolder: null,
-      dataDumpsPath: './data-dumps',
-      graphicsPath: './data-dumps/graphics'
+      graphicsPath: path.resolve(process.cwd(), DEFAULT_GRAPHICS_PATH)
     }
     this.processedMods = new Set()
     this.cliArgs = this.parseCommandLineArgs()
@@ -41,6 +42,7 @@ class ModGraphicsCopier {
     const parsed = {
       gameFolder: null,
       userFolder: null,
+      graphicsPath: path.resolve(process.cwd(), DEFAULT_GRAPHICS_PATH),
       help: false
     }
 
@@ -54,6 +56,10 @@ class ModGraphicsCopier {
         case '-u':
         case '--user-folder':
           parsed.userFolder = args[++i]
+          break
+        case '-o':
+        case '--output':
+          parsed.graphicsPath = path.resolve(args[++i])
           break
         case '-h':
         case '--help':
@@ -77,12 +83,13 @@ class ModGraphicsCopier {
     console.log('Options:')
     console.log('  -g, --game-folder PATH    Path to Factorio game folder')
     console.log('  -u, --user-folder PATH    Path to Factorio user folder (optional)')
+    console.log(`  -o, --output PATH         Output directory (default: ${DEFAULT_GRAPHICS_PATH}, same as process-factorio-data)`)
     console.log('  -h, --help               Show this help message')
     console.log('')
     console.log('Examples:')
     console.log('  node scripts/copy-mod-graphics.js')
     console.log('  node scripts/copy-mod-graphics.js -g /path/to/factorio')
-    console.log('  node scripts/copy-mod-graphics.js -g /factorio -u /userdata')
+    console.log('  node scripts/copy-mod-graphics.js -g /factorio -o ./generated/graphics')
     console.log('')
   }
 
@@ -94,6 +101,11 @@ class ModGraphicsCopier {
     if (this.cliArgs.help) {
       this.showHelp()
       return
+    }
+
+    // Apply CLI overrides
+    if (this.cliArgs.graphicsPath) {
+      this.config.graphicsPath = this.cliArgs.graphicsPath
     }
 
     // Validate required paths
@@ -149,10 +161,6 @@ class ModGraphicsCopier {
    */
   setupGraphicsDirectory() {
     console.log('📁 Setting up graphics directory...')
-
-    if (!fs.existsSync(this.config.dataDumpsPath)) {
-      fs.mkdirSync(this.config.dataDumpsPath, { recursive: true })
-    }
 
     if (!fs.existsSync(this.config.graphicsPath)) {
       fs.mkdirSync(this.config.graphicsPath, { recursive: true })

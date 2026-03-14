@@ -667,8 +667,10 @@ export function useFactorioRenderingMapping() {
   }
 
   function convertEffectLayer(layers, animation_key) {
-    return []
-    //todo fix this
+    if (!Array.isArray(layers) || layers.length === 0) {
+      return []
+    }
+
     layers = layers.map(layer => {
       let { animation } = layer
       if (!animation) {
@@ -677,8 +679,11 @@ export function useFactorioRenderingMapping() {
       if (animation_key) {
         animation = animation[animation_key]
       }
+      if (!animation) {
+        return null
+      }
       if (animation.north_animation || animation.north_position) {
-        console.log('effect layer has postitional animation')
+        // Positional effect variants are not mapped yet; skip rather than returning malformed data.
         return null
       }
       const newAnimation = {
@@ -697,7 +702,8 @@ export function useFactorioRenderingMapping() {
     if (layer.sheets) {
       sheet = layer.sheets[0]
     } else if (layer.sheet) {
-      sheet = layer.sheet
+      const { sheet: singleSheet } = layer
+      sheet = singleSheet
     } else if (layer.north) {
       return layer.north
     } else {

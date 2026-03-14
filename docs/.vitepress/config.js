@@ -1,9 +1,11 @@
-import { readFileSync, readdirSync, statSync } from 'fs'
-import { resolve, basename } from 'path'
+import { readFileSync, readdirSync, statSync, existsSync } from 'fs'
+import { resolve, basename, join } from 'path'
 
 import { defineConfig } from 'vitepress'
 
 import { configData } from './config-data.js'
+
+const generatedDir = resolve(process.cwd(), 'generated')
 
 // Clone the imported config data to avoid mutations
 const modifiedConfigData = { ...configData }
@@ -161,6 +163,39 @@ modifiedConfigData.themeConfig.sidebar = sidebarConfig
 
 export default defineConfig({
   ...modifiedConfigData,
+  vite: {
+    server: {
+      fs: { allow: [process.cwd(), resolve(process.cwd(), 'generated')] }
+    },
+    plugins: [
+      {
+        name: 'serve-generated',
+        configureServer(server) {
+          const base = (configData.base || '/').replace(/\/$/, '') || ''
+          const generatedPrefix = base ? `${base}/generated` : '/generated'
+          const handler = (req, res, next) => {
+            const url = req.url?.split('?')[0] ?? ''
+            if (!url.startsWith(`${generatedPrefix}/`)) return next()
+            const rel = url.slice(generatedPrefix.length).replace(/^\//, '')
+            const filePath = join(generatedDir, rel)
+            if (!existsSync(filePath)) return next()
+            const stat = safeStat(filePath)
+            if (!stat?.isFile()) return next()
+            const ct =
+              /\.json$/.test(rel) ? 'application/json' :
+              /\.webp$/.test(rel) ? 'image/webp' :
+              'image/png'
+            res.setHeader('Content-Type', ct)
+            res.end(readFileSync(filePath))
+          }
+          return () => {
+            // Insert at start so we run before Vite's SPA fallback
+            server.middlewares.stack.unshift({ route: '', handle: handler })
+          }
+        }
+      }
+    ]
+  },
   transformPageData(pageData) {
     try {
       const markdownPath = resolve(process.cwd(), 'docs', pageData.relativePath)

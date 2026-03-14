@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 
 import fs from 'fs'
-import path from 'path'
 
 /**
  * Script to parse technologies JSON and output all technology unlock effects

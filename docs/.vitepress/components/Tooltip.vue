@@ -25,9 +25,15 @@
           @mouseleave="handleTooltipMouseLeave"
         >
           <div class="tooltip-content">
-            <div v-if="isLoading" class="tooltip-loading">Loading...</div>
+            <div
+              v-if="isLoading"
+              class="tooltip-loading"
+            >Loading...</div>
             <template v-else>
-              <template v-for="(tooltipData, index) in tooltipDatas" :key="index">
+              <template
+                v-for="(tooltipData, index) in tooltipDatas"
+                :key="index"
+              >
                 <div class="tooltip-header">
                   <div
                     v-if="tooltipData?.title"
@@ -59,7 +65,10 @@
                   />
                 </div>
                 <!-- Render sections using DetailsPaneSection components -->
-                <div v-if="tooltipData?.sections?.length" class="tooltip-sections">
+                <div
+                  v-if="tooltipData?.sections?.length"
+                  class="tooltip-sections"
+                >
                   <DetailsPaneSection
                     v-for="(section, sectionIndex) in tooltipData.sections"
                     :key="`${section.type}-${sectionIndex}`"

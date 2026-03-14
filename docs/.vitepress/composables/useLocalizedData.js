@@ -1,6 +1,8 @@
 import { ref } from 'vue'
 import { withBase } from 'vitepress'
 
+import { resolveDataUrl } from '../../../src/components/assetResolver.js'
+
 // Shared state for localized data
 const localizedData = ref(null)
 const isLoading = ref(false)
@@ -25,7 +27,7 @@ export function useLocalizedData() {
     isLoading.value = true
     error.value = null
 
-    fetchPromise = fetch(withBase('/data/locale-en.json'))
+    fetchPromise = fetch(resolveDataUrl('locale-en.json', withBase))
       .then(response => {
         if (!response.ok) {
           throw new Error(`Failed to fetch localized data: ${response.status}`)

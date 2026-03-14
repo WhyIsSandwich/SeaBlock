@@ -1,8 +1,15 @@
 <template>
   <div :class="$style.factoripedia">
-    <div v-if="isMobileViewport" :class="$style.mobilePanelControls">
+    <div
+      v-if="isMobileViewport"
+      :class="$style.mobilePanelControls"
+    >
       <span :class="$style.mobilePanelToggleLabel">View</span>
-      <div :class="$style.mobilePanelToggle" role="tablist" aria-label="Switch mobile panel">
+      <div
+        :class="$style.mobilePanelToggle"
+        role="tablist"
+        aria-label="Switch mobile panel"
+      >
         <span
           :class="[
             $style.mobilePanelIndicator,
@@ -57,8 +64,8 @@
                 }
               ]"
               :disabled="disabledFilters.has(category.key)"
-              @click="!disabledFilters.has(category.key) && selectCategory(category.key)"
               :style="categoryGrid.itemStyles"
+              @click="!disabledFilters.has(category.key) && selectCategory(category.key)"
             >
               <SpriteIcon
                 v-if="category.icon"
@@ -78,7 +85,7 @@
             type="text"
             placeholder="Search recipes..."
             :class="$style.searchInput"
-          />
+          >
         </div>
 
         <!-- Recipe Grid -->
@@ -87,24 +94,30 @@
           :class="$style.itemGrid"
           :style="{ ...itemGrid.containerStyles, overflowY: 'scroll' }"
         >
-          <template v-for="subgroup in groupedRecipes" :key="subgroup.subgroup">
+          <template
+            v-for="subgroup in groupedRecipes"
+            :key="subgroup.subgroup"
+          >
             <!-- Subgroup wrapper -->
             <div
               v-if="subgroup.recipes.length > 0"
               :class="$style.subgroupGrid"
               :style="itemGrid.subgroupStyles"
             >
-              <template :key="item.name" v-for="item in subgroup.recipes">
+              <template
+                v-for="item in subgroup.recipes"
+                :key="item.name"
+              >
                 <IconButton
                   :type="getPrimaryType(item)"
                   :name="item.name"
                   :size="itemGrid.buttonSize"
                   :is-selected="
                     selectedItem?.name === item.name &&
-                    getPrimaryType(selectedItem) === getPrimaryType(item)
+                      getPrimaryType(selectedItem) === getPrimaryType(item)
                   "
-                  @click="selectItem(getPrimaryType(item), item.name, item)"
                   :style="itemGrid.itemStyles"
+                  @click="selectItem(getPrimaryType(item), item.name, item)"
                 />
               </template>
             </div>

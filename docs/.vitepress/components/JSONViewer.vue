@@ -1,8 +1,19 @@
 <template>
   <div :class="$style.jsonViewer">
     <div :class="$style.jsonContent">
-      <button :class="$style.copyButton" @click="copyToClipboard" title="Copy JSON">📋</button>
-      <JsonNode :data="data" :level="0" :path="[]" @copy="copyToClipboard" />
+      <button
+        :class="$style.copyButton"
+        title="Copy JSON"
+        @click="copyToClipboard"
+      >
+        📋
+      </button>
+      <JsonNode
+        :data="data"
+        :level="0"
+        :path="[]"
+        @copy="copyToClipboard"
+      />
     </div>
   </div>
 </template>

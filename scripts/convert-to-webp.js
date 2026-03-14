@@ -9,9 +9,11 @@ import os from 'os'
 const execAsync = promisify(exec)
 
 // Configuration
+const DEFAULT_GRAPHICS_SOURCE = './generated/data/dev'
+
 const CONFIG = {
-  // Source directory
-  sourceDir: '/workspaces/SeaBlock/data-dumps/graphics',
+  // Source directory (PNG files in */graphics/* subdirs)
+  sourceDir: path.resolve(process.cwd(), DEFAULT_GRAPHICS_SOURCE),
 
   // WebP quality (0-100, higher = better quality, larger file)
   quality: 95,
@@ -91,7 +93,7 @@ class WebPConverter {
 
   async convertFile(pngPath) {
     const webpPath = pngPath.replace(/\.png$/i, '.webp')
-    const tempWebpPath = webpPath + '.tmp'
+    const tempWebpPath = `${webpPath  }.tmp`
 
     try {
       // Create output directory if it doesn't exist
@@ -262,6 +264,10 @@ async function main() {
   // Parse command line arguments
   for (let i = 0; i < args.length; i++) {
     switch (args[i]) {
+      case '--source':
+      case '-s':
+        config.sourceDir = path.resolve(args[++i])
+        break
       case '--quality':
       case '-q':
         config.quality = parseInt(args[++i])
@@ -284,6 +290,7 @@ WebP Converter - High Throughput PNG to WebP Conversion
 Usage: node convert-to-webp.js [options]
 
 Options:
+  -s, --source <path>        Source directory (default: ${DEFAULT_GRAPHICS_SOURCE})
   -q, --quality <number>     WebP quality (0-100, default: 95)
   -c, --concurrency <number> Max parallel processes (default: CPU count)
   --no-preserve              Remove original PNG files after conversion
@@ -292,6 +299,7 @@ Options:
 
 Examples:
   node convert-to-webp.js
+  node convert-to-webp.js --source ./generated/data/dev
   node convert-to-webp.js --quality 90 --concurrency 8
   node convert-to-webp.js --no-preserve --overwrite
         `)

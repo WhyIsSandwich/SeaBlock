@@ -47,7 +47,10 @@
           :size="size"
           :title="showBrowserTooltip ? resolvedTitle : null"
         />
-        <span v-if="label" :class="$style.iconLabel">
+        <span
+          v-if="label"
+          :class="$style.iconLabel"
+        >
           {{ label }}
         </span>
       </div>

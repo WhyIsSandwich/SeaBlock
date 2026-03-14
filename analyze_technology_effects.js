@@ -40,7 +40,7 @@ function analyzeTechnologies() {
             effectsByType.get(effect.type).push({
               technology: techName,
               displayName: techData.displayName,
-              effect: effect
+              effect
             })
           })
         }

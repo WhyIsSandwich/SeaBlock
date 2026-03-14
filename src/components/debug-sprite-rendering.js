@@ -6,8 +6,9 @@
  * Simple test to debug why sprites aren't rendering
  */
 
-import { createCanvas, loadImage } from 'canvas'
 import fs from 'fs'
+
+import { createCanvas, loadImage } from 'canvas'
 
 console.log('🔍 Debug Sprite Rendering')
 console.log('========================\n')

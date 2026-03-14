@@ -8,6 +8,8 @@
 import { ref } from 'vue'
 import { withBase } from 'vitepress'
 
+import { resolveDataUrl } from '../components/assetResolver.js'
+
 import { postProcessFactorioData } from './factorioDataPostProcessing.js'
 import { useUnifiedObjects } from './useUnifiedObjects.js'
 import { useFactorioPrototypeMapping } from './useFactorioPrototypeMapping.js'
@@ -40,7 +42,7 @@ function createFactorioDataInstance() {
    */
   async function loadRawData() {
     try {
-      const response = await fetch(withBase('/data/data.json'))
+      const response = await fetch(resolveDataUrl('data.json', withBase))
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
       rawData.value = await response.json()
       console.log('✓ Loaded raw data')
@@ -55,7 +57,7 @@ function createFactorioDataInstance() {
    */
   async function loadLocaleData(language = 'en') {
     try {
-      const response = await fetch(withBase(`/data/locale-${language}.json`))
+      const response = await fetch(resolveDataUrl(`locale-${language}.json`, withBase))
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
       localeData.value = await response.json()
       currentLanguage.value = language

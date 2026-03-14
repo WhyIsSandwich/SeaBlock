@@ -1,10 +1,16 @@
 <template>
   <div :class="$style.rawSection">
-    <button :class="$style.rawSectionHeader" @click="toggle">
+    <button
+      :class="$style.rawSectionHeader"
+      @click="toggle"
+    >
       <span :class="$style.rawSectionTitle">{{ title }}</span>
       <span :class="$style.rawSectionToggle">{{ isOpen ? '▼' : '▶' }}</span>
     </button>
-    <div v-if="isOpen" :class="$style.rawSectionContent">
+    <div
+      v-if="isOpen"
+      :class="$style.rawSectionContent"
+    >
       <JSONViewer :data="data" />
     </div>
   </div>

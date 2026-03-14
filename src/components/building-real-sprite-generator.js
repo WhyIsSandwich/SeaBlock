@@ -9,6 +9,7 @@
 
 import fs from 'fs'
 import path from 'path'
+
 import GIFEncoder from 'gifencoder'
 import { createCanvas, loadImage } from 'canvas'
 import sharp from 'sharp'
@@ -97,7 +98,7 @@ function createPlaceholderImage(filename) {
     src: filename,
     onload: null,
     onerror: null,
-    canvas: canvas // Store the canvas for drawing
+    canvas // Store the canvas for drawing
   }
 }
 
@@ -207,8 +208,8 @@ class RealSpriteFrameGenerator {
         direction: 0,
         activity: 1.0,
         workingState: 'idle',
-        time: time,
-        frame: frame,
+        time,
+        frame,
         // Scale up animation speed for faster GIF generation
         animationSpeedMultiplier: 60.0
       })
@@ -463,7 +464,7 @@ class RealSpriteFrameGenerator {
 
   getDimensions(processedData) {
     if (processedData.directions?.north?.layers) {
-      const layers = processedData.directions.north.layers
+      const {layers} = processedData.directions.north
       const maxWidth = Math.max(...layers.map(l => (l.width || 0) + (l.x || 0)))
       const maxHeight = Math.max(...layers.map(l => (l.height || 0) + (l.y || 0)))
       return { width: maxWidth, height: maxHeight }
@@ -474,7 +475,7 @@ class RealSpriteFrameGenerator {
   getFeatureList(processedData) {
     const features = []
     if (processedData.directions?.north?.layers) {
-      const layers = processedData.directions.north.layers
+      const {layers} = processedData.directions.north
       if (layers.some(l => l.drawAsShadow)) features.push('shadows')
       if (layers.some(l => l.drawAsGlow)) features.push('glow effects')
       if (layers.some(l => l.drawAsLight)) features.push('light effects')
@@ -523,9 +524,9 @@ async function generateRealBuildingAnimations(
   const engine = createFactorioAnimationEngine({
     loadImage: imageLoader,
     applyDOMChanges: domChanges.apply,
-    canvas: canvas,
+    canvas,
     devicePixelRatio: 2,
-    graphicsPathMap: graphicsPathMap
+    graphicsPathMap
   })
 
   console.log('✅ Real sprite generation environment ready\n')
@@ -609,7 +610,7 @@ async function generateRealBuildingAnimations(
           buildingName,
           success: true,
           frameCount: frames.length,
-          animationPaths: animationPaths,
+          animationPaths,
           summary
         })
       } else {

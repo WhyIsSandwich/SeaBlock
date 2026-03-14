@@ -15,9 +15,11 @@ import { useUnifiedObjects } from '../src/composables/useUnifiedObjects.js'
  * by the frontend components.
  */
 
+const DEFAULT_OUTPUT_PATH = './generated/data/dev'
+
 class TooltipGenerator {
-  constructor() {
-    this.outputPath = './docs/public/data'
+  constructor(outputPath = DEFAULT_OUTPUT_PATH) {
+    this.outputPath = path.resolve(process.cwd(), outputPath)
     this.rawData = null
     this.organizedData = null
     this.localeData = null
@@ -607,7 +609,15 @@ class TooltipGenerator {
 
 // Run the generator if this script is executed directly
 if (import.meta.url === `file://${process.argv[1]}`) {
-  const generator = new TooltipGenerator()
+  const args = process.argv.slice(2)
+  let outputPath = DEFAULT_OUTPUT_PATH
+  for (let i = 0; i < args.length; i++) {
+    if ((args[i] === '--output' || args[i] === '-o') && i + 1 < args.length) {
+      outputPath = args[i + 1]
+      break
+    }
+  }
+  const generator = new TooltipGenerator(outputPath)
 
   // Check for verbose flag
   const verbose = process.argv.includes('--verbose') || process.argv.includes('-v')

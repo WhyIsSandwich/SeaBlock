@@ -1,15 +1,24 @@
 <template>
   <div :class="$style.jsonNode">
     <!-- Object/Array node -->
-    <div v-if="isObjectOrArray" :class="$style.nodeContainer">
-      <div :class="$style.nodeHeader" @click="toggleExpanded">
+    <div
+      v-if="isObjectOrArray"
+      :class="$style.nodeContainer"
+    >
+      <div
+        :class="$style.nodeHeader"
+        @click="toggleExpanded"
+      >
         <span :class="$style.expandIcon">{{ isExpanded ? '▼' : '▶' }}</span>
         <span :class="$style.nodeKey">{{ getNodeLabel() }}</span>
         <span :class="$style.nodeType">{{ getTypeLabel() }}</span>
         <span :class="$style.nodeCount">{{ getCountLabel() }}</span>
       </div>
 
-      <div v-if="isExpanded" :class="$style.nodeChildren">
+      <div
+        v-if="isExpanded"
+        :class="$style.nodeChildren"
+      >
         <JsonNode
           v-for="(value, key) in getObjectEntries()"
           :key="key"
@@ -27,7 +36,10 @@
       v-else
       :class="[$style.primitiveNode, { [$style.primitiveNodeWithKey]: parentKey !== null }]"
     >
-      <span v-if="parentKey !== null" :class="$style.primitiveKey">{{ parentKey }}:</span>
+      <span
+        v-if="parentKey !== null"
+        :class="$style.primitiveKey"
+      >{{ parentKey }}:</span>
       <span :class="[$style[getValueClass()]]">{{ formatValue() }}</span>
     </div>
   </div>

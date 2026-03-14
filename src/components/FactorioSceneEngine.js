@@ -127,11 +127,22 @@ export class FactorioSceneEngine {
     this.startTime = Date.now()
     this.tileData = new Map() // Cache for tile data
     this.tileImages = new Map() // Cache for loaded tile images
+    this.enableDiagnostics = false
   }
 
   // Set scene size in tiles
   setSceneSize(width, height) {
     this.sceneSize = { width, height }
+  }
+
+  setDiagnosticsEnabled(enabled) {
+    this.enableDiagnostics = Boolean(enabled)
+  }
+
+  logDiagnostic(...args) {
+    if (this.enableDiagnostics) {
+      console.log(...args)
+    }
   }
 
   // Load tile data from Factorio data
@@ -144,7 +155,6 @@ export class FactorioSceneEngine {
 
     if (tileData) {
       this.tileData.set(tileName, tileData)
-      console.log(`✅ Loaded tile data for: ${tileName}`)
     } else {
       console.warn(`⚠️ No tile data found for: ${tileName}`)
     }
@@ -247,12 +257,6 @@ export class FactorioSceneEngine {
     const canvasWidth = ctx.canvas.width
     const canvasHeight = ctx.canvas.height
 
-    // Debug logging
-    if (Math.random() < 0.01) {
-      // Log 1% of the time
-      console.log(`🎬 SceneEngine.render: ${this.entities.size} entities, ${this.tiles.size} tiles`)
-    }
-
     // Apply camera transformation
     this.camera.applyTransform(ctx, canvasWidth, canvasHeight)
 
@@ -342,8 +346,6 @@ export class FactorioSceneEngine {
         const sourceX = tileIndex * spriteWidth
         const sourceY = 0
 
-        this.logTileImage(tileImage)
-
         ctx.drawImage(
           tileImage,
           sourceX,
@@ -362,23 +364,29 @@ export class FactorioSceneEngine {
         ctx.fillRect(0, 0, this.tileSize, this.tileSize)
       }
 
-      // Apply tile tint if specified
-      if (false && tile.tint) {
-        ctx.globalAlpha = tile.tint.a
-        ctx.fillStyle = `rgba(${Math.floor(tile.tint.r * 255)}, ${Math.floor(tile.tint.g * 255)}, ${Math.floor(tile.tint.b * 255)}, ${tile.tint.a})`
-        ctx.fillRect(0, 0, this.tileSize, this.tileSize)
+      // Apply tint only when it deviates from the neutral "no tint" value.
+      const { tint } = tile
+      const shouldApplyTint =
+        tint &&
+        ((tint.r ?? 1) !== 1 || (tint.g ?? 1) !== 1 || (tint.b ?? 1) !== 1 || (tint.a ?? 1) !== 1)
+
+      if (shouldApplyTint) {
+        const tintR = Math.max(0, Math.min(255, Math.round((tint.r ?? 1) * 255)))
+        const tintG = Math.max(0, Math.min(255, Math.round((tint.g ?? 1) * 255)))
+        const tintB = Math.max(0, Math.min(255, Math.round((tint.b ?? 1) * 255)))
+        const tintA = Math.max(0, Math.min(1, tint.a ?? 1))
+
+        // Use source-atop so tint only affects already-drawn tile pixels.
+        ctx.globalCompositeOperation = 'source-atop'
+        ctx.globalAlpha = tintA
+        ctx.fillStyle = `rgb(${tintR}, ${tintG}, ${tintB})`
+        ctx.fillRect(offsetX, offsetY, this.tileSize, this.tileSize)
       }
 
       ctx.restore()
     }
 
     ctx.restore()
-  }
-
-  logTileImage = tileImage => {
-    console.log(tileImage)
-    debugger
-    this.logTileImage = () => {}
   }
 
   // Render background checkerboard pattern for empty areas
@@ -457,11 +465,9 @@ export class FactorioSceneEngine {
         return a.position.x - b.position.x
       })
 
-    const entityPromises = []
     for (const entity of sortedEntities) {
-      entityPromises.push(this.renderEntity(ctx, entity))
+      await this.renderEntity(ctx, entity)
     }
-    await Promise.all(entityPromises)
   }
 
   // Render a single entity
@@ -488,14 +494,6 @@ export class FactorioSceneEngine {
     // Apply entity scale
     if (entity.scale !== 1) {
       ctx.scale(entity.scale, entity.scale)
-    }
-
-    // Debug: Log entity rendering
-    if (Math.random() < 0.01) {
-      // Log 1% of the time
-      console.log(
-        `🎭 Rendering entity: ${entity.name} at world (${worldX}, ${worldY}) from position (${entity.position.x}, ${entity.position.y})`
-      )
     }
 
     // Use the animation engine's new custom positioning feature

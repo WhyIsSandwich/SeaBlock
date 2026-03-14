@@ -189,6 +189,67 @@ function resetBlendMode(ctx) {
   ctx.restore()
 }
 
+function clamp01(value, fallback = 1) {
+  const numeric = Number.isFinite(value) ? value : fallback
+  return Math.max(0, Math.min(1, numeric))
+}
+
+function normalizeTint(tint) {
+  if (!tint || typeof tint !== 'object') return null
+  return {
+    r: clamp01(tint.r, 1),
+    g: clamp01(tint.g, 1),
+    b: clamp01(tint.b, 1),
+    a: clamp01(tint.a, 1)
+  }
+}
+
+function combineTints(baseTint, runtimeTint) {
+  if (!baseTint) return runtimeTint
+  if (!runtimeTint) return baseTint
+
+  return {
+    r: baseTint.r * runtimeTint.r,
+    g: baseTint.g * runtimeTint.g,
+    b: baseTint.b * runtimeTint.b,
+    a: baseTint.a * runtimeTint.a
+  }
+}
+
+function isNeutralTint(tint) {
+  return tint.r === 1 && tint.g === 1 && tint.b === 1 && tint.a === 1
+}
+
+function getEffectiveLayerTint(layer, props = {}) {
+  const baseTint = normalizeTint(layer.tint)
+  const runtimeTint = layer.apply_runtime_tint ? normalizeTint(props.tint) : null
+  const combinedTint = combineTints(baseTint, runtimeTint)
+
+  if (!combinedTint || isNeutralTint(combinedTint)) {
+    return null
+  }
+
+  return combinedTint
+}
+
+function createScratchCanvas(width, height) {
+  const safeWidth = Math.max(1, Math.ceil(width))
+  const safeHeight = Math.max(1, Math.ceil(height))
+
+  if (typeof OffscreenCanvas !== 'undefined') {
+    return new OffscreenCanvas(safeWidth, safeHeight)
+  }
+
+  if (typeof document !== 'undefined' && typeof document.createElement === 'function') {
+    const canvas = document.createElement('canvas')
+    canvas.width = safeWidth
+    canvas.height = safeHeight
+    return canvas
+  }
+
+  return null
+}
+
 // Factorio blend mode implementations
 const FACTORIO_BLEND_MODES = {
   normal: 'source-over',
@@ -585,18 +646,84 @@ export function createFactorioAnimationEngine({
               destY = (canvasHeight - scaledHeight) / 2 + pixelShiftY
             }
 
-            //console.log(destX, destY, layer.width, layer.height)
-            ctx.drawImage(
-              imageData,
-              frameX,
-              frameY, // Source position in sprite sheet
-              layer.width,
-              layer.height, // Source size
-              destX,
-              destY, // Destination position
-              scaledWidth,
-              scaledHeight // Destination size (scaled)
-            )
+            const effectiveTint = getEffectiveLayerTint(layer, props)
+
+            // Standard render path if no tint is requested.
+            if (!effectiveTint) {
+              ctx.drawImage(
+                imageData,
+                frameX,
+                frameY, // Source position in sprite sheet
+                layer.width,
+                layer.height, // Source size
+                destX,
+                destY, // Destination position
+                scaledWidth,
+                scaledHeight // Destination size (scaled)
+              )
+            } else {
+              // Render tinted sprite on an isolated surface to avoid tinting previously drawn layers.
+              const scratchCanvas = createScratchCanvas(scaledWidth, scaledHeight)
+              const scratchCtx = scratchCanvas?.getContext?.('2d')
+
+              if (!scratchCtx) {
+                // Fallback: apply alpha-only tint when scratch canvas is unavailable.
+                ctx.save()
+                ctx.globalAlpha *= effectiveTint.a
+                ctx.drawImage(
+                  imageData,
+                  frameX,
+                  frameY,
+                  layer.width,
+                  layer.height,
+                  destX,
+                  destY,
+                  scaledWidth,
+                  scaledHeight
+                )
+                ctx.restore()
+              } else {
+                scratchCtx.clearRect(0, 0, scratchCanvas.width, scratchCanvas.height)
+                scratchCtx.drawImage(
+                  imageData,
+                  frameX,
+                  frameY,
+                  layer.width,
+                  layer.height,
+                  0,
+                  0,
+                  scaledWidth,
+                  scaledHeight
+                )
+
+                // Factorio mask tint behavior:
+                // 1) multiply sprite RGB by tint color
+                // 2) restore original sprite alpha mask
+                // 3) apply tint alpha at final composite stage
+                scratchCtx.globalCompositeOperation = 'multiply'
+                scratchCtx.fillStyle = `rgb(${Math.round(effectiveTint.r * 255)}, ${Math.round(effectiveTint.g * 255)}, ${Math.round(effectiveTint.b * 255)})`
+                scratchCtx.fillRect(0, 0, scaledWidth, scaledHeight)
+
+                scratchCtx.globalCompositeOperation = 'destination-in'
+                scratchCtx.drawImage(
+                  imageData,
+                  frameX,
+                  frameY,
+                  layer.width,
+                  layer.height,
+                  0,
+                  0,
+                  scaledWidth,
+                  scaledHeight
+                )
+                scratchCtx.globalCompositeOperation = 'source-over'
+
+                ctx.save()
+                ctx.globalAlpha *= effectiveTint.a
+                ctx.drawImage(scratchCanvas, destX, destY, scaledWidth, scaledHeight)
+                ctx.restore()
+              }
+            }
           }
 
           // Restore context state
@@ -625,17 +752,21 @@ export function createFactorioAnimationEngine({
 
       const { getRenderingMethod, getProcessedLayers } = useFactorioRenderingMapping()
 
+      const cacheKey = animationData.name || animationData.filename
+
       let processedLayersPromise = null
-      if (this.promiseCache.has(animationData.name)) {
-        processedLayersPromise = this.promiseCache.get(animationData.name)
+      if (cacheKey && this.promiseCache.has(cacheKey)) {
+        processedLayersPromise = this.promiseCache.get(cacheKey)
       } else {
-        const renderingMethod = getRenderingMethod(animationData)
+        const renderingMethod = getRenderingMethod(animationData) || [animationData]
         processedLayersPromise = getProcessedLayers(
           renderingMethod,
           props.animation_speed,
           this.imageLoader
         )
-        this.promiseCache.set(animationData.name, processedLayersPromise)
+        if (cacheKey) {
+          this.promiseCache.set(cacheKey, processedLayersPromise)
+        }
       }
 
       const processedLayers = await processedLayersPromise

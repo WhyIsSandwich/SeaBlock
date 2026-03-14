@@ -7,9 +7,9 @@
  * against each building entity, producing real rendered images and validation reports.
  */
 
-import { createFactorioAnimationEngine } from './FactorioAnimationEngine.js'
 import fs from 'fs'
-import path from 'path'
+
+import { createFactorioAnimationEngine } from './FactorioAnimationEngine.js'
 
 console.log('🏭 Building Renderer Test Script')
 console.log('================================\n')
@@ -383,7 +383,7 @@ async function runBuildingTests() {
   const engine = createFactorioAnimationEngine({
     loadImage: imageLoader,
     applyDOMChanges: domChanges.apply,
-    canvas: canvas,
+    canvas,
     devicePixelRatio: 2
   })
 

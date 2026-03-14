@@ -1,5 +1,8 @@
 <template>
-  <div class="factorio-scene-container" :style="containerStyle">
+  <div
+    class="factorio-scene-container"
+    :style="containerStyle"
+  >
     <!-- Scene Canvas -->
     <canvas
       ref="sceneCanvas"
@@ -25,9 +28,21 @@
           <span v-else>⏸</span>
         </button>
 
-        <button class="control-button" title="Reset camera" @click="resetCamera">🎯</button>
+        <button
+          class="control-button"
+          title="Reset camera"
+          @click="resetCamera"
+        >
+          🎯
+        </button>
 
-        <button class="control-button" title="Fit scene in view" @click="fitScene">📐</button>
+        <button
+          class="control-button"
+          title="Fit scene in view"
+          @click="fitScene"
+        >
+          📐
+        </button>
       </div>
 
       <div class="control-group">
@@ -40,7 +55,7 @@
           :step="0.1"
           :value="cameraZoom"
           @input="onZoomChange"
-        />
+        >
       </div>
 
       <div class="control-group">
@@ -75,6 +90,7 @@ import { withBase } from 'vitepress'
 import { createFactorioAnimationEngine } from '../../../src/components/FactorioAnimationEngine.js'
 import { createFactorioSceneEngine } from '../../../src/components/FactorioSceneEngine.js'
 import { useFactorioPrototypeMapping } from '../../../src/composables/useFactorioPrototypeMapping.js'
+import { resolveAssetUrl, resolveDataUrl } from '../../../src/components/assetResolver.js'
 
 export default {
   name: 'FactorioScene',
@@ -185,6 +201,10 @@ export default {
       if (!sceneEngine) return
 
       try {
+        // Rebuild scene state on each load to avoid entity/tile accumulation.
+        sceneEngine.entities.clear()
+        sceneEngine.tiles.clear()
+
         // Set scene size
         if (data.size) {
           sceneEngine.setSceneSize(data.size.width, data.size.height)
@@ -214,15 +234,16 @@ export default {
             )
 
             // Load real Factorio entity data
-            const realEntityData = await loadEntityData(entityData.name)
+            let resolvedEntityData = await loadEntityData(entityData.name)
 
-            console.log(`🔍 Raw entity data for ${entityData.name}:`, realEntityData)
+            console.log(`🔍 Raw entity data for ${entityData.name}:`, resolvedEntityData)
 
-            if (!realEntityData) {
+            if (!resolvedEntityData) {
               console.warn(`⚠️ No entity data found for ${entityData.name}, creating fallback`)
               // Create a simple fallback entity data
               const fallbackData = {
                 name: entityData.name,
+                type: 'simple-entity',
                 filename: `${entityData.name}.png`,
                 width: 64,
                 height: 64,
@@ -242,14 +263,19 @@ export default {
                   }
                 ]
               }
-              const realEntityData = fallbackData
+              resolvedEntityData = fallbackData
+            }
+
+            if (!resolvedEntityData) {
+              console.warn(`⚠️ Skipping ${entityData.name} because animation data is unavailable`)
+              return
             }
 
             const entity = sceneEngine.addEntity(
               entityData.id || `entity-${Math.random()}`,
               entityData.name,
               entityData.position,
-              realEntityData, // Use real Factorio data instead of mock
+              resolvedEntityData, // Use real Factorio data instead of mock
               {
                 rotation: entityData.rotation || 0,
                 tint: entityData.tint || { r: 1, g: 1, b: 1, a: 1 },
@@ -322,7 +348,7 @@ export default {
 
         // Load full data only once
         if (!fullDataCache) {
-          const response = await fetch(withBase('/data/data.json'))
+          const response = await fetch(resolveDataUrl('data.json', withBase))
           if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`)
           }
@@ -364,13 +390,11 @@ export default {
       }
     }
 
-    // Create image loader using the same system as FactorioSprite
+    // Create image loader using asset resolver (dev: local png, prod: CDN webp)
     const createImageLoader = () => {
       return filename => {
         const img = new Image()
-        // Convert Factorio path to public path using the same mapping as FactorioSprite
-        const publicPath = `https://factorio.whyissandwich.workers.dev/${filename.replace('.png', '.webp')}`
-        img.src = publicPath
+        img.src = resolveAssetUrl(filename, withBase)
         return img
       }
     }

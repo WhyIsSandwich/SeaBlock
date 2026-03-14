@@ -1,5 +1,8 @@
 import { ref, computed } from 'vue'
 import { withBase } from 'vitepress/client'
+
+import { resolveDataUrl } from '../components/assetResolver.js'
+
 import { useFactorioPrototypeMapping } from './useFactorioPrototypeMapping.js'
 
 // Global shared state - only one instance across the entire app
@@ -84,7 +87,7 @@ export function useTooltipData() {
 
     globalTooltipsDataPromise = (async () => {
       try {
-        const response = await fetch(withBase('/data/en-tooltips.json'))
+        const response = await fetch(resolveDataUrl('en-tooltips.json', withBase))
 
         if (!response.ok) {
           throw new Error(`Failed to load tooltips: ${response.status} ${response.statusText}`)

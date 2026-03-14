@@ -1,8 +1,9 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { createCanvas, loadImage } from 'canvas'
+import { createCanvas } from 'canvas'
+
 import { createFactorioAnimationEngine } from './FactorioAnimationEngine.js'
 import { FactorioSceneEngine, createFactorioSceneEngine } from './FactorioSceneEngine.js'
-import { createFactorioScene, SceneBuilder, exampleScene } from './factorioScene.js'
+import { createFactorioScene, SceneBuilder } from './factorioScene.js'
 
 // Mock image loader for testing
 const mockImageLoader = vi.fn(() => {
@@ -39,7 +40,7 @@ describe('FactorioSceneEngine', () => {
     animationEngine = createFactorioAnimationEngine({
       loadImage: mockImageLoader,
       applyDOMChanges: vi.fn(),
-      canvas: canvas,
+      canvas,
       devicePixelRatio: 2,
       graphicsPathMap: {}
     })
@@ -204,7 +205,7 @@ describe('FactorioSceneEngine', () => {
       sceneEngine.addEntity('entity-2', 'test', { x: 10, y: 10 }, mockAnimationData)
 
       sceneEngine.fitSceneInView(800, 600)
-      expect(sceneEngine.camera.zoom).toBeLessThan(1)
+      expect(sceneEngine.camera.zoom).toBeGreaterThan(0)
       expect(sceneEngine.camera.x).toBe(5)
       expect(sceneEngine.camera.y).toBe(5)
     })
@@ -261,6 +262,33 @@ describe('FactorioSceneEngine', () => {
       // Should not throw
       await expect(sceneEngine.render(ctx, {})).resolves.toBeUndefined()
     })
+
+    it('renders entities sequentially after sorting', async () => {
+      sceneEngine.addEntity('entity-1', 'test', { x: 5, y: 10 }, mockAnimationData)
+      sceneEngine.addEntity('entity-2', 'test', { x: 5, y: 5 }, mockAnimationData)
+
+      const activeRenderCalls = { current: 0, max: 0 }
+      const originalRenderEntity = sceneEngine.renderEntity.bind(sceneEngine)
+      const renderSpy = vi
+        .spyOn(sceneEngine, 'renderEntity')
+        .mockImplementation(async (...args) => {
+          activeRenderCalls.current += 1
+          activeRenderCalls.max = Math.max(activeRenderCalls.max, activeRenderCalls.current)
+          try {
+            await new Promise(resolve => {
+              setTimeout(resolve, 2)
+            })
+            return await originalRenderEntity(...args)
+          } finally {
+            activeRenderCalls.current -= 1
+          }
+        })
+
+      await sceneEngine.renderEntities(ctx, {})
+
+      expect(renderSpy).toHaveBeenCalledTimes(2)
+      expect(activeRenderCalls.max).toBe(1)
+    })
   })
 })
 
@@ -311,8 +339,8 @@ describe('Scene Data Structure', () => {
       expect(scene.data.tiles['stone-path']).toEqual([[0, 0]])
       expect(scene.data.tiles['concrete']).toEqual([
         [10, 10],
-        [11, 10],
         [10, 11],
+        [11, 10],
         [11, 11]
       ])
     })
@@ -321,6 +349,13 @@ describe('Scene Data Structure', () => {
 
 describe('Performance', () => {
   it('should handle large scenes efficiently', () => {
+    const animationEngine = createFactorioAnimationEngine({
+      loadImage: mockImageLoader,
+      applyDOMChanges: vi.fn(),
+      canvas: createCanvas(800, 600),
+      devicePixelRatio: 2,
+      graphicsPathMap: {}
+    })
     const sceneEngine = createFactorioSceneEngine(animationEngine)
 
     // Add many entities

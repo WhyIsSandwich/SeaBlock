@@ -35,8 +35,8 @@ try {
           if (entityType === 'item' && categoryKey !== 'item') {
             itemsOutsideItemCategory.push({
               category: categoryKey,
-              entityKey: entityKey,
-              entity: entity
+              entityKey,
+              entity
             })
           }
 
@@ -61,9 +61,9 @@ try {
           ) {
             itemSubtypes.push({
               category: categoryKey,
-              entityKey: entityKey,
+              entityKey,
               type: entity.type,
-              entity: entity
+              entity
             })
           }
         }

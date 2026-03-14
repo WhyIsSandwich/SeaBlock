@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { ref } from 'vue'
+
 import { useFactorioGrid } from '../useFactorioGrid.js'
 
 describe('useFactorioGrid', () => {

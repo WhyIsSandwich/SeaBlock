@@ -49,14 +49,16 @@ function formatInfiniteTechnologyDisplayName(prototypeName, displayName, technol
  * OUTPUT FILES:
  * - data.json: Original data-raw with minimal transforms (icon paths -> spritemap refs), compact
  * - locale-{lang}.json: Language-specific localization { lang, type: {name: {n: "", d: ""}} }, compact
- * - spritemap.json + spritemap.png + spritemap.webp: Skyline-packed, deduplicated icon atlas (max 64x64), compact
+ * - spritemap.json + spritemap.png: Skyline-packed, deduplicated icon atlas (max 64x64), compact
  * - type-mapping.json: Maps which prototypes belong to which type hierarchies, compact
  */
 
+const DEFAULT_OUTPUT_PATH = './generated/data/dev'
+
 class FactorioDataProcessorRefactored {
-  constructor(scriptOutputPath, locale = 'en') {
+  constructor(scriptOutputPath, locale = 'en', outputPath = DEFAULT_OUTPUT_PATH) {
     this.scriptOutputPath = scriptOutputPath
-    this.outputPath = './docs/public/data'
+    this.outputPath = outputPath
     this.locale = locale // Language code (e.g., 'en', 'de', 'fr')
     this.rawData = null
     this.localeData = {}
@@ -1010,18 +1012,6 @@ class FactorioDataProcessorRefactored {
       fs.writeFileSync(spritemapImageFile, spritemapBuffer)
       console.log(`✓ Generated spritemap image: ${spritemapImageFile}`)
 
-      // Write WebP variant for production/CDN delivery
-      const spritemapWebpFile = path.join(this.outputPath, 'spritemap.webp')
-      await sharp(spritemapBuffer)
-        .webp({
-          quality: 95,
-          lossless: false,
-          effort: 6,
-          smartSubsample: true
-        })
-        .toFile(spritemapWebpFile)
-      console.log(`✓ Generated spritemap WebP: ${spritemapWebpFile}`)
-
       // Write JSON (compact format for speed/size)
       const spritemapFile = path.join(this.outputPath, 'spritemap.json')
       const spritemapData = {
@@ -1124,6 +1114,8 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   const args = process.argv.slice(2)
   let scriptOutputPath = null
   let locale = 'en' // Default to English
+  let outputPath = DEFAULT_OUTPUT_PATH
+  let runTooltips = false
 
   for (let i = 0; i < args.length; i++) {
     if (args[i] === '--script-output' && i + 1 < args.length) {
@@ -1132,20 +1124,40 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     } else if (args[i] === '--locale' && i + 1 < args.length) {
       locale = args[i + 1]
       i++
+    } else if (args[i] === '--output' && i + 1 < args.length) {
+      outputPath = args[i + 1]
+      i++
+    } else if (args[i] === '--tooltips') {
+      runTooltips = true
     }
   }
 
   if (!scriptOutputPath) {
     console.error('✗ Script output path is required. Use --script-output PATH')
-    console.error('Usage: node process-factorio-data.js --script-output PATH [--locale LANG]')
+    console.error(
+      'Usage: node process-factorio-data.js --script-output PATH [--locale LANG] [--output PATH] [--tooltips]'
+    )
     console.error(
       'Example: node process-factorio-data.js --script-output ./script-output --locale en'
     )
+    console.error(`Output defaults to ${DEFAULT_OUTPUT_PATH}`)
     process.exit(1)
   }
 
-  const processor = new FactorioDataProcessorRefactored(scriptOutputPath, locale)
+  const processor = new FactorioDataProcessorRefactored(scriptOutputPath, locale, outputPath)
   processor.process()
+
+  if (runTooltips) {
+    const tooltipsPath = path.join(__dirname, 'generate-tooltips.js')
+    try {
+      execFileSync('node', [tooltipsPath, '--output', outputPath], {
+        stdio: 'inherit',
+        cwd: process.cwd()
+      })
+    } catch (err) {
+      process.exit(err.status ?? 1)
+    }
+  }
 }
 
 export default FactorioDataProcessorRefactored

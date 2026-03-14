@@ -1,4 +1,4 @@
-import { createFactorioSceneEngine } from './FactorioSceneEngine.js'
+import { FactorioSceneEngine } from './FactorioSceneEngine.js'
 
 /**
  * Factorio Scene
@@ -161,7 +161,7 @@ export function createFactorioScene(sceneData = null, animationEngine = null) {
   }
 
   // Create scene engine with animation engine
-  return createFactorioSceneEngine(animationEngine).createFromData(data, animationEngine)
+  return FactorioSceneEngine.createFromData(data, animationEngine)
 }
 
 // Scene builder utility for programmatic scene creation

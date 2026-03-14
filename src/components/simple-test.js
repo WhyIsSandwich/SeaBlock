@@ -153,7 +153,7 @@ const canvas = createMockCanvas()
 const engine = createFactorioAnimationEngine({
   loadImage: imageLoader,
   applyDOMChanges: domChanges.apply,
-  canvas: canvas,
+  canvas,
   devicePixelRatio: 2
 })
 
