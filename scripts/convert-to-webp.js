@@ -86,7 +86,7 @@ class WebPConverter {
     console.log('🔍 Scanning for PNG files in */graphics/* directories...')
 
     const findCommand = `find "${this.config.sourceDir}" -path "*/graphics/*" -name "*.png" -type f`
-    const { stdout } = await execAsync(findCommand)
+    const { stdout } = await execAsync(findCommand, { maxBuffer: 50 * 1024 * 1024 })
 
     const graphicsFiles = stdout
       .trim()

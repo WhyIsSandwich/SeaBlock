@@ -255,7 +255,7 @@ class CloudflareUploader {
     console.log('🔍 Scanning for WebP files in graphics directories...')
 
     const findCommand = `find "${this.config.sourceDir}" -path "*/graphics/*" -name "*.webp" -type f`
-    const { stdout } = await execAsync(findCommand)
+    const { stdout } = await execAsync(findCommand, { maxBuffer: 50 * 1024 * 1024 })
 
     const files = stdout
       .trim()
