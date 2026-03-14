@@ -6,10 +6,19 @@ import { defineConfig } from 'vitepress'
 import { configData } from './config-data.js'
 
 const generatedDir = resolve(process.cwd(), 'generated')
+const includeDevDocs = process.env.SEABLOCK_INCLUDE_DEV_DOCS === 'true'
+const devOnlyDocRoots = new Set(['governance'])
 
 // Clone the imported config data to avoid mutations
 const modifiedConfigData = { ...configData }
 modifiedConfigData.themeConfig = { ...configData.themeConfig }
+if (Array.isArray(configData.themeConfig?.nav)) {
+  modifiedConfigData.themeConfig.nav = configData.themeConfig.nav.filter(navItem => {
+    if (!navItem?.link || includeDevDocs) return true
+    const navPath = navItem.link.replace(/^\/+|\/+$/g, '')
+    return !devOnlyDocRoots.has(navPath)
+  })
+}
 
 // ---------- Helpers ----------
 function safeStat(p) {
@@ -151,6 +160,7 @@ if (modifiedConfigData.themeConfig?.nav) {
   modifiedConfigData.themeConfig.nav.forEach(navItem => {
     if (navItem?.link) {
       const navPath = navItem.link.replace(/^\/+|\/+$/g, '')
+      if (!includeDevDocs && devOnlyDocRoots.has(navPath)) return
       const folderPath = resolve(docsRoot, navPath)
       if (safeStat(folderPath)?.isDirectory()) {
         sidebarConfig[`/${navPath}/`] = buildSidebar(folderPath, navPath)
@@ -163,6 +173,7 @@ modifiedConfigData.themeConfig.sidebar = sidebarConfig
 
 export default defineConfig({
   ...modifiedConfigData,
+  srcExclude: includeDevDocs ? [] : ['governance/**'],
   vite: {
     server: {
       fs: { allow: [process.cwd(), resolve(process.cwd(), 'generated')] }

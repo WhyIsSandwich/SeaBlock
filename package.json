@@ -5,8 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "vitepress dev docs --host 0.0.0.0",
-    "build": "vitepress build docs",
-    "preview": "vitepress preview docs",
+    "build": "SEABLOCK_INCLUDE_DEV_DOCS=false vitepress build docs",
+    "build:dev-docs": "SEABLOCK_INCLUDE_DEV_DOCS=true vitepress build docs",
+    "preview": "SEABLOCK_INCLUDE_DEV_DOCS=false vitepress preview docs",
     "build:browser": "vite build --config vite.extracted.config.js",
     "test": "vitest",
     "test:ui": "vitest --ui",

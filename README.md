@@ -22,7 +22,7 @@ This project uses a dual SSG approach:
 
 - **[VitePress Browser Bundle Guide](VITEPRESS_BROWSER_BUNDLE_GUIDE.md)** - Complete guide to the custom VitePress browser bundle solution
 - **[Vite Dependencies Guide](VITE_DEPENDENCIES_GUIDE.md)** - Analysis of VitePress browser compatibility challenges
-- **[Governance Artifacts](docs/governance/index.md)** - Architecture brief, key issues, guidelines, and roadmap
+- **[Governance Artifacts](docs/governance/index.md)** - Developer-focused architecture brief, key issues, guidelines, and roadmap (excluded from production site build)
 
 ## 🛠️ Development
 
@@ -63,7 +63,8 @@ This project uses a dual SSG approach:
 
 - `npm run dev` - Start VitePress development server (port 5173)
 - `npm run dev:editor` - Start WYSIWYG editor (port 3000)
-- `npm run build` - Build VitePress site for production
+- `npm run build` - Build production site (excludes developer docs)
+- `npm run build:dev-docs` - Build site including developer docs
 - `npm run build:browser` - Build browser bundle for client-side rendering
 - `npm run build:editor` - Build WYSIWYG editor for production
 - `npm run preview` - Preview production build locally
@@ -121,8 +122,8 @@ The site is automatically deployed to GitHub Pages when changes are pushed to th
 # Build the site
 npm run build
 
-# The dist/ folder contains the built site
-# Deploy dist/ to your hosting provider
+# The docs/.vitepress/dist/ folder contains the built site
+# Deploy docs/.vitepress/dist/ to your hosting provider
 ```
 
 ## 🤝 Contributing
