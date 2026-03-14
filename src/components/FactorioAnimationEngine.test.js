@@ -360,6 +360,112 @@ describe('FactorioAnimationEngine', () => {
   })
 
   describe('Rendering', () => {
+    test('should offset sprite sheet frame by direction_count when direction is provided', () => {
+      const ctx = mockCanvas.getContext('2d')
+      ctx.clearOperations()
+      ctx.canvas = { width: 128, height: 128 }
+
+      const layer = {
+        file: { src: 'directional-belt.png', width: 128, height: 128 },
+        filename: 'directional-belt.png',
+        width: 32,
+        height: 32,
+        frame_count: 1,
+        direction_count: 4,
+        line_length: 1,
+        animation_speed: 1
+      }
+
+      engine.renderLayeredSprite(ctx, [layer], { frame: 0, direction: 'south' })
+      const drawOperation = ctx.getOperations().find(op => op.startsWith('drawImage('))
+
+      expect(drawOperation).toContain('directional-belt.png')
+      // south -> direction index 2, so source Y should be 2 * 32 = 64
+      expect(drawOperation).toContain(', 0, 64, 32, 32, ')
+    })
+
+    test('should map numeric 8-way directions onto multi-direction sheets', () => {
+      const ctx = mockCanvas.getContext('2d')
+      ctx.clearOperations()
+      ctx.canvas = { width: 128, height: 128 }
+
+      const layer = {
+        file: { src: 'directional-8way.png', width: 128, height: 128 },
+        filename: 'directional-8way.png',
+        width: 32,
+        height: 32,
+        frame_count: 1,
+        direction_count: 16,
+        line_length: 1,
+        animation_speed: 1
+      }
+
+      // Factorio 8-way east is usually numeric direction 2 -> should map to row index 4 for 16 directions.
+      engine.renderLayeredSprite(ctx, [layer], { frame: 0, direction: 2 })
+      const drawOperation = ctx.getOperations().find(op => op.startsWith('drawImage('))
+      expect(drawOperation).toContain(', 0, 128, 32, 32, ')
+    })
+
+    test('should respect animation_speed = 0 and keep frame static', () => {
+      const ctx = mockCanvas.getContext('2d')
+      ctx.clearOperations()
+      ctx.canvas = { width: 128, height: 128 }
+
+      const layer = {
+        file: { src: 'static-frame.png', width: 96, height: 32 },
+        filename: 'static-frame.png',
+        width: 32,
+        height: 32,
+        frame_count: 3,
+        line_length: 3,
+        animation_speed: 0
+      }
+
+      engine.renderLayeredSprite(ctx, [layer], { frame: 25, direction: 'north' })
+      const drawOperation = ctx.getOperations().find(op => op.startsWith('drawImage('))
+      // frameX should remain 0 when animation speed is locked.
+      expect(drawOperation).toContain(', 0, 0, 32, 32, ')
+    })
+
+    test('should infer frames per row from image width when line_length is missing', () => {
+      const ctx = mockCanvas.getContext('2d')
+      ctx.clearOperations()
+      ctx.canvas = { width: 128, height: 128 }
+
+      const layer = {
+        file: { src: 'inferred-grid.png', width: 64, height: 64 },
+        filename: 'inferred-grid.png',
+        width: 32,
+        height: 32,
+        frame_count: 4,
+        animation_speed: 1
+      }
+
+      // frame 3 in a 2x2 inferred layout should sample x=32, y=32
+      engine.renderLayeredSprite(ctx, [layer], { frame: 3, direction: 'north' })
+      const drawOperation = ctx.getOperations().find(op => op.startsWith('drawImage('))
+      expect(drawOperation).toContain(', 32, 32, 32, 32, ')
+    })
+
+    test('should not use repeat_count as sprite sheet frame count', () => {
+      const ctx = mockCanvas.getContext('2d')
+      ctx.clearOperations()
+      ctx.canvas = { width: 128, height: 128 }
+
+      const layer = {
+        file: { src: 'repeat-count-static.png', width: 60, height: 56 },
+        filename: 'repeat-count-static.png',
+        width: 60,
+        height: 56,
+        repeat_count: 12,
+        animation_speed: 1
+      }
+
+      engine.renderLayeredSprite(ctx, [layer], { frame: 9, direction: 'north' })
+      const drawOperation = ctx.getOperations().find(op => op.startsWith('drawImage('))
+      expect(drawOperation).toContain(', 0, 0, 60, 56, ')
+    })
+
     test('should render sprite sheet with canvas operations', () => {
       const data = {
         filename: 'test.png',

@@ -262,6 +262,11 @@ const FACTORIO_BLEND_MODES = {
 
 // Custom blend mode functions for Factorio-specific blending
 function applyFactorioBlendMode(ctx, layer, backgroundCanvas, activeCanvas) {
+  if (!layer.blend_mode && (layer.draw_as_light || layer.draw_as_glow)) {
+    ctx.globalCompositeOperation = 'lighter'
+    return
+  }
+
   const blendMode = layer.blend_mode || 'normal'
 
   // For simple blend modes, use native canvas operations
@@ -504,6 +509,46 @@ function validateAnimationData(data) {
   return true
 }
 
+function normalizeDirectionIndex(direction, directionCount) {
+  if (!Number.isFinite(directionCount) || directionCount <= 1) {
+    return 0
+  }
+
+  const clampToRange = value => {
+    const normalized = ((value % directionCount) + directionCount) % directionCount
+    return normalized
+  }
+
+  if (typeof direction === 'number' && Number.isFinite(direction)) {
+    const numericDirection = Math.trunc(direction)
+    if (numericDirection >= 0 && numericDirection <= 7) {
+      // Factorio entity directions commonly use 8-way values (0..7).
+      return clampToRange(Math.round((directionCount * numericDirection) / 8))
+    }
+
+    if (numericDirection >= 0 && numericDirection < directionCount) {
+      return numericDirection
+    }
+
+    const cardinalDirection = ((numericDirection % 4) + 4) % 4
+    return clampToRange(Math.round((directionCount * cardinalDirection) / 4))
+  }
+
+  if (typeof direction === 'string') {
+    const directionIndexMap = {
+      north: 0,
+      east: 1,
+      south: 2,
+      west: 3
+    }
+    if (direction in directionIndexMap) {
+      return clampToRange(Math.round((directionCount * directionIndexMap[direction]) / 4))
+    }
+  }
+
+  return 0
+}
+
 // Image cache to avoid reloading images on every frame
 const imageCache = new Map()
 
@@ -602,19 +647,68 @@ export function createFactorioAnimationEngine({
           if (imageData) {
             // Calculate which frame to draw using layer's animation speed
             const baseFrame = props.frame || 0
-            const layerAnimationSpeed = layer.animation_speed || 1
+            const layerAnimationSpeed = Number.isFinite(layer.animation_speed)
+              ? layer.animation_speed
+              : 1
             const adjustedFrame = Math.floor(baseFrame * layerAnimationSpeed)
-            const currentFrame = adjustedFrame % (layer.frame_count || layer.repeat_count || 1)
+            const frameCount =
+              Number.isFinite(layer.frame_count) && layer.frame_count > 0 ? layer.frame_count : 1
+            const currentFrame = adjustedFrame % frameCount
+            const directionCount =
+              Number.isFinite(layer.direction_count) && layer.direction_count > 0
+                ? layer.direction_count
+                : 1
+            const directionIndex = normalizeDirectionIndex(props.direction, directionCount)
+            const spriteFrame = currentFrame + directionIndex * frameCount
+            let frameX
+            let frameY
+            let sourceWidth
+            let sourceHeight
+            let sourceImage = imageData
 
-            const framesPerRow = layer.line_length || layer.frame_count || 1 // || layer.frame_count
-            const frameX = (currentFrame % framesPerRow) * layer.width
-            const finalRow = layer.frame_count / layer.line_length || 1
-            let frameY =
-              (Math.floor(currentFrame / framesPerRow) % finalRow) *
-              (layer.height || imageData.height)
+            if (Array.isArray(layer.stripes) && layer.stripes.length > 0) {
+              const stripeInfo = layer.stripes.map(stripe => ({
+                filename: stripe.filename,
+                widthInFrames: stripe.width_in_frames,
+                heightInFrames: stripe.height_in_frames,
+                x: stripe.x || 0,
+                y: stripe.y || 0
+              }))
+              const stripeFrame = getStripeFrameInfo(stripeInfo, spriteFrame, layer.width, layer.height)
+              const stripeImage = layer.stripeFiles?.[stripeFrame.filename]
+              if (stripeImage) {
+                sourceImage = stripeImage
+              }
+              frameX = stripeFrame.x
+              frameY = stripeFrame.y
+              sourceWidth = stripeFrame.width
+              sourceHeight = stripeFrame.height
+            } else {
+              const totalFrames = frameCount * directionCount
+              const explicitFramesPerRow =
+                Number.isFinite(layer.line_length) && layer.line_length > 0 ? layer.line_length : null
+              const inferredFramesPerRow =
+                Number.isFinite(layer.width) && layer.width > 0 && Number.isFinite(imageData.width)
+                  ? Math.max(1, Math.floor(imageData.width / layer.width))
+                  : null
+              const framesPerRow = Math.max(
+                1,
+                Math.min(totalFrames, explicitFramesPerRow || inferredFramesPerRow || frameCount || 1)
+              )
+              frameX = (spriteFrame % framesPerRow) * layer.width
+              const finalRow = Math.max(1, Math.ceil(totalFrames / framesPerRow))
+              frameY =
+                (Math.floor(spriteFrame / framesPerRow) % finalRow) *
+                (layer.height || imageData.height)
 
-            if (layer.y) {
-              frameY = layer.y
+              frameX += layer.source_x || 0
+              frameY += layer.source_y || 0
+
+              if (layer.y) {
+                frameY = (layer.source_y || 0) + layer.y
+              }
+              sourceWidth = layer.width
+              sourceHeight = layer.height
             }
 
             // Draw the specific frame from the sprite sheet
@@ -651,11 +745,11 @@ export function createFactorioAnimationEngine({
             // Standard render path if no tint is requested.
             if (!effectiveTint) {
               ctx.drawImage(
-                imageData,
+                sourceImage,
                 frameX,
                 frameY, // Source position in sprite sheet
-                layer.width,
-                layer.height, // Source size
+                sourceWidth,
+                sourceHeight, // Source size
                 destX,
                 destY, // Destination position
                 scaledWidth,
@@ -671,11 +765,11 @@ export function createFactorioAnimationEngine({
                 ctx.save()
                 ctx.globalAlpha *= effectiveTint.a
                 ctx.drawImage(
-                  imageData,
+                  sourceImage,
                   frameX,
                   frameY,
-                  layer.width,
-                  layer.height,
+                  sourceWidth,
+                  sourceHeight,
                   destX,
                   destY,
                   scaledWidth,
@@ -685,11 +779,11 @@ export function createFactorioAnimationEngine({
               } else {
                 scratchCtx.clearRect(0, 0, scratchCanvas.width, scratchCanvas.height)
                 scratchCtx.drawImage(
-                  imageData,
+                  sourceImage,
                   frameX,
                   frameY,
-                  layer.width,
-                  layer.height,
+                  sourceWidth,
+                  sourceHeight,
                   0,
                   0,
                   scaledWidth,
@@ -706,11 +800,11 @@ export function createFactorioAnimationEngine({
 
                 scratchCtx.globalCompositeOperation = 'destination-in'
                 scratchCtx.drawImage(
-                  imageData,
+                  sourceImage,
                   frameX,
                   frameY,
-                  layer.width,
-                  layer.height,
+                  sourceWidth,
+                  sourceHeight,
                   0,
                   0,
                   scaledWidth,
@@ -758,7 +852,7 @@ export function createFactorioAnimationEngine({
       if (cacheKey && this.promiseCache.has(cacheKey)) {
         processedLayersPromise = this.promiseCache.get(cacheKey)
       } else {
-        const renderingMethod = getRenderingMethod(animationData) || [animationData]
+        const renderingMethod = getRenderingMethod(animationData, props) || [animationData]
         processedLayersPromise = getProcessedLayers(
           renderingMethod,
           props.animation_speed,
