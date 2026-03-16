@@ -15,7 +15,14 @@ Ready to play? Start with these guides:
 
 - [Installation](./installation.md): How to install SeaBlock and required mods.
 - [First Steps](./first-steps.md): Your first actions after starting a new game.
+- [Stuck in the first hours](/troubleshooting/stuck-first-hours): Fast triage if progression feels blocked early.
 
 Once you’re set up, explore the [Guides](/guides/) for strategies on progressing through each stage of the game.
 
 If setup is not behaving as expected, use [Troubleshooting](/troubleshooting/) before starting a long run.
+
+## Sources and attribution
+
+Last verified: 2026-03-16
+
+- SeaBlock in-repo documentation and linked project pages.

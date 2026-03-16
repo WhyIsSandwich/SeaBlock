@@ -19,12 +19,12 @@ Before changing your base:
 
 ## Decision table
 
-| Situation | Recommended action | Why |
-| --- | --- | --- |
-| Recipe missing in one save only | Test in clean sandbox with same settings | Isolates save-specific drift |
-| Recipe missing for all saves in profile | Check version and startup settings first | Most common root cause |
-| Guide and game disagree on ingredient | Treat guide as version-specific and verify in-game recipe | Prevents chasing stale documentation |
-| Recipe appears after new save only | Startup setting changed but not retroactive | Expected behavior in many mod setups |
+| Situation                               | Recommended action                                        | Why                                  |
+| --------------------------------------- | --------------------------------------------------------- | ------------------------------------ |
+| Recipe missing in one save only         | Test in clean sandbox with same settings                  | Isolates save-specific drift         |
+| Recipe missing for all saves in profile | Check version and startup settings first                  | Most common root cause               |
+| Guide and game disagree on ingredient   | Treat guide as version-specific and verify in-game recipe | Prevents chasing stale documentation |
+| Recipe appears after new save only      | Startup setting changed but not retroactive               | Expected behavior in many mod setups |
 
 ## Fast diagnosis pattern
 
@@ -32,13 +32,28 @@ Before changing your base:
 - Check one recipe chain end-to-end from raw input to final unlock.
 - Compare behavior before and after setting changes.
 
+<details class="details custom-block">
+<summary>Settings mismatch screenshot</summary>
+
+<figure>
+  <img
+    src="/images/troubleshooting/mod-settings/settings-mismatch__startup-options__v2-0__2026-03__01.webp"
+    alt="Sea Block startup settings mismatch example"
+  />
+  <figcaption>Expected view: the exact startup setting mismatch highlighted.</figcaption>
+</figure>
+
+</details>
+
+Capture guidance: [Wiki Screenshot Shot List](/reference/wiki-screenshot-shot-list)
+
 ## Failure signatures
 
-| Symptom | Likely cause | First fix |
-| --- | --- | --- |
+| Symptom                                 | Likely cause                                   | First fix                                      |
+| --------------------------------------- | ---------------------------------------------- | ---------------------------------------------- |
 | Tech researched but recipe still absent | Hidden prerequisite or wrong branch assumption | Validate prereq chain in current 2.0 tech tree |
-| Recipe names differ from guide | Guide targets older version | Use 2.0 references and migration notes |
-| Recipe appears after profile reset | Optional mod or stale setting conflict | Reintroduce mods/settings one at a time |
+| Recipe names differ from guide          | Guide targets older version                    | Use 2.0 references and migration notes         |
+| Recipe appears after profile reset      | Optional mod or stale setting conflict         | Reintroduce mods/settings one at a time        |
 
 ## 2.0 notes
 

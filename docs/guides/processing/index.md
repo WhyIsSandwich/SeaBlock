@@ -11,3 +11,4 @@ These guides cover the three process chains that usually gate early and mid game
 - [Early Power](./early-power.md)
 - [Filtration](./filtration.md)
 - [Smelting](./smelting.md)
+- [Liquids and Gases Progression](./liquids-and-gases.md)

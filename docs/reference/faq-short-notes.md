@@ -19,7 +19,7 @@ Quick answers for recurring questions that do not need a full guide page.
 
 ## Gameplay
 
-### Is Seablock mostly a peaceful run?
+### Is SeaBlock mostly a peaceful run?
 
 Most runs are logistics and process focused, with worms as the primary hostile pressure in relevant areas.
 
@@ -43,7 +43,7 @@ Confirm version alignment and startup setting assumptions before rebuilding your
 
 ### My run feels impossible early on. Is that normal?
 
-Early Seablock is intentionally constrained; focus on small stable loops, not perfect ratios.
+Early SeaBlock is intentionally constrained; focus on small stable loops, not perfect ratios.
 
 ### How do I tell install problems from progression problems?
 
@@ -66,7 +66,7 @@ Yes. Start with [Wiki TODO and Wanted Pages](/reference/wiki-todo-and-wanted-pag
 
 ## Sources and attribution
 
-Last verified: 2026-03-14
+Last verified: 2026-03-16
 
 - [FAQ and Short Notes (Fandom)](https://seablock.fandom.com/wiki/FAQ_and_Short_Notes)
 - [SeaBlock Wiki (Fandom)](https://seablock.fandom.com/wiki/Seablock_Wiki)

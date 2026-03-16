@@ -35,3 +35,9 @@ This section contains detailed walkthroughs, tips, and strategies for every stag
 
 Need quick answers while playing? Jump to [Reference](/reference/) or [Troubleshooting](/troubleshooting/).
 
+## Sources and attribution
+
+Last verified: 2026-03-16
+
+- SeaBlock in-repo documentation and linked project pages.
+

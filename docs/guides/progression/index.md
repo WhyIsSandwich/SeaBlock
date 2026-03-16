@@ -5,3 +5,4 @@ SeaBlock progression is easier when framed as milestone checkpoints instead of o
 ## Pages
 
 - [Progression Milestones](./progression-milestones.md)
+- [Science Bottleneck Playbook](./science-bottlenecks.md)

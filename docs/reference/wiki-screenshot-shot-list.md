@@ -27,28 +27,28 @@ Example:
 
 ## P0 - New player unblockers
 
-| Status | Doc page | Screenshot needed | Suggested path | Notes |
-| --- | --- | --- | --- | --- |
-| TODO | `/getting-started/installation` | Mod list and version confirmation screen | `/public/images/getting-started/installation/` | Show Sea Block pack and Factorio version together |
-| TODO | `/getting-started/first-steps` | First 10-minute starter island | `/public/images/getting-started/first-steps/` | Include windmills, electrolysers, flare stacks |
-| TODO | `/troubleshooting/map-generation-and-ocean-issues` | Correct vs incorrect map start comparison | `/public/images/troubleshooting/map-generation/` | Side-by-side preferred |
-| TODO | `/troubleshooting/missing-recipe-and-mod-settings` | Mod setting mismatch example | `/public/images/troubleshooting/mod-settings/` | Highlight the exact setting name |
+| Status     | Doc page                                           | Screenshot needed                         | Suggested path                                   | Notes                               |
+| ---------- | -------------------------------------------------- | ----------------------------------------- | ------------------------------------------------ | ----------------------------------- |
+| STUB_ADDED | `/getting-started/installation`                    | Mod list and version confirmation screen  | `/public/images/getting-started/installation/`   | Page includes planned filename slot |
+| STUB_ADDED | `/getting-started/first-steps`                     | First 10-minute starter island            | `/public/images/getting-started/first-steps/`    | Page includes planned filename slot |
+| STUB_ADDED | `/troubleshooting/map-generation-and-ocean-issues` | Correct vs incorrect map start comparison | `/public/images/troubleshooting/map-generation/` | Page includes planned filename slot |
+| STUB_ADDED | `/troubleshooting/missing-recipe-and-mod-settings` | Mod setting mismatch example              | `/public/images/troubleshooting/mod-settings/`   | Page includes planned filename slot |
 
 ## P1 - Progression clarity
 
-| Status | Doc page | Screenshot needed | Suggested path | Notes |
-| --- | --- | --- | --- | --- |
-| TODO | `/guides/processing/early-power` | Stable early power block | `/public/images/guides/processing/early-power/` | Label fuel input and steam output |
-| TODO | `/guides/processing/filtration` | Filtration flow with byproduct routing | `/public/images/guides/processing/filtration/` | Show overflow handling |
-| TODO | `/guides/progression/progression-milestones` | Milestone base snapshot per stage | `/public/images/guides/progression/milestones/` | One screenshot per milestone |
-| TODO | `/guides/logistics/rails-and-city-blocks` | First rail outpost / block interface | `/public/images/guides/logistics/rails/` | Mark train IO points |
+| Status | Doc page                                     | Screenshot needed                      | Suggested path                                  | Notes                             |
+| ------ | -------------------------------------------- | -------------------------------------- | ----------------------------------------------- | --------------------------------- |
+| TODO   | `/guides/processing/early-power`             | Stable early power block               | `/public/images/guides/processing/early-power/` | Label fuel input and steam output |
+| TODO   | `/guides/processing/filtration`              | Filtration flow with byproduct routing | `/public/images/guides/processing/filtration/`  | Show overflow handling            |
+| TODO   | `/guides/progression/progression-milestones` | Milestone base snapshot per stage      | `/public/images/guides/progression/milestones/` | One screenshot per milestone      |
+| TODO   | `/guides/logistics/rails-and-city-blocks`    | First rail outpost / block interface   | `/public/images/guides/logistics/rails/`        | Mark train IO points              |
 
 ## P2 - Optimization and community
 
-| Status | Doc page | Screenshot needed | Suggested path | Notes |
-| --- | --- | --- | --- | --- |
-| TODO | `/guides/performance/ups-and-throughput` | Before/after optimization area | `/public/images/guides/performance/ups/` | Keep viewport and zoom identical |
-| TODO | `/community/factory-tours` | Annotated factory overview | `/public/images/community/factory-tours/` | Add callouts for key subsystems |
+| Status | Doc page                                 | Screenshot needed              | Suggested path                            | Notes                            |
+| ------ | ---------------------------------------- | ------------------------------ | ----------------------------------------- | -------------------------------- |
+| TODO   | `/guides/performance/ups-and-throughput` | Before/after optimization area | `/public/images/guides/performance/ups/`  | Keep viewport and zoom identical |
+| TODO   | `/community/factory-tours`               | Annotated factory overview     | `/public/images/community/factory-tours/` | Add callouts for key subsystems  |
 
 ## Reusable capture checklist
 

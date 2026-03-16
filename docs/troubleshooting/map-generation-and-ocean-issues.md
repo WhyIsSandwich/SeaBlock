@@ -21,6 +21,21 @@ SeaBlock starts are sensitive to scenario and generation assumptions. If your wo
 - Compare first 10 minutes against expected tutorial milestones.
 - Reapply custom generation options one at a time.
 
+<details class="details custom-block">
+<summary>Map start comparison screenshot</summary>
+
+<figure>
+  <img
+    src="/images/troubleshooting/map-generation/map-start__correct-vs-incorrect__v2-0__2026-03__01.webp"
+    alt="Correct vs incorrect Sea Block map start comparison"
+  />
+  <figcaption>Expected view: valid ocean/island start versus invalid worldgen start.</figcaption>
+</figure>
+
+</details>
+
+Capture guidance: [Wiki Screenshot Shot List](/reference/wiki-screenshot-shot-list)
+
 ## Common mistakes
 
 - Importing settings from unrelated modpacks.
