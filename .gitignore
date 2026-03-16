@@ -143,3 +143,9 @@ docs/.vitepress/temp/
 *.sublime-*
 *.code-workspace
 
+# Factorio data processing area
+data-dumps/
+factorio/
+
+# Generated asset output (non-git, for dev/prod hosting)
+generated/

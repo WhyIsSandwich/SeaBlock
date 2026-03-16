@@ -1,11 +1,24 @@
+import { readFileSync, readdirSync, statSync, existsSync } from 'fs'
+import { resolve, basename, join } from 'path'
+
 import { defineConfig } from 'vitepress'
+
 import { configData } from './config-data.js'
-import { readFileSync, readdirSync, statSync } from 'fs'
-import { resolve, basename } from 'path'
+
+const generatedDir = resolve(process.cwd(), 'generated')
+const includeDevDocs = process.env.SEABLOCK_INCLUDE_DEV_DOCS === 'true'
+const devOnlyDocRoots = new Set(['governance'])
 
 // Clone the imported config data to avoid mutations
 const modifiedConfigData = { ...configData }
 modifiedConfigData.themeConfig = { ...configData.themeConfig }
+if (Array.isArray(configData.themeConfig?.nav)) {
+  modifiedConfigData.themeConfig.nav = configData.themeConfig.nav.filter(navItem => {
+    if (!navItem?.link || includeDevDocs) return true
+    const navPath = navItem.link.replace(/^\/+|\/+$/g, '')
+    return !devOnlyDocRoots.has(navPath)
+  })
+}
 
 // ---------- Helpers ----------
 function safeStat(p) {
@@ -147,6 +160,7 @@ if (modifiedConfigData.themeConfig?.nav) {
   modifiedConfigData.themeConfig.nav.forEach(navItem => {
     if (navItem?.link) {
       const navPath = navItem.link.replace(/^\/+|\/+$/g, '')
+      if (!includeDevDocs && devOnlyDocRoots.has(navPath)) return
       const folderPath = resolve(docsRoot, navPath)
       if (safeStat(folderPath)?.isDirectory()) {
         sidebarConfig[`/${navPath}/`] = buildSidebar(folderPath, navPath)
@@ -159,6 +173,40 @@ modifiedConfigData.themeConfig.sidebar = sidebarConfig
 
 export default defineConfig({
   ...modifiedConfigData,
+  srcExclude: includeDevDocs ? [] : ['governance/**'],
+  vite: {
+    server: {
+      fs: { allow: [process.cwd(), resolve(process.cwd(), 'generated')] }
+    },
+    plugins: [
+      {
+        name: 'serve-generated',
+        configureServer(server) {
+          const base = (configData.base || '/').replace(/\/$/, '') || ''
+          const generatedPrefix = base ? `${base}/generated` : '/generated'
+          const handler = (req, res, next) => {
+            const url = req.url?.split('?')[0] ?? ''
+            if (!url.startsWith(`${generatedPrefix}/`)) return next()
+            const rel = url.slice(generatedPrefix.length).replace(/^\//, '')
+            const filePath = join(generatedDir, rel)
+            if (!existsSync(filePath)) return next()
+            const stat = safeStat(filePath)
+            if (!stat?.isFile()) return next()
+            const ct =
+              /\.json$/.test(rel) ? 'application/json' :
+              /\.webp$/.test(rel) ? 'image/webp' :
+              'image/png'
+            res.setHeader('Content-Type', ct)
+            res.end(readFileSync(filePath))
+          }
+          return () => {
+            // Insert at start so we run before Vite's SPA fallback
+            server.middlewares.stack.unshift({ route: '', handle: handler })
+          }
+        }
+      }
+    ]
+  },
   transformPageData(pageData) {
     try {
       const markdownPath = resolve(process.cwd(), 'docs', pageData.relativePath)
