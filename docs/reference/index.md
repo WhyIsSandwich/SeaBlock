@@ -27,4 +27,5 @@ In-game, recipes and technologies have long formal names like _“Electrolysis 2
 - [Compatible Mods](/reference/compatible-mods)
 - [Calculators and Planners](/reference/calculators-and-planners)
 - [Migration 1.1 to 2.0](/reference/migration-1.1-to-2.0)
+- [Wiki Screenshot Shot List](/reference/wiki-screenshot-shot-list)
 - [Wiki TODO and Wanted Pages](/reference/wiki-todo-and-wanted-pages)

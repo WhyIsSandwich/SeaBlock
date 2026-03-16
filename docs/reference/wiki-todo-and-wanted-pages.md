@@ -71,8 +71,9 @@ Use this workflow when creating or revising pages:
 
 | Page | Current role | Owner | Decision note |
 | --- | --- | --- | --- |
-| `docs/building-example.md` | Component/example showcase | Docs maintainers | Keep temporarily; remove or relocate if not referenced by contributor workflows. |
-| `docs/tooltip-example.md` | Component/example showcase | Docs maintainers | Keep temporarily; remove if no active docs QA/testing use. |
+| `docs/governance/dev/building-example.md` | Component/example showcase | Docs maintainers | Relocated under governance for contributor/developer scope separation. |
+| `docs/governance/dev/tooltip-example.md` | Component/example showcase | Docs maintainers | Relocated under governance for contributor/developer scope separation. |
+| `docs/governance/dev/factorio-animation-engine.md` | Component/engine internal README | Docs maintainers | Relocated from VitePress component internals to governance dev docs. |
 | `docs/reference/factoriopedia-help.md` | Specialized help page with custom layout | Docs maintainers | Keep for now; reassess discoverability and scope during next reference pass. |
 
 ## Source quality notes
