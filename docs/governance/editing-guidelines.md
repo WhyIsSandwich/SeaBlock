@@ -40,6 +40,13 @@ This document is the canonical writing and markdown standard for SeaBlock docume
 - Avoid raw HTML unless no markdown equivalent exists.
 - Avoid novelty formatting that reduces readability (marquee, excessive inline styles, etc.).
 
+## Attribution Policy
+
+- Reviewed non-index pages must include a `## Sources and attribution` section.
+- Keep attribution concise and maintain a `Last verified:` date when source links are present.
+- Use specific source links where available (Mod Portal, release notes, wiki lineage, community references).
+- Exception: Factoriopedia helper pages that use a custom layout may use a different source-note format.
+
 ## Naming and Assets
 
 - Use kebab-case file names for markdown pages.
@@ -62,6 +69,7 @@ This document is the canonical writing and markdown standard for SeaBlock docume
 - Images render with useful alt text.
 - Instructions are reproducible with current SeaBlock/Factorio context.
 - No placeholder text remains.
+- Attribution policy requirements are satisfied for reviewed non-index pages.
 
 ## Minimum Acceptance Criteria
 
@@ -78,3 +86,10 @@ This document is the canonical writing and markdown standard for SeaBlock docume
 ## Source Notes
 
 These guidelines consolidate prior guidance into a single canonical standard.
+
+## Sources and attribution
+
+Last verified: 2026-03-16
+
+- SeaBlock in-repo documentation and linked project pages.
+- Official Sea Block mod portal resources and community references, where applicable.

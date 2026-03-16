@@ -119,3 +119,10 @@ Showcasing the static sprite rendering with larger, more prominent icons:
 <!-- Detailed variant without tooltip -->
 <Building building-id="chemical-plant" variant="detailed" :show-tooltip="false" />
 ```
+
+## Sources and attribution
+
+Last verified: 2026-03-16
+
+- SeaBlock in-repo documentation and linked project pages.
+- Official Sea Block mod portal resources and community references, where applicable.

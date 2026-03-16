@@ -109,3 +109,10 @@ flowchart LR
 - **Now**: no runtime debugger statements; critical rules TODOs resolved; deploy gating updated.
 - **Next**: key rendering and parity gaps closed; monolith decomposition started with measurable file reductions; legacy governance cleanup milestones complete.
 - **Later**: recurring performance checks and roadmap refresh process established.
+
+## Sources and attribution
+
+Last verified: 2026-03-16
+
+- SeaBlock in-repo documentation and linked project pages.
+- Official Sea Block mod portal resources and community references, where applicable.

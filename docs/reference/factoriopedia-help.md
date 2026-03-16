@@ -1,6 +1,11 @@
 # Factoriopedia Help
 
-The Factoriopedia is an in-game encyclopedia that provides detailed information about all items, recipes, and technologies in SeaBlock. This web version replicates the same interface and functionality as the in-game Factoriopedia.
+The Factoriopedia is an in-game encyclopedia that provides detailed information about items, recipes, and technologies in SeaBlock. The web version mirrors the same core browsing workflow, but some controls or data presentation may differ from the in-game UI depending on export/version state.
+
+## Scope and version note
+
+- This page describes the current web Factoriopedia behavior in this repository.
+- Treat in-game behavior as canonical when differences appear.
 
 ## Features
 

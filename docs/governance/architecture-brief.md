@@ -50,3 +50,10 @@ flowchart LR
 - `useFactorioData` and details rules rely on stable keys and schema from generated files in `generated/data/dev/`; schema drift can silently break UI behavior.
 - The monolithic UI surface in `docs/.vitepress/components/DetailsPane.vue` increases regression risk for unrelated edits.
 - Debug and global side effects currently leak into runtime (`window.structure`, resize observer on `window`, direct console/debugger usage in runtime engines).
+
+## Sources and attribution
+
+Last verified: 2026-03-16
+
+- SeaBlock in-repo documentation and linked project pages.
+- Official Sea Block mod portal resources and community references, where applicable.

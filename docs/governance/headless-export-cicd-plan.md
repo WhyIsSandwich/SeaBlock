@@ -175,3 +175,10 @@ This plan intentionally targets end-to-end CI/CD ownership of generated assets, 
 - Keep extraction logs and manifest files as first-class CI artifacts.
 - Prefer failing fast on contract mismatch rather than silently degrading output.
 - Treat exporter schema changes as governance-level changes requiring review updates.
+
+## Sources and attribution
+
+Last verified: 2026-03-16
+
+- SeaBlock in-repo documentation and linked project pages.
+- Official Sea Block mod portal resources and community references, where applicable.

@@ -2,6 +2,9 @@
 
 This section contains canonical implementation review artifacts and contribution standards.
 
+> Maintainer-only section: governance pages are excluded from the default production docs build.
+> To include them for internal review builds, set `SEABLOCK_INCLUDE_DEV_DOCS=true`.
+
 ## Artifact Set
 
 - [Architecture Brief](/governance/architecture-brief)

@@ -20,14 +20,14 @@ export const configData = {
     repoLabel: 'GitHub',
 
     // Navigation
+    // Governance docs are internal-only unless explicitly enabled via env.
     nav: [
       { text: 'Home', link: '/' },
       { text: 'Getting Started', link: '/getting-started/' },
       { text: 'Guides', link: '/guides/' },
       { text: 'Reference', link: '/reference/' },
       { text: 'Troubleshooting', link: '/troubleshooting/' },
-      { text: 'Community', link: '/community/' },
-      { text: 'Governance', link: '/governance/' }
+      { text: 'Community', link: '/community/' }
     ],
 
     // Sidebar hardcoded here for the editor

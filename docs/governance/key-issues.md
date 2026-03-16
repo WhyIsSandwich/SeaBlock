@@ -99,3 +99,10 @@ This report prioritizes repo-wide implementation issues by production impact and
 4. Improve pipeline throughput in `scripts/process-factorio-data.js` (bounded concurrency and reduced sync hotspots).
 5. Add deploy trigger safeguards and required CI quality checks.
 6. Modularize largest files in staged refactors and keep contract checks in place.
+
+## Sources and attribution
+
+Last verified: 2026-03-16
+
+- SeaBlock in-repo documentation and linked project pages.
+- Official Sea Block mod portal resources and community references, where applicable.

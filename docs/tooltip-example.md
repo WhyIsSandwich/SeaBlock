@@ -137,3 +137,10 @@ Try hovering over these items and clicking to pin them:
 - **Responsive**: Automatically positions tooltips to stay within viewport
 - **Customizable**: Supports different positions and delays
 - **Dark Mode**: Automatically adapts to VitePress dark/light theme
+
+## Sources and attribution
+
+Last verified: 2026-03-16
+
+- SeaBlock in-repo documentation and linked project pages.
+- Official Sea Block mod portal resources and community references, where applicable.

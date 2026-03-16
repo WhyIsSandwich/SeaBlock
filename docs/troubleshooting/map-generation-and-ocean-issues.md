@@ -27,7 +27,7 @@ SeaBlock starts are sensitive to scenario and generation assumptions. If your wo
 - Assuming an old map preset still matches current release behavior.
 - Combining aggressive custom settings before first successful baseline run.
 
-## Links
+## Related pages
 
 - [Troubleshooting index](/troubleshooting/)
 - [Getting Started](/getting-started/)
@@ -35,4 +35,8 @@ SeaBlock starts are sensitive to scenario and generation assumptions. If your wo
 
 ## Sources and attribution
 
-This page targets recurring map-generation questions seen in community support channels and Reddit threads.
+Last verified: 2026-03-16
+
+- [Sea Block FAQ (Mod Portal)](https://mods.factorio.com/mod/SeaBlock/faq)
+- [Sea Block changelog (Mod Portal)](https://mods.factorio.com/mod/SeaBlock/changelog)
+- [r/Seablock](https://www.reddit.com/r/Seablock/)

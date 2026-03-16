@@ -93,3 +93,10 @@ If touching data pipeline scripts, also run the relevant script(s) and validate 
 - Avoid global mutable state on `window` for runtime feature behavior.
 - Use defensive checks on external/generated data reads.
 - Keep browser-facing code resilient to absent/malformed fields in generated JSON.
+
+## Sources and attribution
+
+Last verified: 2026-03-16
+
+- SeaBlock in-repo documentation and linked project pages.
+- Official Sea Block mod portal resources and community references, where applicable.

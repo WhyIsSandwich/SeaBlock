@@ -9,18 +9,20 @@ This page tracks high-value documentation gaps and the implementation order for 
 
 | Topic class | Legacy Fandom coverage | Current docs coverage | Community demand signal | Status |
 | --- | --- | --- | --- | --- |
-| Early power | Yes | Partial | High | Planned |
-| Filtration flow | Yes | Partial | High | Planned |
-| Smelting transitions | Yes | Partial | High | Planned |
-| FAQ short answers | Yes | Minimal | High | Planned |
-| Mod compatibility | Yes | Minimal | Medium/High | Planned |
-| Migration guidance | Partial | Minimal | High | Planned |
-| Troubleshooting hub | Minimal | Missing | High | Planned |
-| Progression map | Minimal | Missing | Medium/High | Planned |
-| Performance/UPS notes | Yes | Missing | Medium/High | Planned |
-| Factory tours | Yes | Missing | Medium | Planned |
+| Early power | Yes | Available | High | Published |
+| Filtration flow | Yes | Available | High | Published |
+| Smelting transitions | Yes | Available | High | Published |
+| FAQ short answers | Yes | Available | High | Published |
+| Mod compatibility | Yes | Available | Medium/High | Published |
+| Migration guidance | Partial | Available | High | Published |
+| Troubleshooting hub | Minimal | Available | High | Published |
+| Progression map | Minimal | Available | Medium/High | Published |
+| Performance/UPS notes | Yes | Available | Medium/High | Published |
+| Factory tours | Yes | Seeded | Medium | Published (seed content) |
 
 ## Candidate page backlog
+
+Most original P0/P1 gaps in this backlog are now published. Treat this table as enhancement follow-up, not missing-page triage.
 
 | Priority | Directory | Page | Source leverage | Rationale |
 | --- | --- | --- | --- | --- |
@@ -65,8 +67,23 @@ Use this workflow when creating or revising pages:
 - Keep version assumptions explicit when referencing old sources.
 - When in doubt, optimize for newcomer clarity and troubleshooting speed.
 
+## Cleanup candidates (reviewed pages)
+
+| Page | Current role | Owner | Decision note |
+| --- | --- | --- | --- |
+| `docs/building-example.md` | Component/example showcase | Docs maintainers | Keep temporarily; remove or relocate if not referenced by contributor workflows. |
+| `docs/tooltip-example.md` | Component/example showcase | Docs maintainers | Keep temporarily; remove if no active docs QA/testing use. |
+| `docs/reference/factoriopedia-help.md` | Specialized help page with custom layout | Docs maintainers | Keep for now; reassess discoverability and scope during next reference pass. |
+
 ## Source quality notes
 
 - Prioritize official 2.0 sources first (Mod Portal changelog/FAQ/discussions, release notes).
 - Use Fandom for legacy structure and topic discovery.
 - Use Reddit for practical pain points and examples, not as sole canonical source.
+
+## Sources and attribution
+
+Last verified: 2026-03-16
+
+- SeaBlock in-repo documentation and linked project pages.
+- Official Sea Block mod portal resources and community references, where applicable.

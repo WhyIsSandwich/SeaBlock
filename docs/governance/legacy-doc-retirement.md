@@ -36,3 +36,10 @@ This register tracks migration and safe removal of obsolete guidance/planning do
 - Scope inventory: complete
 - Migration mapping: complete
 - Removal gates: complete for all files in retirement scope
+
+## Sources and attribution
+
+Last verified: 2026-03-16
+
+- SeaBlock in-repo documentation and linked project pages.
+- Official Sea Block mod portal resources and community references, where applicable.

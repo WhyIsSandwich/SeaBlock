@@ -39,3 +39,10 @@ This audit records current effect processing entry points, supported shapes, and
 
 - Validate output labels/format consistency across all tooltip and details paths.
 - Expand test fixtures for additional modded prototypes with uncommon effect structures.
+
+## Sources and attribution
+
+Last verified: 2026-03-16
+
+- SeaBlock in-repo documentation and linked project pages.
+- Official Sea Block mod portal resources and community references, where applicable.
