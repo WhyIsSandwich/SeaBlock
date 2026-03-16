@@ -25,5 +25,13 @@ This section contains detailed walkthroughs, tips, and strategies for every stag
 
 [Read the Late Game guide →](/guides/late-game)
 
-Need quick answers while playing? Jump to the [Reference section](/reference/).
+## System Guides
+- [Processing](/guides/processing/) for power-adjacent ore and smelting transitions.
+- [Power](/guides/power/) for generation upgrade planning.
+- [Progression](/guides/progression/) for milestone-oriented planning.
+- [Bio](/guides/bio/) for arboretum and bio-science bottlenecks.
+- [Logistics](/guides/logistics/) for rail and city-block scaling.
+- [Performance](/guides/performance/) for UPS and throughput tradeoffs.
+
+Need quick answers while playing? Jump to [Reference](/reference/) or [Troubleshooting](/troubleshooting/).
 

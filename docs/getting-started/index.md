@@ -17,3 +17,5 @@ Ready to play? Start with these guides:
 - [First Steps](./first-steps.md): Your first actions after starting a new game.
 
 Once you’re set up, explore the [Guides](/guides/) for strategies on progressing through each stage of the game.
+
+If setup is not behaving as expected, use [Troubleshooting](/troubleshooting/) before starting a long run.

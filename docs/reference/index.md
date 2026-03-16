@@ -19,3 +19,12 @@ This section is a glossary to help clarify **SeaBlock-specific terms and shortha
 ## Why This Matters
 
 In-game, recipes and technologies have long formal names like _“Electrolysis 2”_. Players and guides often shorten these to **numbers or nicknames**. This glossary bridges that gap so you can quickly match community discussions with in-game terms.
+
+## Quick Access
+
+- [Significant Changes in SeaBlock 2.0](/reference/significant-changes-2-0)
+- [FAQ and Short Notes](/reference/faq-short-notes)
+- [Compatible Mods](/reference/compatible-mods)
+- [Calculators and Planners](/reference/calculators-and-planners)
+- [Migration 1.1 to 2.0](/reference/migration-1.1-to-2.0)
+- [Wiki TODO and Wanted Pages](/reference/wiki-todo-and-wanted-pages)
