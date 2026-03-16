@@ -43,15 +43,13 @@ This page is a practical first-session checklist for your first 30 minutes in Se
 
 <figure>
   <img
-    src="/images/getting-started/first-steps/starter-layout__first-10-minutes__v2-0__2026-03__01.webp"
+    src="./starter-layout__first-10-minutes__v2-0__2026-03__01.webp"
     alt="Sea Block starter layout in first 10 minutes"
   />
   <figcaption>Expected view: wind turbines, electrolysers, flare stacks, and first ore loop.</figcaption>
 </figure>
 
 </details>
-
-Capture guidance: [Wiki Screenshot Shot List](/reference/wiki-screenshot-shot-list)
 
 ## If progression looks wrong
 

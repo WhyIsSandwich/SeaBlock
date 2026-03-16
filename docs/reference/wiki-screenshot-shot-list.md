@@ -29,8 +29,6 @@ Example:
 
 | Status     | Doc page                                           | Screenshot needed                         | Suggested path                                   | Notes                               |
 | ---------- | -------------------------------------------------- | ----------------------------------------- | ------------------------------------------------ | ----------------------------------- |
-| STUB_ADDED | `/getting-started/installation`                    | Mod list and version confirmation screen  | `/public/images/getting-started/installation/`   | Page includes planned filename slot |
-| STUB_ADDED | `/getting-started/first-steps`                     | First 10-minute starter island            | `/public/images/getting-started/first-steps/`    | Page includes planned filename slot |
 | STUB_ADDED | `/troubleshooting/map-generation-and-ocean-issues` | Correct vs incorrect map start comparison | `/public/images/troubleshooting/map-generation/` | Page includes planned filename slot |
 | STUB_ADDED | `/troubleshooting/missing-recipe-and-mod-settings` | Mod setting mismatch example              | `/public/images/troubleshooting/mod-settings/`   | Page includes planned filename slot |
 

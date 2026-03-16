@@ -37,15 +37,13 @@ Before changing your base:
 
 <figure>
   <img
-    src="/images/troubleshooting/mod-settings/settings-mismatch__startup-options__v2-0__2026-03__01.webp"
+    src="./settings-mismatch__startup-options__v2-0__2026-03__01.webp"
     alt="Sea Block startup settings mismatch example"
   />
   <figcaption>Expected view: the exact startup setting mismatch highlighted.</figcaption>
 </figure>
 
 </details>
-
-Capture guidance: [Wiki Screenshot Shot List](/reference/wiki-screenshot-shot-list)
 
 ## Failure signatures
 

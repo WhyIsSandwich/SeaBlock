@@ -40,15 +40,13 @@ Use this page to get a clean, known-good Sea Block 2.0 install before you begin 
 
 <figure>
   <img
-    src="/images/getting-started/installation/install-verify__mod-list-and-version__v2-0__2026-03__01.webp"
+    src="./install-verify__mod-list-and-version__v2-0__2026-03__01.webp"
     alt="Sea Block install verification with mod list and version"
   />
   <figcaption>Expected view: Sea Block pack + version checks in one frame.</figcaption>
 </figure>
 
 </details>
-
-Capture guidance: [Wiki Screenshot Shot List](/reference/wiki-screenshot-shot-list)
 
 ## If anything looks wrong
 

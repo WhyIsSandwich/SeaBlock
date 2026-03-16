@@ -26,15 +26,13 @@ SeaBlock starts are sensitive to scenario and generation assumptions. If your wo
 
 <figure>
   <img
-    src="/images/troubleshooting/map-generation/map-start__correct-vs-incorrect__v2-0__2026-03__01.webp"
+    src="./map-start__correct-vs-incorrect__v2-0__2026-03__01.webp"
     alt="Correct vs incorrect Sea Block map start comparison"
   />
   <figcaption>Expected view: valid ocean/island start versus invalid worldgen start.</figcaption>
 </figure>
 
 </details>
-
-Capture guidance: [Wiki Screenshot Shot List](/reference/wiki-screenshot-shot-list)
 
 ## Common mistakes
 
