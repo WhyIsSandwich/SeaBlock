@@ -135,7 +135,26 @@ function buildSidebar(dir, basePath = '') {
       const groupTitle = titleSource
         ? getMarkdownTitle(titleSource, toTitleCase(sub))
         : toTitleCase(sub)
-      sidebar.push({ text: groupTitle, items: children })
+      // Avoid showing index/readme twice: once as group title and again as first item.
+      const sectionPrefix = `/${subRel.replace(/\\/g, '/').replace(/\/+/g, '/').replace(/^\/+|\/+$/g, '')}`.toLowerCase()
+      const indexLinks = new Set([
+        `${sectionPrefix}/index`,
+        `${sectionPrefix}/readme`,
+        sectionPrefix
+      ])
+      const filteredChildren = titleSource
+        ? children.filter(child => {
+            if (!('link' in child) || typeof child.link !== 'string') return true
+            const normalizedLink = child.link.replace(/\/+$/g, '').toLowerCase()
+            return !indexLinks.has(normalizedLink)
+          })
+        : children
+      const groupEntry = { text: groupTitle, items: filteredChildren }
+      if (titleSource) {
+        // Keep subgroup titles clickable to their landing page.
+        groupEntry.link = sectionPrefix
+      }
+      sidebar.push(groupEntry)
     }
   }
 
