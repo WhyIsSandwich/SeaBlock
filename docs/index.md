@@ -26,6 +26,12 @@ features:
   - title: 🔍 Reference Materials
     details: Quick access to recipes, technologies, and item data—perfect for when you need answers mid-factory.
     link: /reference/
+  - title: 🛠️ Troubleshooting
+    details: Fast diagnosis pages for installation issues, missing recipes, and map generation problems.
+    link: /troubleshooting/
+  - title: 🏭 Community Builds
+    details: Learn from factory tours and real run postmortems from the community.
+    link: /community/
   - title: 🤝 Community Driven
     details: Built by players, for players. Share strategies, add knowledge, and help grow the SeaBlock community.
     link: https://github.com/modded-factorio/SeaBlock
@@ -45,6 +51,8 @@ This wiki is your guide through that journey—from your first crushed stone to 
 - **Getting Started** – Install SeaBlock and learn the fundamentals of survival and resource generation.  
 - **Guides** – In-depth strategies for early, mid, and late game progression.  
 - **Reference** – Recipes, technologies, and item data at your fingertips.  
+- **Troubleshooting** – Common setup and progression blockers with concrete checks.
+- **Community** – Player showcases, factory tours, and shared patterns.
 - **Community Insights** – Tips, tricks, and designs contributed by fellow players.  
 
 ### Start Your Journey

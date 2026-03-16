@@ -25,6 +25,8 @@ export const configData = {
       { text: 'Getting Started', link: '/getting-started/' },
       { text: 'Guides', link: '/guides/' },
       { text: 'Reference', link: '/reference/' },
+      { text: 'Troubleshooting', link: '/troubleshooting/' },
+      { text: 'Community', link: '/community/' },
       { text: 'Governance', link: '/governance/' }
     ],
 
@@ -59,7 +61,33 @@ export const configData = {
             { text: 'Factoriopedia', link: '/reference/factoriopedia' },
             { text: 'Recipes', link: '/reference/recipes' },
             { text: 'Technologies', link: '/reference/technologies' },
-            { text: 'Items', link: '/reference/items' }
+            { text: 'Items', link: '/reference/items' },
+            { text: 'Significant Changes 2.0', link: '/reference/significant-changes-2-0' },
+            { text: 'FAQ and Short Notes', link: '/reference/faq-short-notes' },
+            { text: 'Compatible Mods', link: '/reference/compatible-mods' },
+            { text: 'Calculators and Planners', link: '/reference/calculators-and-planners' },
+            { text: 'Migration 1.1 to 2.0', link: '/reference/migration-1.1-to-2.0' },
+            { text: 'Wiki TODO and Wanted Pages', link: '/reference/wiki-todo-and-wanted-pages' }
+          ]
+        }
+      ],
+      '/troubleshooting/': [
+        {
+          text: 'Troubleshooting',
+          items: [
+            { text: 'Overview', link: '/troubleshooting/' },
+            { text: 'Install and Version Mismatch', link: '/troubleshooting/install-and-version-mismatch' },
+            { text: 'Missing Recipe and Mod Settings', link: '/troubleshooting/missing-recipe-and-mod-settings' },
+            { text: 'Map Generation and Ocean Issues', link: '/troubleshooting/map-generation-and-ocean-issues' }
+          ]
+        }
+      ],
+      '/community/': [
+        {
+          text: 'Community',
+          items: [
+            { text: 'Overview', link: '/community/' },
+            { text: 'Factory Tours', link: '/community/factory-tours' }
           ]
         }
       ]
