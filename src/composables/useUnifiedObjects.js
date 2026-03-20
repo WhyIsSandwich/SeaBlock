@@ -6,6 +6,20 @@
 export function useUnifiedObjects() {
   const aliasResolutionPriority = ['recipe', 'item', 'entity', 'fluid', 'tile']
 
+  function hasMatchingPrototypeName(prototype, expectedName) {
+    if (!prototype || !expectedName) return false
+    if (typeof prototype.name !== 'string' || prototype.name.length === 0) return false
+    return prototype.name === expectedName
+  }
+
+  function getMatchingPrototype(factorioData, type, expectedName) {
+    const prototype = factorioData?.[type]?.[expectedName]
+    if (!prototype) return null
+    if (shouldExcludeFromUnified(prototype)) return null
+    if (!hasMatchingPrototypeName(prototype, expectedName)) return null
+    return prototype
+  }
+
   function shouldExcludeFromUnified(prototype) {
     return Boolean(
       prototype?.hidden || prototype?.hidden_in_factoriopedia || prototype?.hidden_from_factorio
@@ -84,6 +98,40 @@ export function useUnifiedObjects() {
     return getFirstNonNullishPropertyValue(prototypes, 'description')
   }
 
+  function getEntityMinableItemNames(entity) {
+    if (!entity?.minable) return []
+    const names = []
+
+    if (typeof entity.minable.result === 'string' && entity.minable.result.length > 0) {
+      names.push(entity.minable.result)
+    }
+
+    if (Array.isArray(entity.minable.results)) {
+      for (const result of entity.minable.results) {
+        if (typeof result === 'string' && result.length > 0) {
+          names.push(result)
+          continue
+        }
+        if (result && typeof result.name === 'string' && result.name.length > 0) {
+          names.push(result.name)
+        }
+      }
+    }
+
+    return names
+  }
+
+  function getEntityLinkedItem(entity, factorioData) {
+    if (!entity || !factorioData?.item) return null
+    const candidateNames = getEntityMinableItemNames(entity)
+    for (const itemName of candidateNames) {
+      const item = getMatchingPrototype(factorioData, 'item', itemName)
+      if (!item) continue
+      if (item.place_result === entity.name) return item
+    }
+    return null
+  }
+
   function getRecipePrimaryProduct(recipe, factorioData) {
     if (!recipe || !factorioData) return null
 
@@ -116,14 +164,14 @@ export function useUnifiedObjects() {
 
     const allTypes = {}
     for (const prototype of Object.keys(factorioData)) {
-      allTypes[prototype] = factorioData[prototype][resolvedKey]
+      allTypes[prototype] = getMatchingPrototype(factorioData, prototype, resolvedKey)
     }
     // Start with the base data for this key (ignore hidden entries when unifying)
-    const item = shouldExcludeFromUnified(allTypes.item) ? null : allTypes.item
-    const fluid = shouldExcludeFromUnified(allTypes.fluid) ? null : allTypes.fluid
-    const entity = shouldExcludeFromUnified(allTypes.entity) ? null : allTypes.entity
-    const recipe = shouldExcludeFromUnified(allTypes.recipe) ? null : allTypes.recipe
-    const tile = shouldExcludeFromUnified(allTypes.tile) ? null : allTypes.tile
+    const item = allTypes.item
+    const fluid = allTypes.fluid
+    const entity = allTypes.entity
+    const recipe = allTypes.recipe
+    const tile = allTypes.tile
     /*
     const recipe = { ...recipesData?.[key] }
 
@@ -156,7 +204,6 @@ export function useUnifiedObjects() {
     for (const [type, value] of Object.entries(allTypes)) {
       if (handledTypes.has(type)) continue
       if (!value) continue
-      if (shouldExcludeFromUnified(value)) continue
       if (excludedTypes.includes(type)) continue
       const unifiedObject = {
         types: [type],
@@ -246,33 +293,45 @@ export function useUnifiedObjects() {
           recipeUsed = true
         }
       }
-      if (entity) {
-        //Check if the entity is compatible with the item
-        const results = entity?.minable?.results
-        if (
-          item.place_result === resolvedKey ||
-          results == resolvedKey ||
-          results?.every(item => item.name === resolvedKey)
-        ) {
-          unifiedObject.entity = entity
+      {
+        // Check if the entity is compatible with the item.
+        // Intentional cross-name relationship: place_result and minable can link different prototype names.
+        const entityFromPlacement = item.place_result
+          ? getMatchingPrototype(factorioData, 'entity', item.place_result)
+          : null
+        const candidateEntity = entityFromPlacement || entity
+        const minesCurrentItem = getEntityMinableItemNames(candidateEntity).includes(item.name)
+        const placeResultMatches = Boolean(
+          item.place_result && item.place_result === candidateEntity?.name
+        )
+
+        if (candidateEntity && (placeResultMatches || minesCurrentItem)) {
+          unifiedObject.entity = candidateEntity
           unifiedObject.types.push('entity')
-          entityUsed = true
+          if (candidateEntity === entity) {
+            entityUsed = true
+          }
         }
       }
       //Check if the tile is compatible with the item
       if (item.place_as_tile) {
         const tileName = item.place_as_tile.result
-        unifiedObject.tile = factorioData.tile[tileName]
-        unifiedObject.types.push('tile')
-        if (tileName === resolvedKey) {
-          tileUsed = true
+        const tileByPlacement = getMatchingPrototype(factorioData, 'tile', tileName)
+        if (tileByPlacement) {
+          // Intentional cross-name relationship: item can place a tile with a different prototype name.
+          unifiedObject.tile = tileByPlacement
+          unifiedObject.types.push('tile')
+          if (tileName === resolvedKey) {
+            tileUsed = true
+          }
         }
       }
       //Check if the equipment is compatible with the item
       if (item.place_as_equipment_result) {
         const equipmentName = item.place_as_equipment_result
-        const equipment = factorioData.equipment?.[equipmentName]
-        if (equipment && !shouldExcludeFromUnified(equipment)) {
+        const equipment = getMatchingPrototype(factorioData, 'equipment', equipmentName)
+        if (equipment) {
+          // Intentional cross-name relationship: an item can place a different equipment prototype.
           unifiedObject.equipment = equipment
           unifiedObject.types.push('equipment')
         }
@@ -284,7 +343,9 @@ export function useUnifiedObjects() {
       // check if it would've been part of an item
       const placeAsTileItem = Object.values(factorioData.item).filter(
         item =>
-          !shouldExcludeFromUnified(item) && item.place_as_tile && item.place_as_tile.result === key
+          !shouldExcludeFromUnified(item) &&
+          item.place_as_tile &&
+          item.place_as_tile.result === resolvedKey
       )
       if (placeAsTileItem.length === 0 && tile.next_direction) {
         // walk the tile data until and end or we cycle back to the original tile
@@ -318,6 +379,12 @@ export function useUnifiedObjects() {
         types: ['entity'],
         source: 'entity',
         entity
+      }
+      const linkedItem = getEntityLinkedItem(entity, factorioData)
+      if (linkedItem) {
+        // Intentional cross-name relationship in reverse direction for entity-key lookups.
+        unifiedObject.item = linkedItem
+        unifiedObject.types.push('item')
       }
       objects.push(unifiedObject)
     }

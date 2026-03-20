@@ -208,6 +208,7 @@ const {
   precomputeCategoryStructure,
   createUnifiedSelectionObject,
   getSciencePackNamesFromTechnologies,
+  getSciencePackDependencyMap,
   createSciencePackVisibility
 } = useFactorioData()
 const selectedItem = ref(null)
@@ -298,20 +299,71 @@ const sciencePackOptions = computed(() => {
     })
 })
 
+const sciencePackDependencyMap = computed(() => getSciencePackDependencyMap())
+
+const sciencePackOrderLookup = computed(() => {
+  const lookup = new Map()
+  sciencePackOptions.value.forEach((pack, index) => {
+    lookup.set(pack.name, index)
+  })
+  return lookup
+})
+
 function clearSciencePackFilters() {
   selectedSciencePacks.value = []
+}
+
+function collectSciencePackDependencies(packName, dependencyMap, collected = new Set()) {
+  const dependencies = dependencyMap?.[packName] || []
+  dependencies.forEach(dependencyName => {
+    if (!collected.has(dependencyName)) {
+      collected.add(dependencyName)
+      collectSciencePackDependencies(dependencyName, dependencyMap, collected)
+    }
+  })
+  return collected
+}
+
+function pruneInaccessibleSciencePacks(selectedSet, dependencyMap) {
+  let changed = true
+  while (changed) {
+    changed = false
+    for (const packName of Array.from(selectedSet)) {
+      const dependencies = dependencyMap?.[packName] || []
+      const hasMissingDependency = dependencies.some(dependencyName => !selectedSet.has(dependencyName))
+      if (hasMissingDependency) {
+        selectedSet.delete(packName)
+        changed = true
+      }
+    }
+  }
+}
+
+function toOrderedSciencePackArray(selectedSet) {
+  const orderLookup = sciencePackOrderLookup.value
+  return Array.from(selectedSet).sort((left, right) => {
+    const leftOrder = orderLookup.get(left) ?? Number.MAX_SAFE_INTEGER
+    const rightOrder = orderLookup.get(right) ?? Number.MAX_SAFE_INTEGER
+    if (leftOrder !== rightOrder) return leftOrder - rightOrder
+    return left.localeCompare(right)
+  })
 }
 
 function toggleSciencePack(packName) {
   if (!packName) return
 
+  const dependencyMap = sciencePackDependencyMap.value
   const selected = new Set(selectedSciencePacks.value)
   if (selected.has(packName)) {
     selected.delete(packName)
+    pruneInaccessibleSciencePacks(selected, dependencyMap)
   } else {
     selected.add(packName)
+    collectSciencePackDependencies(packName, dependencyMap).forEach(dependencyName => {
+      selected.add(dependencyName)
+    })
   }
-  selectedSciencePacks.value = Array.from(selected)
+  selectedSciencePacks.value = toOrderedSciencePackArray(selected)
 }
 
 // Computed property for filtered and grouped recipes

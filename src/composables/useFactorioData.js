@@ -674,6 +674,43 @@ function createFactorioDataInstance() {
     return [...indexes.metadata.allSciencePackNames]
   }
 
+  function getSciencePackDependencyMap() {
+    const indexes = ensureAvailabilityIndexes()
+    const allPackNames = indexes.metadata.allSciencePackNames || []
+    const dependencyMap = {}
+
+    allPackNames.forEach(packName => {
+      const requiredSets = []
+
+      indexes.metadata.allTechnologyNames.forEach(technologyName => {
+        const requiredPacks = indexes.techIndex.techRequiredSciencePacks.get(technologyName)
+        if (requiredPacks instanceof Set && requiredPacks.has(packName)) {
+          requiredSets.push(requiredPacks)
+        }
+      })
+
+      if (requiredSets.length === 0) {
+        dependencyMap[packName] = []
+        return
+      }
+
+      const intersection = new Set(requiredSets[0])
+      for (let i = 1; i < requiredSets.length; i += 1) {
+        const currentSet = requiredSets[i]
+        for (const candidate of Array.from(intersection)) {
+          if (!currentSet.has(candidate)) {
+            intersection.delete(candidate)
+          }
+        }
+      }
+
+      intersection.delete(packName)
+      dependencyMap[packName] = Array.from(intersection).sort()
+    })
+
+    return dependencyMap
+  }
+
   function createSciencePackVisibility(selectedSciencePacks = []) {
     const indexes = ensureAvailabilityIndexes()
     const selectedSciencePackSet = asSciencePackSet(selectedSciencePacks)
@@ -1187,6 +1224,7 @@ function createFactorioDataInstance() {
     getTechnologyEffects,
     getTechnologiesByEffectType,
     getSciencePackNamesFromTechnologies,
+    getSciencePackDependencyMap,
     getRequiredSciencePackNamesForTechnology,
     isTechnologyVisibleBySciencePacks,
     isRecipeVisibleBySciencePacks,

@@ -155,4 +155,164 @@ describe('useUnifiedObjects.createUnifiedObjectByKey', () => {
     expect(recipeObject.subgroup).toBe('chemicals')
     expect(recipeObject.order).toBe('r-1')
   })
+
+  it('ignores same-key prototypes with mismatched internal names', () => {
+    const { createUnifiedObjectByKey } = useUnifiedObjects()
+    const factorioData = {
+      item: {
+        foo: {
+          type: 'item',
+          name: 'foo',
+          subgroup: 'misc',
+          order: 'a',
+          displayName: 'Foo'
+        }
+      },
+      recipe: {
+        foo: {
+          type: 'recipe',
+          name: 'bar',
+          subgroup: 'misc',
+          order: 'b',
+          displayName: 'Bar Recipe',
+          main_product: 'bar',
+          results: [{ name: 'bar' }]
+        }
+      },
+      entity: {},
+      fluid: {},
+      tile: {},
+      equipment: {},
+      'item-subgroup': {},
+      'item-group': {}
+    }
+
+    const unified = createUnifiedObjectByKey('foo', factorioData)
+    const fooItem = unified.find(entry => entry.source === 'item')
+    const recipeObject = unified.find(entry => entry.source === 'recipe')
+
+    expect(fooItem).toBeDefined()
+    expect(fooItem.recipe).toBeUndefined()
+    expect(recipeObject).toBeUndefined()
+  })
+
+  it('keeps intentional cross-name place_as_tile relationships', () => {
+    const { createUnifiedObjectByKey } = useUnifiedObjects()
+    const factorioData = {
+      item: {
+        landfill: {
+          type: 'item',
+          name: 'landfill',
+          subgroup: 'terrain',
+          order: 'a',
+          displayName: 'Landfill',
+          place_as_tile: { result: 'landfill-tile' }
+        }
+      },
+      recipe: {},
+      entity: {},
+      fluid: {},
+      tile: {
+        'landfill-tile': {
+          type: 'tile',
+          name: 'landfill-tile',
+          subgroup: 'terrain',
+          order: 'a',
+          displayName: 'Landfill Tile'
+        }
+      },
+      equipment: {},
+      'item-subgroup': {},
+      'item-group': {}
+    }
+
+    const unified = createUnifiedObjectByKey('landfill', factorioData)
+    const landfillItem = unified.find(entry => entry.source === 'item')
+
+    expect(landfillItem).toBeDefined()
+    expect(landfillItem.types).toContain('tile')
+    expect(landfillItem.tile?.name).toBe('landfill-tile')
+  })
+
+  it('merges cross-name item/entity via place_result and minable output', () => {
+    const { createUnifiedObjectByKey } = useUnifiedObjects()
+    const factorioData = {
+      item: {
+        'long-handed-inserter': {
+          type: 'item',
+          name: 'long-handed-inserter',
+          subgroup: 'inserter',
+          order: 'a',
+          displayName: 'Long-handed inserter',
+          place_result: 'bob-red-inserter'
+        }
+      },
+      recipe: {},
+      entity: {
+        'bob-red-inserter': {
+          type: 'inserter',
+          name: 'bob-red-inserter',
+          subgroup: 'inserter',
+          order: 'a',
+          displayName: 'Bob red inserter',
+          minable: {
+            results: [{ name: 'long-handed-inserter' }]
+          }
+        }
+      },
+      fluid: {},
+      tile: {},
+      equipment: {},
+      'item-subgroup': {},
+      'item-group': {}
+    }
+
+    const unified = createUnifiedObjectByKey('long-handed-inserter', factorioData)
+    const itemObject = unified.find(entry => entry.source === 'item')
+
+    expect(itemObject).toBeDefined()
+    expect(itemObject.types).toContain('entity')
+    expect(itemObject.entity?.name).toBe('bob-red-inserter')
+  })
+
+  it('merges cross-name entity/item when looked up by entity key', () => {
+    const { createUnifiedObjectByKey } = useUnifiedObjects()
+    const factorioData = {
+      item: {
+        'long-handed-inserter': {
+          type: 'item',
+          name: 'long-handed-inserter',
+          subgroup: 'inserter',
+          order: 'a',
+          displayName: 'Long-handed inserter',
+          place_result: 'bob-red-inserter'
+        }
+      },
+      recipe: {},
+      entity: {
+        'bob-red-inserter': {
+          type: 'inserter',
+          name: 'bob-red-inserter',
+          subgroup: 'inserter',
+          order: 'a',
+          displayName: 'Bob red inserter',
+          minable: {
+            results: [{ name: 'long-handed-inserter' }]
+          }
+        }
+      },
+      fluid: {},
+      tile: {},
+      equipment: {},
+      'item-subgroup': {},
+      'item-group': {}
+    }
+
+    const unified = createUnifiedObjectByKey('bob-red-inserter', factorioData)
+    const entityObject = unified.find(entry => entry.source === 'entity')
+
+    expect(entityObject).toBeDefined()
+    expect(entityObject.types).toContain('item')
+    expect(entityObject.item?.name).toBe('long-handed-inserter')
+  })
 })
