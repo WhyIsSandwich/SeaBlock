@@ -223,6 +223,25 @@ function createFactorioDataInstance() {
     return []
   }
 
+  function normalizeLootResults(loot) {
+    if (!Array.isArray(loot) || loot.length === 0) return []
+    return loot
+      .map(entry => {
+        if (!entry) return null
+        const name =
+          (typeof entry.item === 'string' && entry.item) ||
+          (typeof entry.name === 'string' && entry.name) ||
+          null
+        if (!name) return null
+        return {
+          type: entry.type === 'fluid' ? 'fluid' : 'item',
+          name,
+          amount: entry.count_min ?? entry.amount ?? 1
+        }
+      })
+      .filter(Boolean)
+  }
+
   function getPrototypeSurfaceRequirements(prototype) {
     const requirements = new Set()
     if (!prototype) return requirements
@@ -458,7 +477,8 @@ function createFactorioDataInstance() {
       const entityType = entity.type || ''
 
       const naturalEntityTypes = new Set(['resource', 'fish', 'tree', 'plant'])
-      if (entity.autoplace || naturalEntityTypes.has(entityType)) {
+      const lootResults = normalizeLootResults(entity.loot)
+      if (entity.autoplace || naturalEntityTypes.has(entityType) || lootResults.length > 0) {
         addNaturalSeed('entity', entityName)
       }
 
@@ -495,6 +515,17 @@ function createFactorioDataInstance() {
             if (entityType !== 'resource') return true
             return state.canMineResource(resourceCategory, requiresFluid)
           }
+        })
+      })
+
+      lootResults.forEach(result => {
+        if (!result?.name) return
+        const outputType = result.type === 'fluid' ? 'fluid' : 'item'
+        addPathway(outputType, result.name, {
+          kind: 'enemy_loot',
+          sourceType: 'entity',
+          sourceName: entityName,
+          requires: state => state.isObjectVisible('entity', entityName)
         })
       })
     }
