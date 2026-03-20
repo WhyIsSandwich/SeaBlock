@@ -61,7 +61,8 @@ function applyAllRules(unifiedObject, types, isTooltip, factorioData, options = 
     isTooltip,
     factorioData: processedFactorioData,
     factorioDataRaw: factorioData,
-    types
+    types,
+    visibilityFilter: options.visibilityFilter || null
   }
 
   // Apply all rules at once
@@ -85,7 +86,41 @@ function applyAllRules(unifiedObject, types, isTooltip, factorioData, options = 
   const regularSections = sections.filter(section => section.type !== pinnedSectionType)
   const orderedSections = [...regularSections, ...pinnedSections]
 
-  return { statistics, sections: orderedSections }
+  const visibilityFilter = options.visibilityFilter
+  const filteredSections = orderedSections
+    .map(section => {
+      if (
+        !visibilityFilter ||
+        section.type === 'technology_cost' ||
+        !Array.isArray(section.items) ||
+        section.items.length === 0
+      ) {
+        return section
+      }
+
+      const visibleItems = section.items.filter(item => {
+        if (!item?.type || !item?.name) return true
+        return visibilityFilter.isObjectVisible(item.type, item.name, item)
+      })
+
+      return {
+        ...section,
+        items: visibleItems
+      }
+    })
+    .filter(section => {
+      const hasItems = Array.isArray(section.items) && section.items.length > 0
+      const hasStats = Array.isArray(section.statistics) && section.statistics.length > 0
+
+      if (section.type === 'crafting_time') return hasStats
+      if (section.type === 'technology_cost' || section.type === 'unlock_technologies') {
+        return hasItems
+      }
+
+      return hasItems || hasStats
+    })
+
+  return { statistics, sections: filteredSections }
 }
 
 /***

@@ -54,7 +54,7 @@
         <div :style="{ ...categoryGrid.containerStyles, overflowY: 'visible' }">
           <div :style="categoryGrid.subgroupStyles">
             <button
-              v-for="category in primaryCategories"
+              v-for="category in visiblePrimaryCategories"
               :key="category.key"
               :class="[
                 $style.filterButton,
@@ -80,6 +80,44 @@
 
         <!-- Search -->
         <div :class="$style.searchContainer">
+          <div :class="$style.sciencePackFilterSection">
+            <div :class="$style.sciencePackFilterHeader">
+              <span>Science packs</span>
+              <div :class="$style.sciencePackHeaderRight">
+                <span :class="$style.selectedCountBadge">
+                  {{ selectedSciencePacks.length }}/{{ sciencePackOptions.length }}
+                </span>
+                <button
+                  :class="$style.clearScienceFiltersButton"
+                  :disabled="selectedSciencePacks.length === 0"
+                  @click="clearSciencePackFilters"
+                >
+                  Clear
+                </button>
+              </div>
+            </div>
+            <div :class="$style.sciencePackStrip">
+              <button
+                v-for="pack in sciencePackOptions"
+                :key="pack.name"
+                :class="[
+                  $style.sciencePackButton,
+                  {
+                    [$style.active]: selectedSciencePackSet.has(pack.name)
+                  }
+                ]"
+                :title="pack.displayName"
+                @click="toggleSciencePack(pack.name)"
+              >
+                <SpriteIcon
+                  :sprite-key="`item-${pack.name}`"
+                  :size="28"
+                  :fill-ratio="CATEGORY_ICON_FILL_RATIO"
+                  :title="pack.displayName"
+                />
+              </button>
+            </div>
+          </div>
           <input
             v-model="searchQuery"
             type="text"
@@ -135,11 +173,12 @@
         <DetailsPane
           :name="selectedItem?.name"
           :type="selectedItem ? getPrimaryType(selectedItem) : null"
+          :science-pack-visibility="sciencePackVisibility"
           :is-animation-paused="isAnimationPaused"
           :can-go-back="canGoBack"
           :can-go-forward="canGoForward"
           :show-history-dropdown="showMRUDropdown"
-          :history-items="mruItems"
+          :history-items="visibleMRUItems"
           @toggle-animation-pause="toggleAnimationPause"
           @navigate-back="navigateBack"
           @navigate-forward="navigateForward"
@@ -164,11 +203,18 @@ import DetailsPane from './DetailsPane.vue'
 // Use the composables
 const { getPrimaryType } = useUnifiedObjects()
 
-const { loadAllData, precomputeCategoryStructure, createUnifiedSelectionObject } = useFactorioData()
+const {
+  loadAllData,
+  precomputeCategoryStructure,
+  createUnifiedSelectionObject,
+  getSciencePackNamesFromTechnologies,
+  createSciencePackVisibility
+} = useFactorioData()
 const selectedItem = ref(null)
 const selectedCategory = ref('logistics')
 const searchQuery = ref('')
 const isAnimationPaused = ref(false)
+const selectedSciencePacks = ref([])
 
 // Navigation stack for forward/back functionality
 const navigationStack = ref([])
@@ -189,6 +235,11 @@ const primaryCategories = ref([])
 const secondaryCategories = ref([])
 const isMobileViewport = ref(false)
 const activeMobilePanel = ref('browse')
+
+const selectedSciencePackSet = computed(() => new Set(selectedSciencePacks.value))
+const sciencePackVisibility = computed(() => createSciencePackVisibility(selectedSciencePacks.value))
+const hasActiveScienceFilter = computed(() => selectedSciencePacks.value.length > 0)
+const recipeSearchTextCache = new WeakMap()
 
 const itemGrid = computed(() =>
   useFactorioGrid({
@@ -212,64 +263,135 @@ const categoryGrid = computed(() =>
   })
 )
 
+function isSelectionAllowed(type, name, data = null) {
+  return sciencePackVisibility.value.isObjectVisible(type, name, data)
+}
+
+function getRecipeSearchText(recipe) {
+  if (!recipe || typeof recipe !== 'object') return ''
+  if (recipeSearchTextCache.has(recipe)) {
+    return recipeSearchTextCache.get(recipe)
+  }
+  const searchText = recipe.displayName?.toLowerCase?.() || ''
+  recipeSearchTextCache.set(recipe, searchText)
+  return searchText
+}
+
+const sciencePackOptions = computed(() => {
+  const packNames = getSciencePackNamesFromTechnologies()
+
+  return packNames
+    .map(packName => {
+      const packObject = createUnifiedSelectionObject('item', packName)
+
+      return {
+        name: packName,
+        displayName: packObject?.displayName || packName,
+        order: packObject?.order || ''
+      }
+    })
+    .sort((a, b) => {
+      if (a.order && b.order) return a.order.localeCompare(b.order)
+      if (a.order) return -1
+      if (b.order) return 1
+      return a.displayName.localeCompare(b.displayName)
+    })
+})
+
+function clearSciencePackFilters() {
+  selectedSciencePacks.value = []
+}
+
+function toggleSciencePack(packName) {
+  if (!packName) return
+
+  const selected = new Set(selectedSciencePacks.value)
+  if (selected.has(packName)) {
+    selected.delete(packName)
+  } else {
+    selected.add(packName)
+  }
+  selectedSciencePacks.value = Array.from(selected)
+}
+
 // Computed property for filtered and grouped recipes
-const groupedRecipes = computed(() => {
+const filteredSubgroupsByCategory = computed(() => {
   if (!categoryStructure.value || Object.keys(categoryStructure.value).length === 0) {
-    return []
+    return {}
   }
 
-  const category = selectedCategory.value
-  let categoryData = categoryStructure.value[category]
+  const query = searchQuery.value.trim().toLowerCase()
+  const filteredByCategory = {}
+  const visibleSet = sciencePackVisibility.value
 
-  if (!categoryData) {
-    return []
+  Object.entries(categoryStructure.value).forEach(([categoryKey, categoryData]) => {
+    if (!categoryData) {
+      filteredByCategory[categoryKey] = []
+      return
+    }
+
+    const filteredSubgroups = categoryData.subgroups
+      .map(subgroup => {
+        const recipes = subgroup.recipes.filter(recipe => {
+          if (!visibleSet.isUnifiedObjectVisible(recipe)) return false
+          if (!query) return true
+          return getRecipeSearchText(recipe).includes(query)
+        })
+        return recipes.length > 0 ? { ...subgroup, recipes } : null
+      })
+      .filter(Boolean)
+
+    filteredByCategory[categoryKey] = filteredSubgroups
+  })
+
+  return filteredByCategory
+})
+
+const groupedRecipes = computed(() => {
+  if (!selectedCategory.value) return []
+  return filteredSubgroupsByCategory.value[selectedCategory.value] || []
+})
+
+const enabledCategoryKeys = computed(() => {
+  const enabled = new Set()
+  Object.entries(filteredSubgroupsByCategory.value).forEach(([categoryKey, subgroups]) => {
+    if ((subgroups || []).length > 0) {
+      enabled.add(categoryKey)
+    }
+  })
+  return enabled
+})
+
+const visiblePrimaryCategories = computed(() => {
+  if (!hasActiveScienceFilter.value) {
+    return primaryCategories.value
   }
+  return primaryCategories.value.filter(category => enabledCategoryKeys.value.has(category.key))
+})
 
-  // Apply search filter if needed
-  if (searchQuery.value) {
-    const query = searchQuery.value.toLowerCase()
-    categoryData = {
-      ...categoryData,
-      subgroups: categoryData.subgroups
-        .map(subgroup => ({
-          ...subgroup,
-          recipes: subgroup.recipes.filter(recipe =>
-            recipe.displayName?.toLowerCase()?.includes(query)
-          )
-        }))
-        .filter(subgroup => subgroup.recipes.length > 0)
+const firstEnabledCategoryKey = computed(() => {
+  const sortedCategories = [...primaryCategories.value]
+  for (const category of sortedCategories) {
+    if (enabledCategoryKeys.value.has(category.key)) {
+      return category.key
     }
   }
-
-  return categoryData.subgroups
+  return null
 })
 
 // Computed property to determine which filters have no items when searching
 const disabledFilters = computed(() => {
-  if (!searchQuery.value || !categoryStructure.value) {
+  if (
+    !categoryStructure.value ||
+    (!searchQuery.value.trim() && !hasActiveScienceFilter.value)
+  ) {
     return new Set()
   }
 
-  const query = searchQuery.value.toLowerCase()
   const disabled = new Set()
 
-  // Check each category to see if it has any items matching the search
   Object.keys(categoryStructure.value).forEach(categoryKey => {
-    const categoryData = categoryStructure.value[categoryKey]
-    if (!categoryData) return
-
-    // Apply the same search filter logic as in groupedRecipes
-    const filteredSubgroups = categoryData.subgroups
-      .map(subgroup => ({
-        ...subgroup,
-        recipes: subgroup.recipes.filter(recipe =>
-          recipe.displayName?.toLowerCase()?.includes(query)
-        )
-      }))
-      .filter(subgroup => subgroup.recipes.length > 0)
-
-    // If no subgroups have any matching recipes, disable this filter
-    if (filteredSubgroups.length === 0) {
+    if (!enabledCategoryKeys.value.has(categoryKey)) {
       disabled.add(categoryKey)
     }
   })
@@ -280,6 +402,9 @@ const disabledFilters = computed(() => {
 // Navigation stack computed properties
 const canGoBack = computed(() => currentStackIndex.value > 0)
 const canGoForward = computed(() => currentStackIndex.value < navigationStack.value.length - 1)
+const visibleMRUItems = computed(() =>
+  mruItems.value.filter(item => isSelectionAllowed(item.type, item.name, item.data || item))
+)
 
 // Navigation functions
 function addToNavigationStack(item) {
@@ -303,7 +428,10 @@ function navigateBack() {
   if (canGoBack.value) {
     currentStackIndex.value--
     const item = navigationStack.value[currentStackIndex.value]
-    selectedItem.value = createUnifiedSelectionObject(item.type, item.name, item.data)
+    const candidate = createUnifiedSelectionObject(item.type, item.name, item.data)
+    if (candidate && isSelectionAllowed(item.type, item.name, candidate)) {
+      selectedItem.value = candidate
+    }
   }
 }
 
@@ -311,7 +439,10 @@ function navigateForward() {
   if (canGoForward.value) {
     currentStackIndex.value++
     const item = navigationStack.value[currentStackIndex.value]
-    selectedItem.value = createUnifiedSelectionObject(item.type, item.name, item.data)
+    const candidate = createUnifiedSelectionObject(item.type, item.name, item.data)
+    if (candidate && isSelectionAllowed(item.type, item.name, candidate)) {
+      selectedItem.value = candidate
+    }
   }
 }
 
@@ -455,7 +586,7 @@ watch(
 function selectItem(type, name, data = null) {
   const unifiedObject = createUnifiedSelectionObject(type, name, data)
 
-  if (unifiedObject) {
+  if (unifiedObject && isSelectionAllowed(type, name, unifiedObject)) {
     selectedItem.value = unifiedObject
     addToNavigationStack(unifiedObject)
     addToMRU(unifiedObject)
@@ -464,6 +595,42 @@ function selectItem(type, name, data = null) {
     }
   }
 }
+
+watch(
+  () => selectedSciencePacks.value,
+  () => {
+    if (!selectedItem.value) return
+    const type = getPrimaryType(selectedItem.value)
+    const isVisible = isSelectionAllowed(type, selectedItem.value.name, selectedItem.value)
+    if (!isVisible) {
+      selectedItem.value = null
+      if (isMobileViewport.value) {
+        activeMobilePanel.value = 'browse'
+      }
+      updateURL()
+    }
+  },
+)
+
+watch(
+  [disabledFilters, categoryStructure, firstEnabledCategoryKey],
+  () => {
+    if (!selectedCategory.value || !categoryStructure.value?.[selectedCategory.value]) {
+      const firstCategory = firstEnabledCategoryKey.value
+      if (firstCategory) {
+        selectedCategory.value = firstCategory
+      }
+      return
+    }
+
+    if (disabledFilters.value.has(selectedCategory.value)) {
+      const firstEnabled = firstEnabledCategoryKey.value
+      if (firstEnabled) {
+        selectedCategory.value = firstEnabled
+      }
+    }
+  }
+)
 
 function updateMobileViewport() {
   if (typeof window === 'undefined') return
@@ -699,6 +866,93 @@ const filterGrid = useFactorioGrid({
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.04),
     0 1px 3px rgba(0, 0, 0, 0.35);
+}
+
+.sciencePackFilterSection {
+  margin-bottom: 8px;
+}
+
+.sciencePackFilterHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+  color: #cfcfcf;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.sciencePackHeaderRight {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.selectedCountBadge {
+  font-size: 10px;
+  font-weight: 700;
+  color: #e6e6e6;
+  background: #1f1f1f;
+  border: 1px solid #4a4a4a;
+  border-radius: 10px;
+  padding: 1px 6px;
+}
+
+.sciencePackStrip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  max-height: 116px;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+.sciencePackButton {
+  width: 34px;
+  height: 34px;
+  min-width: 34px;
+  min-height: 34px;
+  max-width: 34px;
+  max-height: 34px;
+  border: 1px solid #4f4f4f;
+  border-radius: 2px;
+  background: linear-gradient(to bottom, #434343, #343434);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+
+.sciencePackButton:hover {
+  border-color: #6f6f6f;
+  background: linear-gradient(to bottom, #525252, #3f3f3f);
+}
+
+.sciencePackButton.active {
+  background: linear-gradient(to bottom, #efb046, #c5861d);
+  border-color: #d89b2a;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 224, 160, 0.25),
+    0 1px 2px rgba(0, 0, 0, 0.45);
+}
+
+.clearScienceFiltersButton {
+  background: linear-gradient(to bottom, #3a3a3a, #2a2a2a);
+  border: 1px solid #575757;
+  border-radius: 2px;
+  color: #d5d5d5;
+  font-size: 11px;
+  padding: 2px 6px;
+  cursor: pointer;
+}
+
+.clearScienceFiltersButton:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .searchInput {
@@ -1146,6 +1400,36 @@ const filterGrid = useFactorioGrid({
   .factoripediaHeader h2 {
     font-size: 16px;
   }
+
+  .sciencePackFilterSection {
+    margin-bottom: 6px;
+  }
+
+  .sciencePackFilterHeader {
+    margin-bottom: 4px;
+  }
+
+  .sciencePackStrip {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    max-height: none;
+    padding-bottom: 2px;
+    scrollbar-width: thin;
+  }
+
+  .sciencePackButton {
+    width: 30px;
+    height: 30px;
+    min-width: 30px;
+    min-height: 30px;
+    max-width: 30px;
+    max-height: 30px;
+  }
+
+  .selectedCountBadge {
+    font-size: 9px;
+  }
 }
 
 /* iPhone 12 Pro and similar devices */
@@ -1191,6 +1475,15 @@ const filterGrid = useFactorioGrid({
 
   .searchContainer {
     padding: 6px;
+  }
+
+  .sciencePackButton {
+    width: 28px;
+    height: 28px;
+    min-width: 28px;
+    min-height: 28px;
+    max-width: 28px;
+    max-height: 28px;
   }
 
   .mobilePanelControls {

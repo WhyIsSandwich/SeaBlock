@@ -307,6 +307,10 @@ const props = defineProps({
   historyItems: {
     type: Array,
     default: () => []
+  },
+  sciencePackVisibility: {
+    type: Object,
+    default: null
   }
 })
 
@@ -341,7 +345,8 @@ const detailsData = computed(() => {
   const data =
     selectedItem.value &&
     getDetailsData(selectedItem.value.types, selectedItem.value, false, organizedData.value, {
-      excludeHiddenFromFactorioData: true
+      excludeHiddenFromFactorioData: true,
+      visibilityFilter: props.sciencePackVisibility
     })
   console.log('detailsData', data)
   return data
