@@ -1,6 +1,7 @@
 <template>
   <ClientOnly>
     <span
+      ref="triggerRef"
       class="tooltip-trigger"
       :tabindex="focusableTrigger ? 0 : -1"
       :role="focusableTrigger ? 'button' : null"
@@ -15,6 +16,7 @@
       <Teleport to="body">
         <div
           v-if="isVisible && shouldShowTooltips"
+          ref="tooltipRef"
           :id="tooltipId"
           :class="tooltipClasses"
           :style="tooltipStyle"
@@ -94,6 +96,7 @@
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 
 import { useTooltipData } from '../../../src/composables/useTooltipData.js'
+import { computeTooltipPosition } from './tooltipPosition.js'
 
 import DetailsPaneSection from './DetailsPaneSection.vue'
 import FactorioRichText from './FactorioRichText.vue'
@@ -129,9 +132,16 @@ const tooltipDatas = ref(null)
 const tooltipStyle = ref({})
 const showTimeout = ref(null)
 const hideTimeout = ref(null)
+const heartbeatInterval = ref(null)
 const isLoading = ref(false)
 const hasError = ref(false)
 const mousePosition = ref({ x: 0, y: 0 })
+const triggerRef = ref(null)
+const tooltipRef = ref(null)
+const lastInteractiveAt = ref(Date.now())
+
+const TOOLTIP_HIDE_GRACE_MS = 350
+const TOOLTIP_HEARTBEAT_MS = 150
 
 // Generate unique tooltip ID
 const tooltipId = computed(
@@ -161,6 +171,18 @@ function getTooltipDataForItem(category = props.category, itemId = props.itemId)
   return getTooltipData(category, itemId)
 }
 
+function getCurrentTooltipPosition(tooltipRect) {
+  const viewport = {
+    width: window.innerWidth,
+    height: window.innerHeight
+  }
+  return computeTooltipPosition(
+    { x: mousePosition.value.x, y: mousePosition.value.y },
+    tooltipRect,
+    viewport
+  )
+}
+
 // Position tooltip relative to cursor (Factorio-style)
 function positionTooltip() {
   nextTick(() => {
@@ -182,53 +204,7 @@ function positionTooltip() {
     // Wait for content to fully render and get final dimensions
     setTimeout(() => {
       const tooltipRect = tooltip.getBoundingClientRect()
-      const viewport = {
-        width: window.innerWidth,
-        height: window.innerHeight
-      }
-
-      // Always position relative to current cursor position
-      const cursorX = mousePosition.value.x
-      const cursorY = mousePosition.value.y
-
-      // Default positioning: 36px right, 24px down (top-left corner of tooltip)
-      let top = cursorY + 24
-      let left = cursorX + 36
-
-      // Check if tooltip would go offscreen and adjust accordingly
-      let needsHorizontalFlip = false
-      let needsVerticalFlip = false
-
-      // Check right edge
-      if (left + tooltipRect.width > viewport.width - 8) {
-        needsHorizontalFlip = true
-      }
-
-      // Check bottom edge
-      if (top + tooltipRect.height > viewport.height - 8) {
-        needsVerticalFlip = true
-      }
-
-      // Apply flips based on which edges would be exceeded
-      if (needsHorizontalFlip) {
-        // Move to left side: 36px left of cursor
-        left = cursorX - tooltipRect.width - 36
-      }
-
-      if (needsVerticalFlip) {
-        // Move to top side: 24px up from cursor
-        top = cursorY - tooltipRect.height - 24
-      }
-
-      // Final boundary check to ensure tooltip stays within viewport
-      if (left < 8) left = 8
-      if (left + tooltipRect.width > viewport.width - 8) {
-        left = viewport.width - tooltipRect.width - 8
-      }
-      if (top < 8) top = 8
-      if (top + tooltipRect.height > viewport.height - 8) {
-        top = viewport.height - tooltipRect.height - 8
-      }
+      const { top, left } = getCurrentTooltipPosition(tooltipRect)
 
       // Set the final position
       tooltipStyle.value = {
@@ -254,53 +230,7 @@ function updateTooltipPosition() {
   }
 
   const tooltipRect = tooltip.getBoundingClientRect()
-  const viewport = {
-    width: window.innerWidth,
-    height: window.innerHeight
-  }
-
-  // Always position relative to current cursor position
-  const cursorX = mousePosition.value.x
-  const cursorY = mousePosition.value.y
-
-  // Default positioning: 36px right, 24px down (top-left corner of tooltip)
-  let top = cursorY + 24
-  let left = cursorX + 36
-
-  // Check if tooltip would go offscreen and adjust accordingly
-  let needsHorizontalFlip = false
-  let needsVerticalFlip = false
-
-  // Check right edge
-  if (left + tooltipRect.width > viewport.width - 8) {
-    needsHorizontalFlip = true
-  }
-
-  // Check bottom edge
-  if (top + tooltipRect.height > viewport.height - 8) {
-    needsVerticalFlip = true
-  }
-
-  // Apply flips based on which edges would be exceeded
-  if (needsHorizontalFlip) {
-    // Move to left side: 36px left of cursor
-    left = cursorX - tooltipRect.width - 36
-  }
-
-  if (needsVerticalFlip) {
-    // Move to top side: 24px up from cursor
-    top = cursorY - tooltipRect.height - 24
-  }
-
-  // Final boundary check to ensure tooltip stays within viewport
-  if (left < 8) left = 8
-  if (left + tooltipRect.width > viewport.width - 8) {
-    left = viewport.width - tooltipRect.width - 8
-  }
-  if (top < 8) top = 8
-  if (top + tooltipRect.height > viewport.height - 8) {
-    top = viewport.height - tooltipRect.height - 8
-  }
+  const { top, left } = getCurrentTooltipPosition(tooltipRect)
 
   // Update position smoothly without hiding
   tooltipStyle.value = {
@@ -311,12 +241,59 @@ function updateTooltipPosition() {
   }
 }
 
+function markTooltipInteractive() {
+  lastInteractiveAt.value = Date.now()
+}
+
+function isEventInsideTooltipTree() {
+  const trigger = triggerRef.value
+  const tooltip = tooltipRef.value
+  if (!trigger && !tooltip) {
+    return false
+  }
+
+  const pointElement = document.elementFromPoint(mousePosition.value.x, mousePosition.value.y)
+  const isPointerInTrigger = Boolean(pointElement && trigger?.contains(pointElement))
+  const isPointerInTooltip = Boolean(pointElement && tooltip?.contains(pointElement))
+  const activeElement = document.activeElement
+  const isFocusInTrigger = Boolean(activeElement && trigger?.contains(activeElement))
+  const isFocusInTooltip = Boolean(activeElement && tooltip?.contains(activeElement))
+
+  return isPointerInTrigger || isPointerInTooltip || isFocusInTrigger || isFocusInTooltip
+}
+
+function stopHeartbeat() {
+  if (heartbeatInterval.value) {
+    clearInterval(heartbeatInterval.value)
+    heartbeatInterval.value = null
+  }
+}
+
+function startHeartbeat() {
+  stopHeartbeat()
+  heartbeatInterval.value = setInterval(() => {
+    if (!isVisible.value) {
+      return
+    }
+
+    if (isEventInsideTooltipTree()) {
+      markTooltipInteractive()
+      return
+    }
+
+    if (Date.now() - lastInteractiveAt.value > TOOLTIP_HIDE_GRACE_MS) {
+      closeTooltip()
+    }
+  }, TOOLTIP_HEARTBEAT_MS)
+}
+
 // Close tooltip
 function closeTooltip() {
   isVisible.value = false
   tooltipDatas.value = null
   isLoading.value = false
   hasError.value = false
+  stopHeartbeat()
 
   // Clear all timeouts
   if (showTimeout.value) {
@@ -344,6 +321,7 @@ function showTooltip() {
     hideTimeout.value = null
   }
 
+  markTooltipInteractive()
   showTimeout.value = setTimeout(async () => {
     isLoading.value = true
     hasError.value = false
@@ -365,6 +343,7 @@ function showTooltip() {
           }
         ]
         isVisible.value = true
+        startHeartbeat()
         positionTooltip()
         return
       }
@@ -384,6 +363,7 @@ function showTooltip() {
         }
 
         isVisible.value = true
+        startHeartbeat()
         positionTooltip()
 
         // Announce to screen readers
@@ -412,6 +392,7 @@ function showTooltip() {
         }
       ]
       isVisible.value = true
+      startHeartbeat()
       positionTooltip()
     } finally {
       isLoading.value = false
@@ -430,15 +411,13 @@ function hideTooltip() {
   }
 
   hideTimeout.value = setTimeout(() => {
-    isVisible.value = false
-    tooltipDatas.value = null
-    isLoading.value = false
-    hasError.value = false
+    closeTooltip()
   }, 100)
 }
 
 // Handle mouse enter on tooltip itself
 function handleTooltipMouseEnter() {
+  markTooltipInteractive()
   // Clear any pending hide timeout when mouse enters tooltip
   if (hideTimeout.value) {
     clearTimeout(hideTimeout.value)
@@ -486,6 +465,10 @@ function handleMouseMove(event) {
     y: event.clientY
   }
 
+  if (isVisible.value && isEventInsideTooltipTree()) {
+    markTooltipInteractive()
+  }
+
   // Reposition tooltip if it's visible (without hiding/showing)
   if (isVisible.value) {
     updateTooltipPosition()
@@ -519,6 +502,7 @@ onUnmounted(() => {
   if (hideTimeout.value) {
     clearTimeout(hideTimeout.value)
   }
+  stopHeartbeat()
   window.removeEventListener('resize', handleResize)
   document.removeEventListener('keydown', handleKeydown)
   document.removeEventListener('mousemove', handleMouseMove)

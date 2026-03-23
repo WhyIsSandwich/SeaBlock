@@ -9,6 +9,7 @@ import { ref } from 'vue'
 import { withBase } from 'vitepress'
 
 import { resolveDataUrl } from '../components/assetResolver.js'
+import { isHiddenFactorioPrototype } from '../utils/factorioPrototypeVisibility.js'
 
 import { postProcessFactorioData } from './factorioDataPostProcessing.js'
 import { useUnifiedObjects } from './useUnifiedObjects.js'
@@ -81,8 +82,10 @@ function createFactorioDataInstance() {
     const { subtypeToBaseType } = useFactorioPrototypeMapping(currentLanguage.value)
 
     // Initialize organized data below added for intellisense
-    // Process each prototype type
+    // Process each prototype type (skip metadata keys like _factoriopedia)
     for (const [prototypeType, prototypes] of Object.entries(rawData.value)) {
+      if (prototypeType.startsWith('_')) continue
+
       const baseType = subtypeToBaseType[prototypeType]
 
       if (!baseType) {
@@ -193,12 +196,6 @@ function createFactorioDataInstance() {
     return true
   }
 
-  function isHiddenPrototype(prototype) {
-    return Boolean(
-      prototype?.hidden || prototype?.hidden_in_factoriopedia || prototype?.hidden_from_factorio
-    )
-  }
-
   function toArray(value) {
     if (!value) return []
     return Array.isArray(value) ? value : [value]
@@ -280,7 +277,9 @@ function createFactorioDataInstance() {
     const spaceLocations = getTypeCollection('space-location')
 
     const visibleTechnologies = Object.fromEntries(
-      Object.entries(technologies || {}).filter(([_name, technology]) => !isHiddenPrototype(technology))
+      Object.entries(technologies || {}).filter(
+        ([_name, technology]) => !isHiddenFactorioPrototype(technology)
+      )
     )
 
     const techEffectsByName = new Map()
@@ -381,7 +380,7 @@ function createFactorioDataInstance() {
     }
 
     for (const [recipeName, recipe] of Object.entries(recipes || {})) {
-      if (isHiddenPrototype(recipe)) continue
+      if (isHiddenFactorioPrototype(recipe)) continue
 
       if (isEnabledFlag(recipe?.enabled)) {
         baseVisibleRecipes.add(recipeName)
@@ -404,7 +403,7 @@ function createFactorioDataInstance() {
     }
 
     for (const [itemName, item] of Object.entries(items || {})) {
-      if (isHiddenPrototype(item)) continue
+      if (isHiddenFactorioPrototype(item)) continue
 
       if (item.place_result) {
         addPathway('entity', item.place_result, {
@@ -456,7 +455,7 @@ function createFactorioDataInstance() {
     }
 
     for (const [tileName, tile] of Object.entries(tiles || {})) {
-      if (isHiddenPrototype(tile)) continue
+      if (isHiddenFactorioPrototype(tile)) continue
       const hasNaturalPresence = tile.fluid || tile.autoplace
       if (hasNaturalPresence) {
         addNaturalSeed('tile', tileName)
@@ -473,7 +472,7 @@ function createFactorioDataInstance() {
     }
 
     for (const [entityName, entity] of Object.entries(entities || {})) {
-      if (isHiddenPrototype(entity)) continue
+      if (isHiddenFactorioPrototype(entity)) continue
       const entityType = entity.type || ''
 
       const naturalEntityTypes = new Set(['resource', 'fish', 'tree', 'plant'])
@@ -532,7 +531,7 @@ function createFactorioDataInstance() {
 
     const knownSurfaces = new Set()
     const visibleSpaceLocations = Object.entries(spaceLocations || {}).filter(
-      ([_name, surface]) => !isHiddenPrototype(surface)
+      ([_name, surface]) => !isHiddenFactorioPrototype(surface)
     )
     visibleSpaceLocations.forEach(([surfaceName]) => {
       knownSurfaces.add(surfaceName)
@@ -1199,7 +1198,6 @@ function createFactorioDataInstance() {
         }
       }
     })
-    window.structure = structure
     return structure
   }
 
@@ -1233,12 +1231,25 @@ function createFactorioDataInstance() {
     )
   }
 
+  /**
+   * Optional metadata written by process-factorio-data (see data.json `_factoriopedia`).
+   */
+  function getFactoriopediaExportMeta() {
+    const meta = rawData.value?._factoriopedia
+    if (!meta || typeof meta !== 'object') return null
+    return meta
+  }
+
   return {
     // Data refs
     organizedData,
+    rawData,
+    currentLanguage,
     // Loading state
     isLoading,
     loadingError,
+
+    getFactoriopediaExportMeta,
 
     // Loading functions
     loadAllData,

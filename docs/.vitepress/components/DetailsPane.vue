@@ -15,17 +15,34 @@
           <div :class="$style.headerTabs">
             <button
               :class="{ [$style.active]: activeTab === 'details' }"
+              class="fpio-button-chrome"
               @click="activeTab = 'details'"
             >
               Details
             </button>
-            <button :class="{ [$style.active]: activeTab === 'raws' }" @click="activeTab = 'raws'">
+            <button
+              :class="{ [$style.active]: activeTab === 'raws' }"
+              class="fpio-button-chrome"
+              @click="activeTab = 'raws'"
+            >
               Raws
+            </button>
+            <button
+              v-if="type === 'technology' && showTechnologyAction"
+              type="button"
+              :class="$style.researchMapButton"
+              class="fpio-button-chrome"
+              :title="technologyActionTitle"
+              :aria-label="technologyActionTitle"
+              @click="emit('open-tech-tree')"
+            >
+              {{ technologyActionLabel }}
             </button>
           </div>
           <div :class="$style.navigationControls">
             <button
               :class="[$style.navButton, { [$style.disabled]: !canGoBack }]"
+              class="fpio-button-chrome"
               :disabled="!canGoBack"
               title="Go back"
               @click="$emit('navigate-back')"
@@ -34,6 +51,7 @@
             </button>
             <button
               :class="[$style.navButton, { [$style.disabled]: !canGoForward }]"
+              class="fpio-button-chrome"
               :disabled="!canGoForward"
               title="Go forward"
               @click="$emit('navigate-forward')"
@@ -43,6 +61,7 @@
             <div :class="$style.historyContainer">
               <button
                 :class="$style.historyButton"
+                class="fpio-button-chrome"
                 title="Recently viewed items"
                 @click="$emit('toggle-history')"
               >
@@ -287,6 +306,18 @@ const props = defineProps({
   sciencePackVisibility: {
     type: Object,
     default: null
+  },
+  showTechnologyAction: {
+    type: Boolean,
+    default: true
+  },
+  technologyActionLabel: {
+    type: String,
+    default: 'Research map'
+  },
+  technologyActionTitle: {
+    type: String,
+    default: 'Show research dependency map (prerequisites converge on each technology once)'
   }
 })
 
@@ -296,7 +327,8 @@ const emit = defineEmits([
   'navigate-back',
   'navigate-forward',
   'toggle-history',
-  'select-from-history'
+  'select-from-history',
+  'open-tech-tree'
 ])
 
 // Computed property to create selectedItem from name and type
@@ -324,7 +356,6 @@ const detailsData = computed(() => {
       excludeHiddenFromFactorioData: true,
       visibilityFilter: props.sciencePackVisibility
     })
-  console.log('detailsData', data)
   return data
 })
 
@@ -358,6 +389,8 @@ const formattedDisplayName = computed(() => {
 </script>
 
 <style module>
+@import './factoriopediaSharedPrimitives.css';
+
 .detailsPane {
   flex: 1;
   display: flex;
@@ -415,32 +448,16 @@ const formattedDisplayName = computed(() => {
 .navButton {
   width: 32px;
   height: 32px;
-  background: linear-gradient(to bottom, #2d2d2d, #1f1f1f);
-  border: 1px solid #595959;
-  border-top: 1px solid #6b6b6b;
-  border-left: 1px solid #6b6b6b;
-  border-radius: 2px;
   color: #ffffff;
   font-size: 16px;
   font-weight: bold;
-  cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s ease;
-  box-shadow:
-    1px 1px 0px rgba(0, 0, 0, 0.3),
-    inset 0 1px 1px rgba(255, 255, 255, 0.1);
 }
 
 .navButton:hover:not(.disabled) {
-  background: linear-gradient(to bottom, #3a3a3a, #2a2a2a);
-  border-color: #7f7f7f;
-  border-top: 1px solid #8e8e8e;
-  border-left: 1px solid #8e8e8e;
-  box-shadow:
-    1px 1px 0px rgba(0, 0, 0, 0.4),
-    inset 0 1px 1px rgba(255, 255, 255, 0.15);
+  color: #ffffff;
 }
 
 .navButton.disabled {
@@ -506,59 +523,20 @@ const formattedDisplayName = computed(() => {
 }
 
 .historyButton {
-  background: linear-gradient(to bottom, #2d2d2d, #1f1f1f);
-  border: 1px solid #585858;
-  border-top: 1px solid #6a6a6a;
-  border-left: 1px solid #6a6a6a;
-  border-radius: 2px;
   padding: 4px 8px;
   color: #d3d3d3;
-  font-size: 11px;
-  font-weight: 600;
-  line-height: 1.1;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow:
-    1px 1px 0px rgba(0, 0, 0, 0.3),
-    inset 0 1px 1px rgba(255, 255, 255, 0.1);
 }
 
 .historyButton:hover {
-  background: linear-gradient(to bottom, #3a3a3a, #2a2a2a);
-  border-color: #7a7a7a;
-  border-top: 1px solid #8a8a8a;
-  border-left: 1px solid #8a8a8a;
-  box-shadow:
-    1px 1px 0px rgba(0, 0, 0, 0.4),
-    inset 0 1px 1px rgba(255, 255, 255, 0.15);
+  color: #ffffff;
 }
 
 .headerTabs button {
-  background: linear-gradient(to bottom, #2d2d2d, #1f1f1f);
-  border: 1px solid #585858;
-  border-top: 1px solid #6a6a6a;
-  border-left: 1px solid #6a6a6a;
-  border-radius: 2px;
   padding: 4px 8px;
-  color: #d3d3d3;
-  font-size: 11px;
-  font-weight: 600;
-  line-height: 1.1;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow:
-    1px 1px 0px rgba(0, 0, 0, 0.3),
-    inset 0 1px 1px rgba(255, 255, 255, 0.1);
 }
 
 .headerTabs button:hover {
-  background: linear-gradient(to bottom, #3a3a3a, #2a2a2a);
-  border-color: #7a7a7a;
-  border-top: 1px solid #8a8a8a;
-  border-left: 1px solid #8a8a8a;
-  box-shadow:
-    1px 1px 0px rgba(0, 0, 0, 0.4),
-    inset 0 1px 1px rgba(255, 255, 255, 0.15);
+  color: #ffffff;
 }
 
 .headerTabs button.active {
@@ -569,6 +547,27 @@ const formattedDisplayName = computed(() => {
   box-shadow:
     1px 1px 0px rgba(0, 0, 0, 0.5),
     inset 0 1px 1px rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+}
+
+.researchMapButton {
+  background: linear-gradient(to bottom, #2d3a2d, #1f2a1f);
+  border: 1px solid #4a6b4a;
+  border-top: 1px solid #5a7f5a;
+  border-left: 1px solid #5a7f5a;
+  padding: 4px 8px;
+  color: #c8e6c8;
+  box-shadow:
+    1px 1px 0px rgba(0, 0, 0, 0.3),
+    inset 0 1px 1px rgba(255, 255, 255, 0.08);
+  white-space: nowrap;
+}
+
+.researchMapButton:hover {
+  background: linear-gradient(to bottom, #354435, #283828);
+  border-color: #6a906a;
+  border-top: 1px solid #7aa07a;
+  border-left: 1px solid #7aa07a;
   color: #ffffff;
 }
 

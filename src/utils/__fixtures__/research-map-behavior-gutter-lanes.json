@@ -1,0 +1,34 @@
+{
+  "technology": {
+    "hub": {
+      "name": "hub",
+      "displayName": "hub",
+      "prerequisites": [],
+      "unit": { "ingredients": [] }
+    },
+    "c1": {
+      "name": "c1",
+      "displayName": "c1",
+      "prerequisites": ["hub"],
+      "unit": { "ingredients": [] }
+    },
+    "c2": {
+      "name": "c2",
+      "displayName": "c2",
+      "prerequisites": ["hub"],
+      "unit": { "ingredients": [] }
+    },
+    "c3": {
+      "name": "c3",
+      "displayName": "c3",
+      "prerequisites": ["hub"],
+      "unit": { "ingredients": [] }
+    },
+    "goal": {
+      "name": "goal",
+      "displayName": "goal",
+      "prerequisites": ["c1", "c2", "c3"],
+      "unit": { "ingredients": [] }
+    }
+  }
+}

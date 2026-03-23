@@ -149,3 +149,6 @@ factorio/
 
 # Generated asset output (non-git, for dev/prod hosting)
 generated/
+
+# Duplicate-code analysis outputs
+reports/duplication/

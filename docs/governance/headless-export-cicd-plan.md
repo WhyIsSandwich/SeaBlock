@@ -7,6 +7,8 @@ This work is one track in a wider initiative to run the full asset pipeline (`ex
 ## Document Control
 
 - **Owner area**: Pipeline and Platform maintainers
+- **Audience**: Platform maintainers and developers (Track B)
+- **Target location**: `docs/governance` (under `docs/`)
 - **Review cadence**: After any extraction contract or CI workflow change
 - **Scope**: Factorio-side export execution, orchestrator handshake, artifact contracts, CI/CD rollout
 

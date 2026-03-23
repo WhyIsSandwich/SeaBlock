@@ -1,6 +1,6 @@
-# Key Issues Report
+# Wiki Platform Key Issues Report
 
-This report prioritizes repo-wide implementation issues by production impact and remediation order.
+This report prioritizes engineering issues for the wiki platform by production impact and remediation order.
 
 ## Severity Legend
 
@@ -12,15 +12,17 @@ This report prioritizes repo-wide implementation issues by production impact and
 
 - **Status values**: `Open`, `Planned`, `Resolved`
 - **Owner area values**: `Runtime`, `Pipeline`, `DocsUI`, `CI`, `Governance`
+- **Audience**: Platform maintainers and developers (Track B)
+- **Target location**: `docs/governance` (under `docs/`)
 
 ## Findings
 
-1. **P0 - Runtime organized-data key mismatch in loader utilities**
-   - **Status**: `Open`
+1. **P1 - Runtime loader key consistency hardening**
+   - **Status**: `Planned`
    - **Owner area**: `Runtime`
-   - **Evidence**: `src/composables/useFactorioData.js` organizes by singular base types (for example `recipe`, `technology`) while helper methods query plural buckets (`recipes`, `technologies`).
-   - **Risk**: Empty or incorrect utility results and inconsistent downstream behavior.
-   - **Recommended fix**: Normalize key usage to contract-aligned base types and add focused unit coverage for loader helpers.
+   - **Evidence**: `src/composables/useFactorioData.js` now includes singular/plural fallback lookup, but contract usage remains spread across helpers and would benefit from explicit test coverage.
+   - **Risk**: Future regressions in helper behavior when data-shape assumptions change.
+   - **Recommended fix**: Keep one canonical loader key contract and add focused unit coverage for collection helpers.
 
 2. **P0 - Race/deduping gaps in runtime data loading**
    - **Status**: `Open`
@@ -29,12 +31,12 @@ This report prioritizes repo-wide implementation issues by production impact and
    - **Risk**: Shared singleton state can be overwritten by stale responses, causing mixed or stale localized data.
    - **Recommended fix**: Add in-flight load coordination (dedupe or sequence token) and deterministic reset/rebuild behavior.
 
-3. **P0 - Runtime debugger and diagnostic logging in scene engine**
+3. **P1 - Runtime diagnostic logging remains in hot render paths**
    - **Status**: `Open`
    - **Owner area**: `Runtime`
-   - **Evidence**: `src/components/FactorioSceneEngine.js` contains `debugger` and runtime `console.log` calls in active render paths.
-   - **Risk**: Unexpected execution pauses and performance degradation in client sessions.
-   - **Recommended fix**: Remove `debugger`; gate diagnostics behind explicit development flag.
+   - **Evidence**: `src/components/FactorioSceneEngine.js` no longer contains `debugger`, but still includes runtime `console.*` calls in active render/error paths.
+   - **Risk**: Excessive logging noise and potential performance overhead in client sessions.
+   - **Recommended fix**: Keep diagnostics behind explicit development flags and reduce non-actionable runtime logs.
 
 4. **P0 - Global state side effects in runtime composables/components**
    - **Status**: `Open`
@@ -73,7 +75,7 @@ This report prioritizes repo-wide implementation issues by production impact and
    - **Evidence**: high-size concentration in:
      - `docs/.vitepress/components/DetailsPane.vue`
      - `scripts/process-factorio-data.js`
-     - `scripts/orchestrate-factorio-processing.js`
+    - extraction scripts + `scripts/process-factorio-data.js`
    - **Risk**: High merge conflict rate, lower reviewability, hidden coupling.
    - **Recommended fix**: Modularize by concern (data loading, transforms, rendering, UI sections).
 
@@ -84,21 +86,26 @@ This report prioritizes repo-wide implementation issues by production impact and
    - **Risk**: Silent regressions when generation behavior drifts from runtime expectations.
    - **Recommended fix**: Maintain a pipeline contract document and add lightweight contract validation checks.
 
-10. **P2 - Guidance and quality gates are fragmented**
-   - **Status**: `Resolved`
+10. **P2 - Cross-track planning drift**
+   - **Status**: `Planned`
    - **Owner area**: `Governance`
-   - **Evidence**: guidance split between `README.md`, markdown guides, and `test/` planning docs; no canonical contributor/developer policy file.
-   - **Risk**: Inconsistent contributor behavior and uneven quality bar.
-   - **Recommended fix**: Centralize in governance docs and link from README/docs nav (implemented in this review set).
+   - **Evidence**: planning concerns span both platform and wiki-maintenance audiences and can drift without explicit track ownership.
+   - **Risk**: duplicated work and unclear ownership boundaries.
+   - **Recommended fix**: keep platform issues here (Track B) and maintain consumer/maintainer issue register in `docs/reference`.
 
 ## Recommended Remediation Order
 
-1. Fix runtime organized-data key mismatches and add load dedupe/race protection.
-2. Remove runtime `debugger` and eliminate global `window` side effects.
+1. Add load dedupe/race protection and finalize loader contract helper coverage.
+2. Reduce runtime diagnostics noise and eliminate global `window` side effects.
 3. Harden details rules null-safety and add parity tests.
 4. Improve pipeline throughput in `scripts/process-factorio-data.js` (bounded concurrency and reduced sync hotspots).
 5. Add deploy trigger safeguards and required CI quality checks.
 6. Modularize largest files in staged refactors and keep contract checks in place.
+
+## Cross-Track Links
+
+- Consumer and maintainer issues: [Wiki Issues (Consumers and Maintainers)](/reference/wiki-issues-consumers-maintainers)
+- Consumer and maintainer roadmap: [Wiki Roadmap (Consumers and Maintainers)](/reference/wiki-roadmap-consumers-maintainers)
 
 ## Sources and attribution
 

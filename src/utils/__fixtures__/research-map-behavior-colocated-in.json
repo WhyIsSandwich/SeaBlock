@@ -1,0 +1,28 @@
+{
+  "technology": {
+    "p0": {
+      "name": "p0",
+      "displayName": "p0",
+      "prerequisites": [],
+      "unit": { "ingredients": [] }
+    },
+    "p1": {
+      "name": "p1",
+      "displayName": "p1",
+      "prerequisites": [],
+      "unit": { "ingredients": [] }
+    },
+    "p2": {
+      "name": "p2",
+      "displayName": "p2",
+      "prerequisites": [],
+      "unit": { "ingredients": [] }
+    },
+    "goal": {
+      "name": "goal",
+      "displayName": "goal",
+      "prerequisites": ["p0", "p1", "p2"],
+      "unit": { "ingredients": [] }
+    }
+  }
+}

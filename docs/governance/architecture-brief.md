@@ -6,6 +6,8 @@ For a deeper pipeline review with prioritized remediation actions, see `docs/gov
 ## Document Control
 
 - **Owner area**: Runtime and Data Pipeline maintainers
+- **Audience**: Platform maintainers and developers (Track B)
+- **Target location**: `docs/governance` (under `docs/`)
 - **Review cadence**: Quarterly, or after major pipeline/schema refactors
 - **Acceptance criteria**:
   - Component list reflects current runtime + pipeline boundaries.
@@ -14,7 +16,7 @@ For a deeper pipeline review with prioritized remediation actions, see `docs/gov
 
 ## System Components
 
-- **Data extraction and orchestration**: `scripts/orchestrate-factorio-processing.js`, extraction scripts, and graphics copy/convert scripts.
+- **Data extraction and orchestration**: extraction scripts and graphics copy/convert scripts.
 - **Core transformation pipeline**: `scripts/process-factorio-data.js` generates runtime artifacts in `generated/data/dev/`.
 - **Tooltip derivation pipeline**: `scripts/generate-tooltips.js` computes `en-tooltips.json` using the same rules framework used by runtime details rendering.
 - **Runtime data composables**: `src/composables/useFactorioData.js`, `src/composables/useUnifiedObjects.js`, `src/composables/useFactorioPrototypeMapping.js`.
@@ -44,6 +46,12 @@ flowchart LR
 - **Boundary B - type mapping correctness**: `src/composables/useFactorioPrototypeMapping.js` and `src/composables/useFactorioData.js` determine how raw prototypes are grouped for all downstream behavior.
 - **Boundary C - details fidelity**: `src/composables/useDetailsData/` controls tooltip/statistics parity with Factorio semantics.
 - **Boundary D - visual rendering behavior**: `src/composables/useFactorioRenderingMapping.js` and render engines determine whether entities/tiles animate and compose correctly.
+
+### Runtime data shape (Factoriopedia)
+
+- Generated `data.json` stays close to raw Factorio prototype buckets (`item`, `recipe`, `entity`, …). `useFactorioData` **ignores** top-level keys starting with `_` (for example `_factoriopedia` metadata) when building `organizedData`.
+- **Derived indexes** for search and navigation are intended to be built **in the browser** after load (or cached in `localStorage` when expensive), not baked into the pipeline output, unless a future performance review shows a hard need.
+- The processor may attach a small `_factoriopedia` object (e.g. `generatedAt`) for UI display and support; it is not a prototype table.
 
 ## Coupling and Risk Notes
 

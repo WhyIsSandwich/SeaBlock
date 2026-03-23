@@ -1,10 +1,6 @@
-const processedDataCache = new WeakMap()
+import { isHiddenFactorioPrototype } from '../utils/factorioPrototypeVisibility.js'
 
-function shouldExcludeFromFactorioData(prototype) {
-  return Boolean(
-    prototype?.hidden || prototype?.hidden_in_factoriopedia || prototype?.hidden_from_factorio
-  )
-}
+const processedDataCache = new WeakMap()
 
 /**
  * Post-process factorio data with optional filtering rules.
@@ -40,7 +36,7 @@ export function postProcessFactorioData(factorioData, options = {}) {
 
     processedData[prototypeType] = Object.fromEntries(
       Object.entries(prototypes).filter(([_prototypeName, prototype]) => {
-        return !shouldExcludeFromFactorioData(prototype)
+        return !isHiddenFactorioPrototype(prototype)
       })
     )
   }

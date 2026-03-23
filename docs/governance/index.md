@@ -7,13 +7,16 @@ This section contains canonical implementation review artifacts and contribution
 
 ## Artifact Set
 
+- [Roadmaps and Planning (Track B)](/governance/roadmaps-and-planning)
 - [Architecture Brief](/governance/architecture-brief)
+- [ADR 0001: D3 for Factoriopedia graph viewports](/governance/architecture-decisions/adr-0001-d3-factoriopedia-graphs)
 - [Factorio Data Pipeline Review](/governance/factorio-data-pipeline-review)
 - [Key Issues Report](/governance/key-issues)
 - [Editing Guidelines](/governance/editing-guidelines)
 - [Developer Guidelines](/governance/developer-guidelines)
 - [Future Roadmap](/governance/roadmap)
 - [Headless Export CI/CD Plan](/governance/headless-export-cicd-plan)
+- [VitePress Implementation Roadmap](/governance/vitepress-implementation-roadmap)
 - [Legacy Document Retirement](/governance/legacy-doc-retirement)
 
 ## Usage

@@ -1,0 +1,22 @@
+{
+  "technology": {
+    "goal": {
+      "name": "goal",
+      "displayName": "goal",
+      "prerequisites": ["a", "b"],
+      "unit": { "ingredients": [] }
+    },
+    "a": {
+      "name": "a",
+      "displayName": "a",
+      "prerequisites": [],
+      "unit": { "ingredients": [] }
+    },
+    "b": {
+      "name": "b",
+      "displayName": "b",
+      "prerequisites": [],
+      "unit": { "ingredients": [] }
+    }
+  }
+}

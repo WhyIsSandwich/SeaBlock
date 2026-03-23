@@ -99,6 +99,11 @@ export default {
     const animationId = ref(null)
     const _currentFrame = ref(0)
     const hasError = ref(false)
+    const prefersReducedMotion = ref(false)
+
+    const effectivePlayAnimation = computed(
+      () => props.playAnimation && !prefersReducedMotion.value
+    )
 
     // Performance optimization variables
     const lastFrameTime = ref(0)
@@ -310,7 +315,7 @@ export default {
 
     // Animation loop with frame rate limiting
     const animate = async (currentTime = performance.now()) => {
-      if (props.playAnimation && animationData.value && !props.isPaused) {
+      if (effectivePlayAnimation.value && animationData.value && !props.isPaused) {
         // Frame rate limiting - only advance frame if enough time has passed
         if (currentTime - lastFrameTime.value >= frameInterval) {
           _currentFrame.value++
@@ -330,7 +335,7 @@ export default {
 
     // Start/stop animation
     const startAnimation = () => {
-      if (props.playAnimation && animationData.value && !props.isPaused) {
+      if (effectivePlayAnimation.value && animationData.value && !props.isPaused) {
         stopAnimation()
         animationId.value = requestAnimationFrame(animate)
       }
@@ -398,21 +403,31 @@ export default {
     })
 
     watch(
-      () => props.playAnimation,
-      newVal => {
-        if (newVal) {
+      () => [props.playAnimation, prefersReducedMotion.value],
+      () => {
+        if (effectivePlayAnimation.value) {
           startAnimation()
         } else {
           stopAnimation()
+          renderCanvas()
         }
       }
     )
 
     // Resize observer for responsive canvas
     let resizeObserver = null
+    let motionPreferenceCleanup = null
 
     // Lifecycle
     onMounted(() => {
+      const mq = window.matchMedia('(prefers-reduced-motion: reduce)')
+      prefersReducedMotion.value = mq.matches
+      const onMotionPreferenceChange = () => {
+        prefersReducedMotion.value = mq.matches
+      }
+      mq.addEventListener('change', onMotionPreferenceChange)
+      motionPreferenceCleanup = () => mq.removeEventListener('change', onMotionPreferenceChange)
+
       nextTick(() => {
         // Initialize performance tracking
         lastFrameTime.value = performance.now()
@@ -442,6 +457,7 @@ export default {
     })
 
     onUnmounted(() => {
+      motionPreferenceCleanup?.()
       stopAnimation()
       if (resizeObserver) {
         resizeObserver.disconnect()

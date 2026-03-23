@@ -1,10 +1,12 @@
-# Future Roadmap
+# Wiki Platform Roadmap
 
-This roadmap consolidates existing planning docs and in-code TODO signals into a single execution view.
+This roadmap tracks engineering execution for the wiki platform (pipeline, runtime, CI/CD, and architecture).
 
 ## Document Control
 
 - **Owner area**: Governance maintainers with Runtime/DocsUI input
+- **Audience**: Platform maintainers and developers (Track B)
+- **Target location**: `docs/governance` (under `docs/`)
 - **Review cadence**: Monthly
 - **Update trigger**: Any major workflow, contract, or architecture change
 
@@ -22,11 +24,11 @@ This roadmap consolidates existing planning docs and in-code TODO signals into a
 ## Now (0-1 Month)
 
 1. **Fix runtime loader correctness and concurrency**
-   - Normalize organized-data key usage (`recipe`/`technology` contract alignment) and add request dedupe/race protection in data loading.
+   - Add request dedupe/race protection in data loading and lock loader key-contract behavior with focused helper tests.
    - Source evidence: `src/composables/useFactorioData.js`.
 
 2. **Stabilize runtime/debug behavior**
-   - Remove runtime `debugger` and noisy logs from production paths.
+   - Keep diagnostics controlled in production paths and remove residual non-actionable runtime logs.
    - Source evidence: `src/components/FactorioSceneEngine.js`, `src/composables/useFactorioData.js`, `src/composables/useFactorioPrototypeMapping.js`.
 
 3. **Close highest-impact details-rule gaps**
@@ -43,7 +45,7 @@ This roadmap consolidates existing planning docs and in-code TODO signals into a
 
 6. **Prototype end-to-end CI asset pipeline**
    - Implement server-mode exporter handshake (sentinel + RCON quit) as part of automating the full `export -> processing -> validation -> publish` path, and define migration gates away from `.cfg` fallback paths.
-   - Source evidence: `docs/governance/headless-export-cicd-plan.md`, `scripts/orchestrate-factorio-processing.js`, `scripts/process-factorio-data.js`.
+   - Source evidence: `docs/governance/headless-export-cicd-plan.md`, extraction scripts, `scripts/process-factorio-data.js`.
 
 ## Next (1-3 Months)
 
@@ -61,19 +63,15 @@ This roadmap consolidates existing planning docs and in-code TODO signals into a
 
 4. **Modularize high-risk monolith files**
    - Extract `DetailsPane.vue` and major scripts into bounded modules.
-   - Source evidence: `docs/.vitepress/components/DetailsPane.vue`, `scripts/process-factorio-data.js`, `scripts/orchestrate-factorio-processing.js`.
+   - Source evidence: `docs/.vitepress/components/DetailsPane.vue`, `scripts/process-factorio-data.js`.
 
 5. **Formalize contributor standards in one entry path**
    - Consolidate contributor workflow and quality policy references from README/docs.
    - Source evidence: `README.md`, `docs/governance/editing-guidelines.md`, `docs/governance/developer-guidelines.md`.
 
-6. **Documentation governance cleanup**
-   - Migrate residual useful content from legacy docs, then deprecate and remove obsolete guidance files.
+6. **Governance artifact cleanup for platform docs**
+   - Retire duplicate platform-planning artifacts and keep canonical engineering docs in `docs/`.
    - Source evidence: `docs/governance/legacy-doc-retirement.md`.
-   - Milestones:
-     - Inventory complete and mapped to canonical governance pages.
-     - Inbound references replaced.
-     - Legacy docs deleted once removal gates are satisfied.
 
 ## Later (3+ Months)
 
@@ -81,9 +79,9 @@ This roadmap consolidates existing planning docs and in-code TODO signals into a
    - Add benchmark-style checks for data load, details generation, and heavy render paths.
    - Source evidence: runtime render engine files and governance validation policy.
 
-2. **Documentation expansion and content program**
-   - Continue guides/reference growth with explicit quality checklist adherence.
-   - Source evidence: `README.md` content guidance sections and existing guides tree.
+2. **Platform documentation resilience**
+   - Keep architecture and pipeline docs aligned with implementation and CI gates.
+   - Source evidence: `docs/governance/architecture-brief.md`, `docs/governance/developer-guidelines.md`.
 
 3. **Roadmap automation**
    - Generate roadmap evidence snapshots from TODO markers and planning docs on a cadence.
@@ -106,9 +104,14 @@ flowchart LR
 
 ## Exit Criteria per Horizon
 
-- **Now**: no runtime debugger statements; critical rules TODOs resolved; deploy gating updated.
+- **Now**: no runtime debugger statements; critical rules TODOs resolved; deploy gating updated; runtime diagnostics are development-gated.
 - **Next**: key rendering and parity gaps closed; monolith decomposition started with measurable file reductions; legacy governance cleanup milestones complete.
 - **Later**: recurring performance checks and roadmap refresh process established.
+
+## Cross-Track Links
+
+- Consumer and maintainer roadmap: [Wiki Roadmap (Consumers and Maintainers)](/reference/wiki-roadmap-consumers-maintainers)
+- Consumer and maintainer issues: [Wiki Issues (Consumers and Maintainers)](/reference/wiki-issues-consumers-maintainers)
 
 ## Sources and attribution
 

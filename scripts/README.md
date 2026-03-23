@@ -61,7 +61,6 @@ node scripts/copy-mod-graphics.js -g /path/to/factorio -u /path/to/userdata -o .
 
 ### Deprecated
 
-- **`orchestrate-factorio-processing.js`** - Use standalone scripts above.
 - **`productionize-spritemap-webp.js`** - Use `convert-to-webp.js --spritemap-only` instead.
 
 ## Usage

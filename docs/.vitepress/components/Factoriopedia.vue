@@ -48,11 +48,80 @@
       >
         <div :class="$style.factoripediaHeader">
           <h2>Factoriopedia</h2>
+          <div :class="$style.factoripediaHeaderActions">
+            <label :class="$style.localeLabel">
+              <span :class="$style.visuallyHidden">Language</span>
+              <select
+                :class="$style.localeSelect"
+                :value="currentLanguage"
+                aria-label="Factoriopedia data language"
+                @change="onLocaleChange($event.target.value)"
+              >
+                <option value="en">English</option>
+              </select>
+            </label>
+            <span
+              v-if="datasetVersionLabel"
+              :class="$style.datasetVersionBadge"
+              :title="'Dataset build metadata from data.json'"
+            >
+              {{ datasetVersionLabel }}
+            </span>
+            <button
+              type="button"
+              :class="[$style.headerActionButton, 'fpio-button-chrome']"
+              title="Keyboard shortcuts"
+              aria-label="Keyboard shortcuts"
+              @click="showKeyboardHelp = true"
+            >
+              ?
+            </button>
+            <button
+              type="button"
+              :class="[
+                $style.headerActionButton,
+                'fpio-button-chrome',
+                { [$style.headerActionButtonFlash]: linkCopyStatus === 'copied' }
+              ]"
+              title="Copy link to this view"
+              :aria-label="
+                linkCopyStatus === 'copied'
+                  ? 'Link copied'
+                  : linkCopyStatus === 'failed'
+                    ? 'Copy failed'
+                    : 'Copy link to this view'
+              "
+              @click="copyShareLink"
+            >
+              {{
+                linkCopyStatus === 'copied'
+                  ? 'Copied!'
+                  : linkCopyStatus === 'failed'
+                    ? 'Copy failed'
+                    : 'Link'
+              }}
+            </button>
+            <span aria-live="polite" :class="$style.visuallyHidden">
+              {{
+                linkCopyStatus === 'copied'
+                  ? 'Link copied to clipboard.'
+                  : linkCopyStatus === 'failed'
+                    ? 'Could not copy link.'
+                    : ''
+              }}
+            </span>
+          </div>
         </div>
 
         <!-- Category Filters -->
         <div :style="{ ...categoryGrid.containerStyles, overflowY: 'visible' }">
-          <div :style="categoryGrid.subgroupStyles">
+          <div
+            :style="{
+              ...categoryGrid.subgroupStyles,
+              backgroundImage: 'none',
+              background: 'transparent'
+            }"
+          >
             <button
               v-for="category in visiblePrimaryCategories"
               :key="category.key"
@@ -64,6 +133,7 @@
                 }
               ]"
               :disabled="disabledFilters.has(category.key)"
+              :aria-label="category.name || category.key"
               :style="categoryGrid.itemStyles"
               @click="!disabledFilters.has(category.key) && selectCategory(category.key)"
             >
@@ -80,50 +150,68 @@
 
         <!-- Search -->
         <div :class="$style.searchContainer">
-          <div :class="$style.sciencePackFilterSection">
-            <div :class="$style.sciencePackFilterHeader">
-              <span>Science packs</span>
-              <div :class="$style.sciencePackHeaderRight">
-                <span :class="$style.selectedCountBadge">
-                  {{ selectedSciencePacks.length }}/{{ sciencePackOptions.length }}
-                </span>
-                <button
-                  :class="$style.clearScienceFiltersButton"
-                  :disabled="selectedSciencePacks.length === 0"
-                  @click="clearSciencePackFilters"
-                >
-                  Clear
-                </button>
-              </div>
-            </div>
-            <div :class="$style.sciencePackStrip">
+          <div :class="$style.sciencePackFilterRow">
+            <span :class="$style.sciencePackLabel">Science packs</span>
+            <div :class="$style.sciencePackActions">
+              <span :class="$style.selectedCountBadge">
+                {{ selectedSciencePacks.length }}/{{ sciencePackOptions.length }}
+              </span>
               <button
-                v-for="pack in sciencePackOptions"
-                :key="pack.name"
-                :class="[
-                  $style.sciencePackButton,
-                  {
-                    [$style.active]: selectedSciencePackSet.has(pack.name)
-                  }
-                ]"
-                :title="pack.displayName"
-                @click="toggleSciencePack(pack.name)"
+                :class="$style.clearScienceFiltersButton"
+                :disabled="selectedSciencePacks.length === 0"
+                @click="clearSciencePackFilters"
               >
-                <SpriteIcon
-                  :sprite-key="`item-${pack.name}`"
-                  :size="28"
-                  :fill-ratio="CATEGORY_ICON_FILL_RATIO"
-                  :title="pack.displayName"
-                />
+                Clear
               </button>
             </div>
+            <button
+              v-for="pack in sciencePackOptions"
+              :key="pack.name"
+              :class="[
+                $style.sciencePackButton,
+                {
+                  [$style.active]: selectedSciencePackSet.has(pack.name)
+                }
+              ]"
+              :title="pack.displayName"
+              @click="toggleSciencePack(pack.name)"
+            >
+              <SpriteIcon
+                :sprite-key="`item-${pack.name}`"
+                :size="28"
+                :fill-ratio="CATEGORY_ICON_FILL_RATIO"
+                :title="pack.displayName"
+              />
+            </button>
           </div>
-          <input
-            v-model="searchQuery"
-            type="text"
-            placeholder="Search recipes..."
-            :class="$style.searchInput"
-          >
+          <div :class="$style.searchRow">
+            <input
+              v-model="searchQuery"
+              type="search"
+              placeholder="Search recipes..."
+              :class="$style.searchInput"
+              aria-label="Search recipes"
+              autocomplete="off"
+            >
+          </div>
+          <div :class="$style.browseTypeToggles">
+            <span :class="$style.browseTypeLabel">Show</span>
+            <button
+              v-for="opt in browseTypeOptions"
+              :key="opt.type"
+              type="button"
+              :class="[
+                $style.browseTypeButton,
+                'fpio-button-chrome',
+                { [$style.active]: browseTypes[opt.type] }
+              ]"
+              :title="opt.title"
+              :aria-pressed="browseTypes[opt.type]"
+              @click="toggleBrowseType(opt.type)"
+            >
+              {{ opt.label }}
+            </button>
+          </div>
         </div>
 
         <!-- Recipe Grid -->
@@ -184,17 +272,53 @@
           @navigate-forward="navigateForward"
           @toggle-history="toggleMRUDropdown"
           @select-from-history="selectFromMRU"
+          @open-tech-tree="openResearchMap"
         />
       </div>
     </div>
+
+    <div
+      v-if="showKeyboardHelp"
+      :class="$style.modalBackdrop"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="factoriopedia-kbd-title"
+      @click.self="showKeyboardHelp = false"
+    >
+      <div :class="$style.modalPanel" @keydown.esc.stop="showKeyboardHelp = false">
+        <h3 id="factoriopedia-kbd-title">Keyboard shortcuts</h3>
+        <ul :class="$style.kbdList">
+          <li><kbd>←</kbd> <kbd>→</kbd> Previous / next item in the grid</li>
+          <li><kbd>↑</kbd> <kbd>↓</kbd> Move up / down a row (keeps column, clamps to row end)</li>
+          <li><kbd>Esc</kbd> Close details</li>
+          <li><kbd>?</kbd> Toggle this help</li>
+        </ul>
+        <p :class="$style.modalHint">
+          URL query parameters <code>category</code>, <code>science</code>, <code>q</code>, and
+          <code>locale</code> persist browse state; the hash selects the open item.
+        </p>
+        <button type="button" :class="$style.modalClose" @click="showKeyboardHelp = false">
+          Close
+        </button>
+      </div>
+    </div>
+
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch, nextTick, provide } from 'vue'
+import { useRouter, withBase } from 'vitepress'
 
 import { useUnifiedObjects, useFactorioData } from '../../../src/index.js'
 import { useFactorioGrid } from '../../../src/composables/useFactorioGrid.js'
+import { fuzzyMatchQuery } from '../../../src/utils/fuzzySearch.js'
+import {
+  buildVisualRows,
+  findSelectedGridIndex,
+  getFlatGridItems,
+  resolveVerticalNavigationTarget
+} from '../../../src/utils/gridNavigation.js'
 
 import SpriteIcon from './SpriteIcon.vue'
 import IconButton from './IconButton.vue'
@@ -209,13 +333,47 @@ const {
   createUnifiedSelectionObject,
   getSciencePackNamesFromTechnologies,
   getSciencePackDependencyMap,
-  createSciencePackVisibility
+  createSciencePackVisibility,
+  getFactoriopediaExportMeta,
+  currentLanguage
 } = useFactorioData()
+const router = useRouter()
 const selectedItem = ref(null)
 const selectedCategory = ref('logistics')
 const searchQuery = ref('')
 const isAnimationPaused = ref(false)
 const selectedSciencePacks = ref([])
+
+const showKeyboardHelp = ref(false)
+const verticalNavigationColumn = ref(null)
+/** @type {import('vue').Ref<'idle' | 'copied' | 'failed'>} */
+const linkCopyStatus = ref('idle')
+let linkCopyStatusTimer = null
+const isApplyingUrl = ref(false)
+const browseTypes = ref({
+  recipe: true,
+  technology: true,
+  fluid: true,
+  tile: true,
+  item: true,
+  entity: true
+})
+
+const browseTypeOptions = [
+  { type: 'recipe', label: 'Recipes', title: 'Show recipe entries' },
+  { type: 'technology', label: 'Tech', title: 'Show technologies' },
+  { type: 'fluid', label: 'Fluids', title: 'Show fluids' },
+  { type: 'tile', label: 'Tiles', title: 'Show tiles' },
+  { type: 'item', label: 'Items', title: 'Show items' },
+  { type: 'entity', label: 'Entities', title: 'Show entities' }
+]
+
+function toggleBrowseType(type) {
+  browseTypes.value = {
+    ...browseTypes.value,
+    [type]: !browseTypes.value[type]
+  }
+}
 
 // Navigation stack for forward/back functionality
 const navigationStack = ref([])
@@ -229,6 +387,7 @@ const showMRUDropdown = ref(false)
 // Grid container width tracking
 const gridContainerWidth = ref(0)
 const gridContainer = ref(null)
+let gridResizeObserver = null
 
 // Pre-computed category structure
 const categoryStructure = ref({})
@@ -240,8 +399,6 @@ const activeMobilePanel = ref('browse')
 const selectedSciencePackSet = computed(() => new Set(selectedSciencePacks.value))
 const sciencePackVisibility = computed(() => createSciencePackVisibility(selectedSciencePacks.value))
 const hasActiveScienceFilter = computed(() => selectedSciencePacks.value.length > 0)
-const recipeSearchTextCache = new WeakMap()
-
 const itemGrid = computed(() =>
   useFactorioGrid({
     containerWidth: gridContainerWidth.value,
@@ -268,14 +425,45 @@ function isSelectionAllowed(type, name, data = null) {
   return sciencePackVisibility.value.isObjectVisible(type, name, data)
 }
 
+/**
+ * Lowercased text for search: display name + internal id (ids are unique and help fuzzy match).
+ */
 function getRecipeSearchText(recipe) {
   if (!recipe || typeof recipe !== 'object') return ''
-  if (recipeSearchTextCache.has(recipe)) {
-    return recipeSearchTextCache.get(recipe)
-  }
-  const searchText = recipe.displayName?.toLowerCase?.() || ''
-  recipeSearchTextCache.set(recipe, searchText)
-  return searchText
+  const display = recipe.displayName?.toLowerCase?.() || ''
+  const internal = (recipe.name || '').toLowerCase()
+  return [display, internal].filter(Boolean).join(' ')
+}
+
+function matchesBrowseTypeFilter(recipe) {
+  const types = recipe.types || []
+  if (types.length === 0) return true
+  // Union: show if any prototype role is still enabled; unknown types default to visible
+  return types.some(t => browseTypes.value[t] !== false)
+}
+
+function recipeMatchesSearch(recipe, queryRaw) {
+  if (!queryRaw || !queryRaw.trim()) return true
+  const query = queryRaw.trim().toLowerCase()
+  const combined = getRecipeSearchText(recipe)
+  const id = (recipe.name || '').toLowerCase()
+
+  if (combined.includes(query) || id.includes(query)) return true
+
+  const tokens = query.split(/\s+/).filter(t => t.length > 0)
+  if (tokens.length === 0) return true
+
+  const wordSplit = s => s.split(/[\s\-_/]+/).filter(Boolean)
+
+  return tokens.every(token => {
+    if (combined.includes(token) || id.includes(token)) return true
+    if (fuzzyMatchQuery(token, combined)) return true
+    if (fuzzyMatchQuery(token, id)) return true
+    const hayWords = wordSplit(combined)
+    return hayWords.some(
+      word => word.includes(token) || fuzzyMatchQuery(token, word) || fuzzyMatchQuery(token, id)
+    )
+  })
 }
 
 const sciencePackOptions = computed(() => {
@@ -366,13 +554,37 @@ function toggleSciencePack(packName) {
   selectedSciencePacks.value = toOrderedSciencePackArray(selected)
 }
 
+function setSciencePacksFromUrlParam(param) {
+  if (!param || !param.trim()) {
+    selectedSciencePacks.value = []
+    return
+  }
+  const names = param.split(',').map(s => s.trim()).filter(Boolean)
+  const dependencyMap = sciencePackDependencyMap.value
+  const selected = new Set()
+  const validNames = new Set(sciencePackOptions.value.map(p => p.name))
+  for (const name of names) {
+    if (!validNames.has(name)) continue
+    selected.add(name)
+    collectSciencePackDependencies(name, dependencyMap).forEach(d => selected.add(d))
+  }
+  selectedSciencePacks.value = toOrderedSciencePackArray(selected)
+}
+
+const datasetVersionLabel = computed(() => {
+  const meta = getFactoriopediaExportMeta()
+  if (!meta?.generatedAt) return ''
+  const d = new Date(meta.generatedAt)
+  if (Number.isNaN(d.getTime())) return ''
+  return `Data ${d.toISOString().slice(0, 10)}`
+})
+
 // Computed property for filtered and grouped recipes
 const filteredSubgroupsByCategory = computed(() => {
   if (!categoryStructure.value || Object.keys(categoryStructure.value).length === 0) {
     return {}
   }
 
-  const query = searchQuery.value.trim().toLowerCase()
   const filteredByCategory = {}
   const visibleSet = sciencePackVisibility.value
 
@@ -386,8 +598,8 @@ const filteredSubgroupsByCategory = computed(() => {
       .map(subgroup => {
         const recipes = subgroup.recipes.filter(recipe => {
           if (!visibleSet.isUnifiedObjectVisible(recipe)) return false
-          if (!query) return true
-          return getRecipeSearchText(recipe).includes(query)
+          if (!matchesBrowseTypeFilter(recipe)) return false
+          return recipeMatchesSearch(recipe, searchQuery.value)
         })
         return recipes.length > 0 ? { ...subgroup, recipes } : null
       })
@@ -414,16 +626,35 @@ const enabledCategoryKeys = computed(() => {
   return enabled
 })
 
+const accessibleCategoryKeys = computed(() => {
+  const accessible = new Set()
+  const visibleSet = sciencePackVisibility.value
+
+  Object.entries(categoryStructure.value || {}).forEach(([categoryKey, categoryData]) => {
+    const hasAccessibleEntries = (categoryData?.subgroups || []).some(subgroup =>
+      (subgroup?.recipes || []).some(recipe => visibleSet.isUnifiedObjectVisible(recipe))
+    )
+    if (hasAccessibleEntries) {
+      accessible.add(categoryKey)
+    }
+  })
+
+  return accessible
+})
+
 const visiblePrimaryCategories = computed(() => {
   if (!hasActiveScienceFilter.value) {
     return primaryCategories.value
   }
-  return primaryCategories.value.filter(category => enabledCategoryKeys.value.has(category.key))
+  return primaryCategories.value.filter(category => accessibleCategoryKeys.value.has(category.key))
 })
 
 const firstEnabledCategoryKey = computed(() => {
-  const sortedCategories = [...primaryCategories.value]
+  const sortedCategories = [...visiblePrimaryCategories.value]
   for (const category of sortedCategories) {
+    if (hasActiveScienceFilter.value) {
+      return category.key
+    }
     if (enabledCategoryKeys.value.has(category.key)) {
       return category.key
     }
@@ -553,19 +784,37 @@ function selectCategory(category) {
 }
 
 function navigateItem(direction) {
-  // Create a flattened list of items (recipes and technologies) for navigation
-  const allItems = []
-  groupedRecipes.value.forEach(subgroup => {
-    allItems.push(...subgroup.recipes)
-  })
-
-  const currentIndex = allItems.findIndex(item => item.name === selectedItem.value?.name)
+  const allItems = getFlatGridItems(groupedRecipes.value)
+  const currentIndex = findSelectedGridIndex(allItems, selectedItem.value, getPrimaryType)
   if (currentIndex === -1) return
 
   const newIndex = currentIndex + direction
   if (newIndex >= 0 && newIndex < allItems.length) {
+    verticalNavigationColumn.value = null
     const item = allItems[newIndex]
     selectItem(getPrimaryType(item), item.name, item)
+  }
+}
+
+function navigateItemVertical(deltaRow) {
+  const cols = Math.max(1, itemGrid.value.columns || 1)
+  const allItems = getFlatGridItems(groupedRecipes.value)
+  const rows = buildVisualRows(groupedRecipes.value, cols)
+  const currentIndex = findSelectedGridIndex(allItems, selectedItem.value, getPrimaryType)
+  if (currentIndex === -1) return
+
+  const target = resolveVerticalNavigationTarget({
+    currentIndex,
+    deltaRow,
+    rows,
+    preferredColumn: verticalNavigationColumn.value
+  })
+  if (!target) return
+
+  verticalNavigationColumn.value = target.preferredColumn
+  const item = allItems[target.targetIndex]
+  if (item) {
+    selectItem(getPrimaryType(item), item.name, item, { preserveVerticalColumn: true })
   }
 }
 
@@ -577,23 +826,80 @@ function closeDetails() {
   updateURL()
 }
 
+function openResearchMap() {
+  if (typeof window === 'undefined') return
+  const selected = selectedItem.value
+  if (!selected || getPrimaryType(selected) !== 'technology') return
+  const target = withBase('/reference/research-map.html')
+  const hash = `#technology=${encodeURIComponent(selected.name)}`
+  router.go(`${target}${hash}`)
+}
+
 function toggleAnimationPause() {
   isAnimationPaused.value = !isAnimationPaused.value
 }
 
-// URL management
+// URL management (hash = selection; query = browse state)
+function getInitialLocaleFromUrl() {
+  if (typeof window === 'undefined') return 'en'
+  try {
+    return new URL(window.location.href).searchParams.get('locale') || 'en'
+  } catch {
+    return 'en'
+  }
+}
+
 function updateURL() {
-  const url = new URL(window.location)
+  if (typeof window === 'undefined') return
+  const url = new URL(window.location.href)
   if (selectedItem.value) {
     const primaryType = getPrimaryType(selectedItem.value)
     url.hash = `#${primaryType}=${selectedItem.value.name}`
   } else {
     url.hash = ''
   }
+
+  if (selectedCategory.value) {
+    url.searchParams.set('category', selectedCategory.value)
+  } else {
+    url.searchParams.delete('category')
+  }
+
+  if (selectedSciencePacks.value.length > 0) {
+    url.searchParams.set('science', selectedSciencePacks.value.join(','))
+  } else {
+    url.searchParams.delete('science')
+  }
+
+  const q = searchQuery.value.trim()
+  if (q) {
+    url.searchParams.set('q', q)
+  } else {
+    url.searchParams.delete('q')
+  }
+
+  if (currentLanguage.value && currentLanguage.value !== 'en') {
+    url.searchParams.set('locale', currentLanguage.value)
+  } else {
+    url.searchParams.delete('locale')
+  }
+
   window.history.replaceState({}, '', url)
 }
 
-function parseURL() {
+function applyBrowseStateFromUrl() {
+  if (typeof window === 'undefined') return
+  const url = new URL(window.location.href)
+  const cat = url.searchParams.get('category')
+  if (cat && categoryStructure.value[cat]) {
+    selectedCategory.value = cat
+  }
+  setSciencePacksFromUrlParam(url.searchParams.get('science') || '')
+  const q = url.searchParams.get('q')
+  searchQuery.value = q !== null ? q : ''
+}
+
+function parseHashForSelection() {
   const { hash } = window.location
   if (hash.startsWith('#item=')) {
     const itemName = hash.substring(6)
@@ -613,29 +919,128 @@ function parseURL() {
   }
 }
 
+async function copyShareLink() {
+  if (typeof window === 'undefined' || !navigator.clipboard?.writeText) {
+    linkCopyStatus.value = 'failed'
+    if (linkCopyStatusTimer) clearTimeout(linkCopyStatusTimer)
+    linkCopyStatusTimer = setTimeout(() => {
+      linkCopyStatus.value = 'idle'
+    }, 2200)
+    return
+  }
+  try {
+    await navigator.clipboard.writeText(window.location.href)
+    linkCopyStatus.value = 'copied'
+  } catch (e) {
+    console.warn('Failed to copy link', e)
+    linkCopyStatus.value = 'failed'
+  }
+  if (linkCopyStatusTimer) clearTimeout(linkCopyStatusTimer)
+  linkCopyStatusTimer = setTimeout(() => {
+    linkCopyStatus.value = 'idle'
+  }, 2200)
+}
+
+async function onLocaleChange(lang) {
+  if (!lang || lang === currentLanguage.value) return
+  try {
+    await loadAllData(lang)
+    setupCategoryStructure()
+    isApplyingUrl.value = true
+    try {
+      applyBrowseStateFromUrl()
+      await nextTick()
+      parseHashForSelection()
+    } finally {
+      isApplyingUrl.value = false
+    }
+    updateURL()
+  } catch (e) {
+    console.error('Failed to load locale', e)
+  }
+}
+
 // Lifecycle
 onMounted(async () => {
-  await loadAllData()
+  const initialLocale = getInitialLocaleFromUrl()
+  await loadAllData(initialLocale)
 
-  // Set up the category structure using composable
   setupCategoryStructure()
 
-  // Parse URL after data is loaded
-  nextTick(() => {
-    parseURL()
-  })
+  isApplyingUrl.value = true
+  try {
+    applyBrowseStateFromUrl()
+    await nextTick()
+    parseHashForSelection()
+  } finally {
+    isApplyingUrl.value = false
+  }
+
+  if (typeof window !== 'undefined') {
+    window.addEventListener('popstate', onPopState)
+    window.addEventListener('hashchange', onHashChange)
+    window.addEventListener('keydown', handleKeydown)
+    window.addEventListener('resize', updateMobileViewport)
+    updateMobileViewport()
+  }
+
+  await nextTick()
+  if (gridContainer.value && typeof ResizeObserver !== 'undefined') {
+    gridResizeObserver = new ResizeObserver(entries => {
+      for (const entry of entries) {
+        gridContainerWidth.value = entry.contentRect.width
+      }
+    })
+    gridResizeObserver.observe(gridContainer.value)
+  }
+
+  setTimeout(() => {
+    if (gridContainer.value && gridContainerWidth.value === 0) {
+      gridContainerWidth.value = gridContainer.value.offsetWidth
+    }
+  }, 100)
 })
 
-// Watch for URL changes
-watch(
-  () => window.location.hash,
-  () => {
-    parseURL()
+function onPopState() {
+  isApplyingUrl.value = true
+  try {
+    applyBrowseStateFromUrl()
+    nextTick(() => {
+      parseHashForSelection()
+    })
+  } finally {
+    isApplyingUrl.value = false
   }
-)
+}
+
+function onHashChange() {
+  if (isApplyingUrl.value) return
+  isApplyingUrl.value = true
+  try {
+    parseHashForSelection()
+  } finally {
+    isApplyingUrl.value = false
+  }
+}
+
+let searchUrlTimer
+watch(searchQuery, () => {
+  clearTimeout(searchUrlTimer)
+  searchUrlTimer = setTimeout(() => {
+    if (!isApplyingUrl.value) updateURL()
+  }, 350)
+})
+
+watch([selectedCategory, selectedSciencePacks, selectedItem], () => {
+  if (isApplyingUrl.value) return
+  updateURL()
+}, { deep: true })
 
 // Unified selection functions
-function selectItem(type, name, data = null) {
+function selectItem(type, name, data = null, options = {}) {
+  if (!options.preserveVerticalColumn) {
+    verticalNavigationColumn.value = null
+  }
   const unifiedObject = createUnifiedSelectionObject(type, name, data)
 
   if (unifiedObject && isSelectionAllowed(type, name, unifiedObject)) {
@@ -705,51 +1110,47 @@ provide('onItemSelected', selectItem)
 
 // Handle keyboard navigation
 function handleKeydown(event) {
+  const tag = event.target?.tagName
+  const inField = tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT'
   if (event.key === 'Escape') {
+    if (showKeyboardHelp.value) {
+      showKeyboardHelp.value = false
+      return
+    }
     closeDetails()
     showMRUDropdown.value = false
-  } else if (event.key === 'ArrowLeft') {
+    return
+  }
+  if (inField) return
+  if (event.key === '?' && !event.ctrlKey && !event.metaKey && !event.altKey) {
+    event.preventDefault()
+    showKeyboardHelp.value = !showKeyboardHelp.value
+    return
+  }
+  if (event.key === 'ArrowLeft') {
+    event.preventDefault()
     navigateItem(-1)
   } else if (event.key === 'ArrowRight') {
+    event.preventDefault()
     navigateItem(1)
+  } else if (event.key === 'ArrowUp') {
+    event.preventDefault()
+    navigateItemVertical(-1)
+  } else if (event.key === 'ArrowDown') {
+    event.preventDefault()
+    navigateItemVertical(1)
   }
 }
 
-onMounted(() => {
-  window.addEventListener('keydown', handleKeydown)
-  window.addEventListener('resize', updateMobileViewport)
-  updateMobileViewport()
-  // Temporarily disable click outside handler to debug
-  // document.addEventListener('click', handleClickOutside)
-
-  // Set up ResizeObserver to track grid container width
-  if (gridContainer.value && typeof ResizeObserver !== 'undefined') {
-    const resizeObserver = new ResizeObserver(entries => {
-      for (const entry of entries) {
-        gridContainerWidth.value = entry.contentRect.width
-      }
-    })
-    resizeObserver.observe(gridContainer.value)
-
-    // Store the observer for cleanup
-    window._factoriopediaResizeObserver = resizeObserver
-  }
-
-  // Fallback: Set initial width after a short delay
-  setTimeout(() => {
-    if (gridContainer.value && gridContainerWidth.value === 0) {
-      const width = gridContainer.value.offsetWidth
-      gridContainerWidth.value = width
-    }
-  }, 100)
-})
-
 onUnmounted(() => {
+  if (linkCopyStatusTimer) clearTimeout(linkCopyStatusTimer)
   window.removeEventListener('keydown', handleKeydown)
   window.removeEventListener('resize', updateMobileViewport)
-  // document.removeEventListener('click', handleClickOutside)
-  if (window._factoriopediaResizeObserver) {
-    window._factoriopediaResizeObserver.disconnect()
+  window.removeEventListener('popstate', onPopState)
+  window.removeEventListener('hashchange', onHashChange)
+  if (gridResizeObserver) {
+    gridResizeObserver.disconnect()
+    gridResizeObserver = null
   }
 })
 const filterGrid = useFactorioGrid({
@@ -763,6 +1164,8 @@ const filterGrid = useFactorioGrid({
 </script>
 
 <style module>
+@import './factoriopediaSharedPrimitives.css';
+
 .factoripedia {
   width: 100%;
   height: 80vh;
@@ -842,6 +1245,7 @@ const filterGrid = useFactorioGrid({
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 10px;
 }
 
 .factoripediaHeader h2 {
@@ -851,28 +1255,181 @@ const filterGrid = useFactorioGrid({
   font-weight: 700;
   letter-spacing: 0.2px;
   text-shadow: 0 1px 0 rgba(0, 0, 0, 0.5);
+  flex: 1;
+  min-width: 0;
+}
+
+.factoripediaHeaderActions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.localeLabel {
+  display: inline-flex;
+  align-items: center;
+}
+
+.localeSelect {
+  font-size: 11px;
+  padding: 3px 6px;
+  border-radius: 2px;
+  background: #333;
+  color: #eee;
+  border: 1px solid #555;
+  max-width: 120px;
+}
+
+.visuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.headerActionButton {
+  color: #e6e6e6;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 8px;
+}
+
+.headerActionButton:hover {
+  border-color: #cf9428;
+  color: #fff;
+}
+
+.headerActionButtonFlash {
+  border-color: #56c97a;
+  color: #c8ffd8;
+}
+
+.datasetVersionBadge {
+  font-size: 10px;
+  font-weight: 600;
+  color: #a8a8a8;
+  padding: 2px 6px;
+  border: 1px solid #4a4a4a;
+  border-radius: 2px;
+  max-width: 140px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.modalBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10030;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.modalPanel {
+  background: #2e2e2e;
+  border: 1px solid #555;
+  border-radius: 4px;
+  padding: 16px 18px;
+  max-width: min(420px, 100%);
+  color: #e8e8e8;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
+}
+
+.modalPanel h3 {
+  margin: 0 0 10px;
+  font-size: 16px;
+}
+
+.kbdList {
+  margin: 0 0 12px;
+  padding-left: 18px;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.kbdList kbd {
+  display: inline-block;
+  padding: 1px 6px;
+  border: 1px solid #666;
+  border-radius: 2px;
+  background: #1f1f1f;
+  font-size: 12px;
+}
+
+.modalHint {
+  font-size: 12px;
+  color: #b8b8b8;
+  margin: 0 0 12px;
+  line-height: 1.4;
+}
+
+.modalHint code {
+  font-size: 11px;
+  color: #f0d090;
+}
+
+.modalClose {
+  border: 1px solid #6a6a6a;
+  background: #3a3a3a;
+  color: #fff;
+  padding: 6px 14px;
+  border-radius: 2px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.searchRow {
+  margin-bottom: 6px;
+}
+
+.browseTypeToggles {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.browseTypeLabel {
+  font-size: 11px;
+  color: #aaa;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.browseTypeButton {
+  color: #ccc;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 8px;
+}
+
+.browseTypeButton.active {
+  border-color: #c7891f;
+  color: #fff;
+  background: #3f3a30;
 }
 
 .filterButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   background: linear-gradient(to bottom, #4a4a4a, #3a3a3a);
   border: 1px solid #5a5a5a;
   border-radius: 2px;
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   transition: all 0.2s ease;
   flex-shrink: 0;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
-}
-
-/* Override SpriteIcon styling for filter buttons */
-.filterButton :global(.sprite-icon) {
-  /* Preserve inline sprite background-image while clearing only fill color */
-  background-color: transparent !important;
-  border: none !important;
-  box-shadow: none !important;
-  border-radius: 0 !important;
 }
 
 .filterButton:hover {
@@ -920,25 +1477,31 @@ const filterGrid = useFactorioGrid({
     0 1px 3px rgba(0, 0, 0, 0.35);
 }
 
-.sciencePackFilterSection {
-  margin-bottom: 8px;
+.sciencePackFilterRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 3px 5px;
+  margin-bottom: 6px;
+  max-height: 116px;
+  overflow-y: auto;
+  padding-right: 2px;
+  color: #cfcfcf;
 }
 
-.sciencePackFilterHeader {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 6px;
-  color: #cfcfcf;
+.sciencePackLabel {
+  flex-shrink: 0;
   font-size: 12px;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.03em;
+  line-height: 34px;
 }
 
-.sciencePackHeaderRight {
+.sciencePackActions {
   display: inline-flex;
+  flex-shrink: 0;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
 }
 
 .selectedCountBadge {
@@ -947,17 +1510,8 @@ const filterGrid = useFactorioGrid({
   color: #e6e6e6;
   background: #1f1f1f;
   border: 1px solid #4a4a4a;
-  border-radius: 10px;
-  padding: 1px 6px;
-}
-
-.sciencePackStrip {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  max-height: 116px;
-  overflow-y: auto;
-  padding-right: 2px;
+  border-radius: 8px;
+  padding: 0 4px;
 }
 
 .sciencePackButton {
@@ -998,7 +1552,7 @@ const filterGrid = useFactorioGrid({
   border-radius: 2px;
   color: #d5d5d5;
   font-size: 11px;
-  padding: 2px 6px;
+  padding: 1px 5px;
   cursor: pointer;
 }
 
@@ -1445,6 +1999,7 @@ const filterGrid = useFactorioGrid({
     max-height: 48px;
     flex-shrink: 0;
     background: linear-gradient(to bottom, #4a4a4a, #3a3a3a);
+    background-image: none;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
   }
 
@@ -1453,21 +2008,14 @@ const filterGrid = useFactorioGrid({
     font-size: 16px;
   }
 
-  .sciencePackFilterSection {
-    margin-bottom: 6px;
+  .sciencePackFilterRow {
+    margin-bottom: 5px;
+    gap: 2px 4px;
+    max-height: 108px;
   }
 
-  .sciencePackFilterHeader {
-    margin-bottom: 4px;
-  }
-
-  .sciencePackStrip {
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    overflow-y: hidden;
-    max-height: none;
-    padding-bottom: 2px;
-    scrollbar-width: thin;
+  .sciencePackLabel {
+    line-height: 30px;
   }
 
   .sciencePackButton {
@@ -1517,6 +2065,7 @@ const filterGrid = useFactorioGrid({
     max-height: 40px;
     flex-shrink: 0;
     background: linear-gradient(to bottom, #4a4a4a, #3a3a3a);
+    background-image: none;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
   }
 
@@ -1538,6 +2087,10 @@ const filterGrid = useFactorioGrid({
     max-height: 28px;
   }
 
+  .sciencePackLabel {
+    line-height: 28px;
+  }
+
   .mobilePanelControls {
     padding: 6px;
     gap: 8px;
@@ -1555,6 +2108,7 @@ const filterGrid = useFactorioGrid({
     max-height: 36px;
     flex-shrink: 0;
     background: linear-gradient(to bottom, #4a4a4a, #3a3a3a);
+    background-image: none;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
   }
 }

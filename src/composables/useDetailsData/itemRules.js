@@ -4,11 +4,7 @@ import {
   parseCapsuleAction,
   parseGenericItemEffect
 } from '../useAttackParametersParser.js'
-
-function asArray(value) {
-  if (!value) return []
-  return Array.isArray(value) ? value : [value]
-}
+import { asArray } from './sharedFormatters.js'
 
 function getGunAmmoCategories(item) {
   if (!item?.attack_parameters) return []

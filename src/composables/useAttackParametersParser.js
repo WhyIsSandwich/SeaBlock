@@ -1,17 +1,7 @@
 /**
  * Composable for parsing attack and trigger effect data from entities and items.
  */
-
-function asArray(value) {
-  if (!value) return []
-  return Array.isArray(value) ? value : [value]
-}
-
-function formatNumber(value, decimals = 2) {
-  if (typeof value !== 'number' || Number.isNaN(value)) return String(value)
-  if (Number.isInteger(value)) return String(value)
-  return value.toFixed(decimals).replace(/\.?0+$/, '')
-}
+import { asArray, formatNumber } from './useDetailsData/sharedFormatters.js'
 
 function toSecondsLabel(ticksOrSeconds, assumeTicks = true) {
   const seconds = assumeTicks ? ticksOrSeconds / 60 : ticksOrSeconds

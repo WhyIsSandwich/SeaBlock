@@ -5,6 +5,7 @@ import SpriteIcon from '../components/SpriteIcon.vue'
 import IconButton from '../components/IconButton.vue'
 import Factoriopedia from '../components/Factoriopedia.vue'
 import FactorioScene from '../components/FactorioScene.vue'
+import ResearchMapHost from '../components/ResearchMapHost.vue'
 
 import Layout from './Layout.vue'
 import './custom.css'
@@ -20,5 +21,6 @@ export default {
     app.component('IconButton', IconButton)
     app.component('Factoriopedia', Factoriopedia)
     app.component('FactorioScene', FactorioScene)
+    app.component('ResearchMapHost', ResearchMapHost)
   }
 }

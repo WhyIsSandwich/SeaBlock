@@ -4,7 +4,7 @@ on:
   push:
     branches: ['**']
   pull_request:
-    branches: [wiki]
+    branches: ['**']
 
 permissions:
   contents: read
@@ -44,7 +44,13 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     needs: build
-    if: github.ref == 'refs/heads/wiki' || github.event_name == 'push'
+    if: >-
+      github.event_name == 'push' &&
+      (
+        vars.DEPLOY_ON_ANY_PUSH == 'true' ||
+        github.ref == format('refs/heads/{0}', vars.DEPLOY_BRANCH) ||
+        (vars.DEPLOY_BRANCH == '' && github.ref == 'refs/heads/wiki')
+      )
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}

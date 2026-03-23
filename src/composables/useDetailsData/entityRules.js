@@ -502,8 +502,28 @@ export const entityRules = [
     condition: data => data.entity?.type === 'mining-drill'
   },
   {
-    name: sectionTypes.minable_results,
+    name: labels.mining_time,
+    order: 3,
+    type: 'statistics',
+    forType: 'entity',
+    shownInTooltip: true,
+    getValue: data => data.entity?.minable?.mining_time,
+    condition: data =>
+      data.entity?.type === 'resource' && data.entity?.minable?.mining_time !== undefined
+  },
+  {
+    name: labels.resource_hardness,
     order: 4,
+    type: 'statistics',
+    forType: 'entity',
+    shownInTooltip: true,
+    getValue: data => data.entity?.minable?.hardness,
+    condition: data =>
+      data.entity?.type === 'resource' && data.entity?.minable?.hardness !== undefined
+  },
+  {
+    name: sectionTypes.minable_results,
+    order: 6,
     type: 'section',
     forType: 'entity',
     shownInTooltip: false,

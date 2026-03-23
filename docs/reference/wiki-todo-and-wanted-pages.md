@@ -2,6 +2,13 @@
 
 This page tracks high-value documentation gaps and the implementation order for contributors.
 
+## Document Control
+
+- **Audience**: Consumers and Maintainers (Track A)
+- **Owner area**: Docs maintainers
+- **Target location**: `docs/reference`
+- **Review cadence**: Monthly
+
 > Contributor page: this is a maintenance roadmap, not a gameplay troubleshooting page.
 > If you are looking for player guidance, start at [Reference](/reference/) or [Troubleshooting](/troubleshooting/).
 

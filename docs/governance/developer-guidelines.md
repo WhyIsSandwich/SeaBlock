@@ -76,6 +76,35 @@ If touching data pipeline scripts, also run the relevant script(s) and validate 
 - Deployment workflow should be branch-scoped; broad push triggers should be avoided.
 - PR checks should include lint/build validation before deploy-capable jobs.
 
+### GitHub Actions Deploy Configuration
+
+`/.github/workflows/deploy.yml` is parameterized with repository variables so forks and target repos can use different deploy policies without editing workflow logic.
+
+Required repository variables (Settings -> Secrets and variables -> Actions -> Variables):
+
+- `DEPLOY_ON_ANY_PUSH`
+  - `true`: deploy on every push branch (recommended for this fork).
+  - `false`: deploy only from `DEPLOY_BRANCH` (recommended for target repo).
+- `DEPLOY_BRANCH`
+  - Branch name used when `DEPLOY_ON_ANY_PUSH` is not `true` (for example `wiki`).
+  - If unset, workflow falls back to `wiki`.
+
+Required GitHub Pages setup:
+
+- In repository Settings -> Pages:
+  - Source: **GitHub Actions**.
+- In Actions permissions (repository settings):
+  - Allow `pages: write` and `id-token: write` via workflow permissions (already configured in workflow file).
+
+Recommended profiles:
+
+- Fork profile:
+  - `DEPLOY_ON_ANY_PUSH=true`
+  - `DEPLOY_BRANCH=wiki` (ignored while any-push is true, but keep explicit).
+- Target repo profile:
+  - `DEPLOY_ON_ANY_PUSH=false`
+  - `DEPLOY_BRANCH=wiki`
+
 ## Release and Maintenance Cadence
 
 - Before release: run lint/build checks and verify critical rendering/details paths.

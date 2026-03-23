@@ -59,6 +59,7 @@ export const configData = {
           items: [
             { text: 'Overview', link: '/reference/' },
             { text: 'Factoriopedia', link: '/reference/factoriopedia' },
+            { text: 'Research Map', link: '/reference/research-map' },
             { text: 'Recipes', link: '/reference/recipes' },
             { text: 'Technologies', link: '/reference/technologies' },
             { text: 'Items', link: '/reference/items' },
@@ -67,6 +68,9 @@ export const configData = {
             { text: 'Compatible Mods', link: '/reference/compatible-mods' },
             { text: 'Calculators and Planners', link: '/reference/calculators-and-planners' },
             { text: 'Migration 1.1 to 2.0', link: '/reference/migration-1.1-to-2.0' },
+            { text: 'Roadmaps and Planning (Track A)', link: '/reference/roadmaps-and-planning' },
+            { text: 'Wiki Roadmap (Consumers and Maintainers)', link: '/reference/wiki-roadmap-consumers-maintainers' },
+            { text: 'Wiki Issues (Consumers and Maintainers)', link: '/reference/wiki-issues-consumers-maintainers' },
             { text: 'Wiki TODO and Wanted Pages', link: '/reference/wiki-todo-and-wanted-pages' }
           ]
         }

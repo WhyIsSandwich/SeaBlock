@@ -1,0 +1,18 @@
+{
+  "path": ["src", "docs/.vitepress/components", "scripts"],
+  "ignore": [
+    "**/node_modules/**",
+    "**/.vitepress/dist/**",
+    "**/.vitepress/cache/**",
+    "**/.vitepress/.temp/**",
+    "**/generated/**"
+  ],
+  "reporters": ["console", "json"],
+  "output": "reports/duplication",
+  "format": ["javascript", "vue"],
+  "minTokens": 80,
+  "minLines": 10,
+  "threshold": 6,
+  "silent": false,
+  "absolute": false
+}

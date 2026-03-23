@@ -693,6 +693,11 @@ class FactorioDataProcessorRefactored {
     // Note: This only adds icons to spritemap, doesn't modify original data
     this.processCombinedTypeIcons(processedData)
 
+    processedData._factoriopedia = {
+      generatedAt: new Date().toISOString(),
+      processor: 'process-factorio-data'
+    }
+
     return { data: processedData, typeMapping }
   }
 

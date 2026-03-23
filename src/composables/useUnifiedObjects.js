@@ -1,3 +1,5 @@
+import { isHiddenFactorioPrototype } from '../utils/factorioPrototypeVisibility.js'
+
 /**
  * Composable for creating unified objects from different Factorio data types
  * This provides a consistent interface for recipes, technologies, items, buildings, etc.
@@ -15,15 +17,9 @@ export function useUnifiedObjects() {
   function getMatchingPrototype(factorioData, type, expectedName) {
     const prototype = factorioData?.[type]?.[expectedName]
     if (!prototype) return null
-    if (shouldExcludeFromUnified(prototype)) return null
+    if (isHiddenFactorioPrototype(prototype)) return null
     if (!hasMatchingPrototypeName(prototype, expectedName)) return null
     return prototype
-  }
-
-  function shouldExcludeFromUnified(prototype) {
-    return Boolean(
-      prototype?.hidden || prototype?.hidden_in_factoriopedia || prototype?.hidden_from_factorio
-    )
   }
 
   function getFactoriopediaAlternativeForKey(key, factorioData) {
@@ -35,7 +31,7 @@ export function useUnifiedObjects() {
 
     for (const type of prioritizedTypes) {
       const prototype = factorioData?.[type]?.[key]
-      if (!prototype || shouldExcludeFromUnified(prototype)) continue
+      if (!prototype || isHiddenFactorioPrototype(prototype)) continue
       if (
         typeof prototype.factoriopedia_alternative === 'string' &&
         prototype.factoriopedia_alternative.length > 0
@@ -145,7 +141,7 @@ export function useUnifiedObjects() {
 
     const productType = productRef.type === 'fluid' ? 'fluid' : 'item'
     const product = factorioData[productType]?.[productRef.name]
-    if (!product || shouldExcludeFromUnified(product)) return null
+    if (!product || isHiddenFactorioPrototype(product)) return null
 
     return product
   }
@@ -343,7 +339,7 @@ export function useUnifiedObjects() {
       // check if it would've been part of an item
       const placeAsTileItem = Object.values(factorioData.item).filter(
         item =>
-          !shouldExcludeFromUnified(item) &&
+          !isHiddenFactorioPrototype(item) &&
           item.place_as_tile &&
           item.place_as_tile.result === resolvedKey
       )
@@ -354,7 +350,7 @@ export function useUnifiedObjects() {
           currentTile = factorioData.tile[currentTile.next_direction]
           const otherTilePlaceAsTileItem = Object.values(factorioData.item).filter(
             item =>
-              !shouldExcludeFromUnified(item) &&
+              !isHiddenFactorioPrototype(item) &&
               item.place_as_tile &&
               item.place_as_tile.result === currentTile.name
           )

@@ -1,0 +1,26 @@
+.fpio-button-chrome {
+  background: linear-gradient(to bottom, #2d2d2d, #1f1f1f);
+  border: 1px solid #585858;
+  border-top: 1px solid #6a6a6a;
+  border-left: 1px solid #6a6a6a;
+  border-radius: 2px;
+  color: #d3d3d3;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.1;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow:
+    1px 1px 0 rgba(0, 0, 0, 0.3),
+    inset 0 1px 1px rgba(255, 255, 255, 0.1);
+}
+
+.fpio-button-chrome:hover {
+  background: linear-gradient(to bottom, #3a3a3a, #2a2a2a);
+  border-color: #7a7a7a;
+  border-top: 1px solid #8a8a8a;
+  border-left: 1px solid #8a8a8a;
+  box-shadow:
+    1px 1px 0 rgba(0, 0, 0, 0.4),
+    inset 0 1px 1px rgba(255, 255, 255, 0.15);
+}

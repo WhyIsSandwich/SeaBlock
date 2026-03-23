@@ -1,0 +1,87 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`computeResearchMapEdgeSnapshot (harness sample) > matches routed edge geometry for a tiny closure 1`] = `
+{
+  "contentHeight": 290,
+  "contentWidth": 232,
+  "edgeCount": 2,
+  "edges": [
+    {
+      "from": "a",
+      "meta": {
+        "bucketKey": "1-0",
+        "fromX": 58,
+        "midY": 135,
+        "rankGap": 1,
+        "rf": 1,
+        "rt": 0,
+        "toX": 151,
+        "y1": 110,
+        "y2": 156,
+      },
+      "path": "M 58 110 L 58 135 L 151 135 L 151 156",
+      "to": "goal",
+      "vertexCount": 4,
+      "vertices": [
+        [
+          58,
+          110,
+        ],
+        [
+          58,
+          135,
+        ],
+        [
+          151,
+          135,
+        ],
+        [
+          151,
+          156,
+        ],
+      ],
+    },
+    {
+      "from": "b",
+      "meta": {
+        "bucketKey": "1-0",
+        "fromX": 174,
+        "midY": 131,
+        "rankGap": 1,
+        "rf": 1,
+        "rt": 0,
+        "toX": 197,
+        "y1": 110,
+        "y2": 156,
+      },
+      "path": "M 174 110 L 174 131 L 197 131 L 197 156",
+      "to": "goal",
+      "vertexCount": 4,
+      "vertices": [
+        [
+          174,
+          110,
+        ],
+        [
+          174,
+          131,
+        ],
+        [
+          197,
+          131,
+        ],
+        [
+          197,
+          156,
+        ],
+      ],
+    },
+  ],
+  "maxRank": 1,
+  "nodeCount": 3,
+  "offsetY": 12,
+  "ok": true,
+  "target": "goal",
+  "usesDag": true,
+}
+`;

@@ -1,0 +1,28 @@
+{
+  "technology": {
+    "g": {
+      "name": "g",
+      "displayName": "g",
+      "prerequisites": ["a", "b"],
+      "unit": { "ingredients": [] }
+    },
+    "a": {
+      "name": "a",
+      "displayName": "a",
+      "prerequisites": ["p"],
+      "unit": { "ingredients": [] }
+    },
+    "b": {
+      "name": "b",
+      "displayName": "b",
+      "prerequisites": ["p"],
+      "unit": { "ingredients": [] }
+    },
+    "p": {
+      "name": "p",
+      "displayName": "p",
+      "prerequisites": [],
+      "unit": { "ingredients": [] }
+    }
+  }
+}

@@ -94,6 +94,8 @@ export const labels = new Proxy(
     radar_coverage_distance: 'Radar coverage distance',
     pumping_speed: 'Pumping Speed',
     mining_speed: 'Mining Speed',
+    mining_time: 'Mining time',
+    resource_hardness: 'Hardness',
     mining_area: 'Mining Area',
     crafting_speed: 'Crafting Speed',
     pollution: 'Pollution',

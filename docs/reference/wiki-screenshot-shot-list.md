@@ -4,6 +4,13 @@ This page is a working capture backlog for player-facing wiki screenshots.
 
 Use it to track what still needs to be captured, what version it was captured on, and where each image is used.
 
+## Document Control
+
+- **Audience**: Consumers and Maintainers (Track A)
+- **Owner area**: Docs maintainers
+- **Target location**: `docs/reference`
+- **Review cadence**: Monthly
+
 ## Capture standards
 
 - Format: `webp`
