@@ -12,6 +12,16 @@
           <h3>{{ formattedDisplayName }} ({{ itemTypeLabel }})</h3>
         </div>
         <div :class="$style.headerControls">
+          <button
+            v-if="showBackToBrowse"
+            type="button"
+            :class="[$style.backToBrowseButton, 'fpio-button-chrome']"
+            title="Back to browse"
+            aria-label="Back to browse"
+            @click="emit('close-details')"
+          >
+            ← Browse
+          </button>
           <div :class="$style.headerTabs">
             <button
               :class="{ [$style.active]: activeTab === 'details' }"
@@ -318,6 +328,10 @@ const props = defineProps({
     type: Object,
     default: null
   },
+  showBackToBrowse: {
+    type: Boolean,
+    default: false
+  },
   showTechnologyAction: {
     type: Boolean,
     default: true
@@ -338,7 +352,8 @@ const emit = defineEmits([
   'navigate-back',
   'navigate-forward',
   'select-from-history',
-  'open-tech-tree'
+  'open-tech-tree',
+  'close-details'
 ])
 
 const historyPopoverId = `fpio-history-popover-${getCurrentInstance()?.uid ?? 0}`
@@ -508,6 +523,16 @@ const formattedDisplayName = computed(() => {
   display: flex;
   align-items: center;
   gap: 12px;
+  flex-wrap: wrap;
+}
+
+.backToBrowseButton {
+  flex-shrink: 0;
+  padding: 4px 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #e8e8e8;
+  white-space: nowrap;
 }
 
 .headerTabs {

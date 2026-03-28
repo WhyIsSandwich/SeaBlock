@@ -7,6 +7,10 @@
           $style.factoripediaLeftPanel,
           isMobileViewport && mobilePane === 'entry' && selectedItem ? $style.mobileGridBlocked : null
         ]"
+        @touchstart.passive="onMobileGridTouchStart"
+        @touchmove="onMobileGridTouchMove"
+        @touchend.passive="onMobileGridTouchEnd"
+        @touchcancel.passive="onMobileGridTouchCancel"
       >
         <div :class="$style.browseHeaderStack">
           <div :class="$style.factoripediaHeader">
@@ -39,7 +43,10 @@
                   {{ selectedSciencePacks.length }}/{{ sciencePackOptions.length }}
                 </span>
               </button>
-              <label :class="$style.localeLabel">
+              <label
+                v-if="!isMobileViewport"
+                :class="$style.localeLabel"
+              >
                 <span :class="$style.visuallyHidden">Language</span>
                 <select
                   :class="$style.localeSelect"
@@ -57,40 +64,89 @@
               >
                 {{ datasetVersionLabel }}
               </span>
-              <button
-                type="button"
-                :class="[$style.headerActionButton, 'fpio-button-chrome']"
-                title="Keyboard shortcuts"
-                aria-label="Keyboard shortcuts"
-                @click="showKeyboardHelp = true; closeSciencePackPanel()"
-              >
-                ?
-              </button>
-              <button
-                type="button"
-                :class="[
-                  $style.headerActionButton,
-                  'fpio-button-chrome',
-                  { [$style.headerActionButtonFlash]: linkCopyStatus === 'copied' }
-                ]"
-                title="Copy link to this view"
-                :aria-label="
-                  linkCopyStatus === 'copied'
-                    ? 'Link copied'
-                    : linkCopyStatus === 'failed'
-                      ? 'Copy failed'
-                      : 'Copy link to this view'
-                "
-                @click="copyShareLink"
-              >
-                {{
-                  linkCopyStatus === 'copied'
-                    ? 'Copied!'
-                    : linkCopyStatus === 'failed'
-                      ? 'Copy failed'
-                      : 'Link'
-                }}
-              </button>
+              <div :class="$style.headerHelpLinkGroup">
+                <button
+                  type="button"
+                  :class="[$style.headerActionButton, $style.headerIconAction, 'fpio-button-chrome']"
+                  title="Keyboard shortcuts"
+                  aria-label="Keyboard shortcuts"
+                  @click="showKeyboardHelp = true; closeSciencePackPanel()"
+                >
+                  ?
+                </button>
+                <button
+                  type="button"
+                  :class="[
+                    $style.headerActionButton,
+                    $style.headerIconAction,
+                    'fpio-button-chrome',
+                    { [$style.headerActionButtonFlash]: linkCopyStatus === 'copied' }
+                  ]"
+                  title="Copy link to this view"
+                  :aria-label="
+                    linkCopyStatus === 'copied'
+                      ? 'Link copied'
+                      : linkCopyStatus === 'failed'
+                        ? 'Copy failed'
+                        : 'Copy link to this view'
+                  "
+                  @click="copyShareLink"
+                >
+                  <span
+                    v-if="linkCopyStatus === 'copied'"
+                    :class="$style.headerLinkGlyph"
+                    aria-hidden="true"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2.5"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <path d="M20 6L9 17l-5-5" />
+                    </svg>
+                  </span>
+                  <span
+                    v-else-if="linkCopyStatus === 'failed'"
+                    :class="$style.headerLinkGlyph"
+                    aria-hidden="true"
+                    title="Copy failed"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                    >
+                      <circle cx="12" cy="12" r="10" />
+                      <path d="M15 9l-6 6M9 9l6 6" />
+                    </svg>
+                  </span>
+                  <span
+                    v-else
+                    :class="$style.headerLinkGlyph"
+                    aria-hidden="true"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+                      <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+                    </svg>
+                  </span>
+                </button>
+              </div>
               <span aria-live="polite" :class="$style.visuallyHidden">
                 {{
                   linkCopyStatus === 'copied'
@@ -190,34 +246,35 @@
         </div>
       </div>
 
+      <!-- Mobile: static hint that entry sits off-screen right; swipe left on grid to reopen -->
+      <div
+        v-if="showMobileGridSwipeAffordance"
+        :class="$style.mobileGridSwipeAffordance"
+        aria-hidden="true"
+      >
+        <span :class="$style.mobileGridSwipeAffordanceChevrons">‹‹</span>
+      </div>
+
       <!-- Right Panel: Details (desktop column; mobile full-viewport slide-over) -->
       <div
         ref="mobileEntryPanelRef"
         :class="[
           $style.factoripediaRightPanel,
-          { [$style.mobileEntryInactive]: isMobileViewport && !mobileEntryOverlayOpen }
+          {
+            [$style.mobileEntryInactive]: isMobileViewport && !mobileEntryOverlayOpen,
+            [$style.mobileEntryPeek]: mobileEntryPeekActive
+          }
         ]"
         :style="mobileOverlayPanelStyle"
-        :aria-hidden="isMobileViewport && !mobileEntryOverlayOpen ? true : undefined"
+        :aria-hidden="
+          isMobileViewport && !mobileEntryOverlayOpen && !mobileGridOpenSheetVisible ? true : undefined
+        "
         @touchstart.passive="onMobileOverlayTouchStart"
         @touchmove="onMobileOverlayTouchMove"
         @touchend.passive="onMobileOverlayTouchEnd"
         @touchcancel.passive="onMobileOverlayTouchCancel"
       >
         <div :class="$style.mobileEntrySheetInner">
-          <button
-            v-if="isMobileViewport && mobileEntryOverlayOpen"
-            type="button"
-            :class="$style.mobileEntryEdgeRail"
-            aria-label="Dismiss entry panel"
-            @click="dismissMobileEntry"
-          >
-            <span :class="$style.mobileEntryHandleGrip" aria-hidden="true">
-              <span />
-              <span />
-              <span />
-            </span>
-          </button>
           <div :class="$style.entryPaneBody">
             <DetailsPane
               ref="detailsPaneRef"
@@ -228,11 +285,13 @@
               :can-go-back="canGoBack"
               :can-go-forward="canGoForward"
               :history-items="visibleMRUItems"
+              :show-back-to-browse="!isMobileViewport && !!selectedItem"
               @toggle-animation-pause="toggleAnimationPause"
               @navigate-back="navigateBack"
               @navigate-forward="navigateForward"
               @select-from-history="selectFromMRU"
               @open-tech-tree="openResearchMap"
+              @close-details="closeDetails"
             />
           </div>
         </div>
@@ -256,7 +315,9 @@
           <li><kbd>?</kbd> Toggle this help</li>
           <li v-if="isMobileViewport">
             Tap an icon to open the entry; drag the panel right to move it with your finger, then release to snap
-            back or dismiss; the handle on the left edge of the panel also closes it
+            back or dismiss. A strip of the grid stays visible on the left while the entry is open. When you return
+            to the grid with an item still selected, drag left on the grid to open the entry again (same peek
+            as when dismissing). A hint also appears on the right edge of the browse view.
           </li>
         </ul>
         <p :class="$style.modalHint">
@@ -407,15 +468,42 @@ const mobileEntryOverlayOpen = computed(
   () => isMobileViewport.value && mobilePane.value === 'entry' && !!selectedItem.value
 )
 
+/** Grid swipe-left: sheet follows finger before `mobilePane` commits to `entry`. */
+const mobileGridOpenDragging = ref(false)
+/** True while animating dragPx back to `w` after cancel. */
+const mobileGridOpenSnapCancel = ref(false)
+/** Skip open animation in watch when committing from an in-progress grid drag. */
+const skipMobileEntryOpenAnimation = ref(false)
+
 /** Pixels panel is shifted right from fully-open (0 = flush left). */
 const mobileOverlayDragPx = ref(0)
 const mobileOverlayDragging = ref(false)
 
-const MOBILE_ENTRY_TRANSITION = 'transform 0.28s cubic-bezier(0.32, 0.72, 0, 1)'
+const prefersReducedMotion = ref(false)
+
+const mobileEntryMotionTransition = computed(() =>
+  prefersReducedMotion.value
+    ? 'transform 0.14s ease'
+    : 'transform 0.24s cubic-bezier(0.34, 1.12, 0.58, 1.02)'
+)
+
+const mobileEntryDismissMs = computed(() => (prefersReducedMotion.value ? 165 : 265))
+
 const MOBILE_ENTRY_DISMISS_RATIO = 0.22
+
+let mobileReducedMotionMqlCleanup = null
 
 /** @type {{ startX: number, startY: number, originPx: number, locked: boolean } | null} */
 let mobileOverlayPan = null
+
+/** @type {{ startX: number, startY: number, lastX: number, locked: boolean, lockX: number } | null} */
+let mobileGridPan = null
+
+function resetMobileGridOpenGestureVisuals() {
+  mobileGridOpenDragging.value = false
+  mobileGridOpenSnapCancel.value = false
+  mobileOverlayDragPx.value = 0
+}
 
 /** @type {string | null} */
 let documentOverflowSnapshot = null
@@ -444,17 +532,50 @@ function getMobileEntryPanelWidth() {
   return mobileEntryPanelRef.value?.offsetWidth || window.innerWidth
 }
 
+/** Partial sheet visible during grid reopen drag or snap-back (for peek + aria). */
+const mobileGridOpenSheetVisible = computed(
+  () =>
+    isMobileViewport.value &&
+    mobilePane.value === 'grid' &&
+    !!selectedItem.value &&
+    (mobileGridOpenDragging.value || mobileGridOpenSnapCancel.value)
+)
+
+/** Right-edge cue: grid visible + selection, entry dismissed (not while dragging sheet). */
+const showMobileGridSwipeAffordance = computed(
+  () =>
+    isMobileViewport.value &&
+    mobilePane.value === 'grid' &&
+    !!selectedItem.value &&
+    !showKeyboardHelp.value &&
+    !sciencePackPanelOpen.value &&
+    !mobileGridOpenSheetVisible.value
+)
+
+const mobileEntryPeekActive = computed(() => {
+  if (!isMobileViewport.value) return false
+  if (mobileEntryOverlayOpen.value) return true
+  if (!mobileGridOpenSheetVisible.value) return false
+  const w = getMobileEntryPanelWidth()
+  return mobileOverlayDragPx.value < w - 0.5
+})
+
 const mobileOverlayPanelStyle = computed(() => {
   if (!isMobileViewport.value) return {}
   const open = mobileEntryOverlayOpen.value
   const w = getMobileEntryPanelWidth()
   const x = Math.min(Math.max(0, mobileOverlayDragPx.value), w)
-  const transition = mobileOverlayDragging.value ? 'none' : MOBILE_ENTRY_TRANSITION
+  const motion = mobileEntryMotionTransition.value
+  const gridSlideOpen = !open && mobileGridOpenSheetVisible.value
+  const transitionNone =
+    mobileOverlayDragging.value ||
+    (mobileGridOpenDragging.value && !mobileGridOpenSnapCancel.value)
+  const transition = transitionNone ? 'none' : motion
 
-  if (!open) {
+  if (!open && !gridSlideOpen) {
     return {
       transform: 'translateX(100%)',
-      transition: MOBILE_ENTRY_TRANSITION
+      transition: motion
     }
   }
 
@@ -476,9 +597,14 @@ watch(
       return
     }
     if (open) {
+      mobileOverlayDragging.value = false
+      if (skipMobileEntryOpenAnimation.value) {
+        skipMobileEntryOpenAnimation.value = false
+        mobileOverlayDragPx.value = 0
+        return
+      }
       const width = getMobileEntryPanelWidth()
       mobileOverlayDragPx.value = width
-      mobileOverlayDragging.value = false
       nextTick(() => {
         requestAnimationFrame(() => {
           mobileOverlayDragPx.value = 0
@@ -487,6 +613,7 @@ watch(
     } else {
       mobileOverlayDragPx.value = 0
       mobileOverlayDragging.value = false
+      resetMobileGridOpenGestureVisuals()
     }
   },
   { flush: 'post' }
@@ -977,6 +1104,8 @@ function dismissMobileEntry() {
   captureMobileEntryScroll()
   mobileOverlayPan = null
   mobileOverlayDragging.value = false
+  mobileGridOpenDragging.value = false
+  mobileGridOpenSnapCancel.value = false
   mobilePane.value = 'grid'
 }
 
@@ -987,7 +1116,7 @@ function animateMobileEntryOffThenDismiss() {
   mobileOverlayDragPx.value = w
   window.setTimeout(() => {
     dismissMobileEntry()
-  }, 280)
+  }, mobileEntryDismissMs.value)
 }
 
 function closeDetails() {
@@ -1154,6 +1283,15 @@ onMounted(async () => {
     window.addEventListener('keydown', handleKeydown)
     window.addEventListener('resize', updateMobileViewport)
     updateMobileViewport()
+    if (typeof window.matchMedia === 'function') {
+      const mql = window.matchMedia('(prefers-reduced-motion: reduce)')
+      prefersReducedMotion.value = mql.matches
+      const onMotionPreference = () => {
+        prefersReducedMotion.value = mql.matches
+      }
+      mql.addEventListener('change', onMotionPreference)
+      mobileReducedMotionMqlCleanup = () => mql.removeEventListener('change', onMotionPreference)
+    }
   }
 
   await nextTick()
@@ -1292,6 +1430,8 @@ function updateMobileViewport() {
     setDocumentScrollLock(false)
     mobilePane.value = 'grid'
     mobileOverlayPan = null
+    mobileGridPan = null
+    resetMobileGridOpenGestureVisuals()
     return
   }
 
@@ -1378,6 +1518,105 @@ function onMobileOverlayTouchCancel() {
   }
 }
 
+function onMobileGridTouchStart(e) {
+  if (!isMobileViewport.value) return
+  if (mobilePane.value !== 'grid' || !selectedItem.value) return
+  if (showKeyboardHelp.value || sciencePackPanelOpen.value) return
+  if (e.touches.length !== 1) return
+  if (mobileOverlayTouchTargetIsEditable(e.target)) return
+  const t = e.touches[0]
+  mobileGridPan = {
+    startX: t.clientX,
+    startY: t.clientY,
+    lastX: t.clientX,
+    locked: false,
+    lockX: 0
+  }
+}
+
+function onMobileGridTouchMove(e) {
+  if (!mobileGridPan) return
+  if (!isMobileViewport.value || mobilePane.value !== 'grid' || !selectedItem.value) {
+    if (mobileGridPan.locked) resetMobileGridOpenGestureVisuals()
+    mobileGridPan = null
+    return
+  }
+  if (showKeyboardHelp.value || sciencePackPanelOpen.value) {
+    if (mobileGridPan.locked) resetMobileGridOpenGestureVisuals()
+    mobileGridPan = null
+    return
+  }
+  if (e.touches.length !== 1) return
+
+  const t = e.touches[0]
+  const cx = t.clientX
+  const cy = t.clientY
+  mobileGridPan.lastX = cx
+  const dx = cx - mobileGridPan.startX
+  const dy = cy - mobileGridPan.startY
+
+  if (!mobileGridPan.locked) {
+    if (Math.abs(dy) > Math.abs(dx) && Math.abs(dy) > 14) {
+      mobileGridPan = null
+      return
+    }
+    if (Math.abs(dx) >= 12 && Math.abs(dx) > Math.abs(dy) * 1.05 && dx < 0) {
+      mobileGridPan.locked = true
+      mobileGridPan.lockX = cx
+      mobileGridOpenDragging.value = true
+    } else {
+      return
+    }
+  }
+
+  const w = getMobileEntryPanelWidth()
+  mobileOverlayDragPx.value = Math.min(Math.max(0, w + (cx - mobileGridPan.lockX)), w)
+  e.preventDefault()
+}
+
+function onMobileGridTouchEnd(e) {
+  if (!mobileGridPan) return
+  const pan = mobileGridPan
+  mobileGridPan = null
+  if (!pan.locked) return
+  if (!isMobileViewport.value || mobilePane.value !== 'grid' || !selectedItem.value) return
+
+  const endX = e.changedTouches?.[0]?.clientX ?? pan.lastX
+  const w = getMobileEntryPanelWidth()
+  const x = Math.min(Math.max(0, w + (endX - pan.lockX)), w)
+
+  if (x < w * MOBILE_ENTRY_DISMISS_RATIO) {
+    skipMobileEntryOpenAnimation.value = true
+    mobileGridOpenDragging.value = false
+    mobilePane.value = 'entry'
+    restoreMobileEntryScroll(true)
+    return
+  }
+
+  mobileGridOpenSnapCancel.value = true
+  mobileOverlayDragPx.value = w
+  window.setTimeout(() => {
+    mobileGridOpenDragging.value = false
+    mobileGridOpenSnapCancel.value = false
+    mobileOverlayDragPx.value = 0
+  }, mobileEntryDismissMs.value)
+}
+
+function onMobileGridTouchCancel() {
+  const pan = mobileGridPan
+  mobileGridPan = null
+  if (pan?.locked) {
+    const w = getMobileEntryPanelWidth()
+    mobileGridOpenSnapCancel.value = true
+    mobileOverlayDragPx.value = w
+    window.setTimeout(() => {
+      mobileGridOpenDragging.value = false
+      mobileGridOpenSnapCancel.value = false
+      mobileOverlayDragPx.value = 0
+    }, mobileEntryDismissMs.value)
+  }
+}
+
 // Provide event handlers to child components
 provide('onSelectItem', selectItem)
 provide('onItemSelected', selectItem)
@@ -1421,8 +1660,14 @@ function handleKeydown(event) {
 }
 
 onUnmounted(() => {
+  if (mobileReducedMotionMqlCleanup) {
+    mobileReducedMotionMqlCleanup()
+    mobileReducedMotionMqlCleanup = null
+  }
   setDocumentScrollLock(false)
   mobileOverlayPan = null
+  mobileGridPan = null
+  resetMobileGridOpenGestureVisuals()
   if (sciencePackPositionListenersCleanup) {
     sciencePackPositionListenersCleanup()
     sciencePackPositionListenersCleanup = null
@@ -1689,11 +1934,41 @@ const filterGrid = useFactorioGrid({
   border: 0;
 }
 
+.headerHelpLinkGroup {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
 .headerActionButton {
   color: #e6e6e6;
   font-size: 11px;
   font-weight: 700;
   padding: 4px 8px;
+}
+
+.headerIconAction {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 30px;
+  min-height: 28px;
+  padding: 4px 6px;
+}
+
+.headerLinkGlyph {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+}
+
+.headerLinkGlyph svg {
+  width: 100%;
+  height: 100%;
+  display: block;
 }
 
 .headerActionButton:hover {
@@ -2222,6 +2497,58 @@ const filterGrid = useFactorioGrid({
     overflow: hidden;
   }
 
+  /* Off-screen entry cue (below sheet z-index; pointer-events none). */
+  .mobileGridSwipeAffordance {
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 16px;
+    z-index: 25;
+    pointer-events: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(
+      to left,
+      rgba(74, 74, 74, 0.88) 0%,
+      rgba(74, 74, 74, 0.2) 65%,
+      transparent 100%
+    );
+    box-shadow: inset 8px 0 14px -5px rgba(0, 0, 0, 0.45);
+  }
+
+  .mobileGridSwipeAffordanceChevrons {
+    font-size: 12px;
+    font-weight: 800;
+    line-height: 1;
+    color: rgba(239, 176, 70, 0.88);
+    letter-spacing: -0.2em;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.65);
+    animation: mobileGridSwipeAffordanceNudge 2.8s ease-in-out infinite;
+  }
+
+  @keyframes mobileGridSwipeAffordanceNudge {
+    0%,
+    100% {
+      transform: translateX(0);
+      opacity: 0.72;
+    }
+
+    50% {
+      transform: translateX(-4px);
+      opacity: 1;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .mobileGridSwipeAffordanceChevrons {
+      animation: none;
+      opacity: 0.9;
+    }
+  }
+
   .mobileGridBlocked {
     pointer-events: none;
     user-select: none;
@@ -2252,8 +2579,21 @@ const filterGrid = useFactorioGrid({
     display: flex;
     flex-direction: column;
     background: #4a4a4a;
-    box-shadow: -10px 0 28px rgba(0, 0, 0, 0.5);
+    box-shadow:
+      -14px 0 32px rgba(0, 0, 0, 0.55),
+      inset 8px 0 14px -6px rgba(0, 0, 0, 0.35);
     overscroll-behavior: contain;
+  }
+
+  /* Peek: keep a strip of the browse column visible (affordance for swipe-dismiss). */
+  .mobileEntryPeek {
+    left: 10px;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: auto;
+    border-top-left-radius: 3px;
+    border-bottom-left-radius: 3px;
   }
 
   .mobileEntryInactive {
@@ -2262,55 +2602,12 @@ const filterGrid = useFactorioGrid({
 
   .mobileEntrySheetInner {
     display: flex;
-    flex-direction: row;
+    flex-direction: column;
     flex: 1 1 0;
     align-self: stretch;
     min-height: 0;
     width: 100%;
     overflow: hidden;
-  }
-
-  /* Left edge of slide-over (grid-facing): grab strip + vertical bars */
-  .mobileEntryEdgeRail {
-    flex-shrink: 0;
-    width: 32px;
-    align-self: stretch;
-    margin: 0;
-    padding: 0 2px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    border: none;
-    border-right: 1px solid #3a3a3a;
-    border-radius: 0;
-    background: linear-gradient(to right, #2e2e2e, #353535);
-    cursor: pointer;
-    font: inherit;
-    color: inherit;
-    -webkit-tap-highlight-color: transparent;
-  }
-
-  .mobileEntryEdgeRail:active {
-    background: linear-gradient(to right, #383838, #3d3d3d);
-  }
-
-  .mobileEntryHandleGrip {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    justify-content: center;
-    gap: 5px;
-    pointer-events: none;
-  }
-
-  .mobileEntryHandleGrip span {
-    display: block;
-    width: 3px;
-    height: 26px;
-    border-radius: 2px;
-    background: #8a8a8a;
-    box-shadow: 1px 0 0 rgba(0, 0, 0, 0.35);
   }
 
   .entryPaneBody {
