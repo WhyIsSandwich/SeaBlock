@@ -21,6 +21,17 @@ layout: page
     overflow: hidden;
   }
 }
+
+@media (max-width: 768px) {
+  .factoriopedia-page {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    height: calc(100dvh - var(--vp-nav-height, 64px));
+    max-height: calc(100dvh - var(--vp-nav-height, 64px));
+    overflow: hidden;
+  }
+}
 </style>
 
 <div class="factoriopedia-page">

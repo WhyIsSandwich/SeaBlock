@@ -1,49 +1,11 @@
 <template>
   <div :class="$style.factoripedia">
-    <div
-      v-if="isMobileViewport"
-      :class="$style.mobilePanelControls"
-    >
-      <span :class="$style.mobilePanelToggleLabel">View</span>
-      <div
-        :class="$style.mobilePanelToggle"
-        role="tablist"
-        aria-label="Switch mobile panel"
-      >
-        <span
-          :class="[
-            $style.mobilePanelIndicator,
-            { [$style.details]: activeMobilePanel === 'details' && selectedItem }
-          ]"
-        />
-        <button
-          :class="[$style.mobilePanelButton, { [$style.active]: activeMobilePanel === 'browse' }]"
-          role="tab"
-          :aria-selected="activeMobilePanel === 'browse'"
-          @click="activeMobilePanel = 'browse'"
-        >
-          Browse
-        </button>
-        <button
-          :class="[
-            $style.mobilePanelButton,
-            { [$style.active]: activeMobilePanel === 'details' && selectedItem }
-          ]"
-          role="tab"
-          :aria-selected="activeMobilePanel === 'details' && !!selectedItem"
-          :disabled="!selectedItem"
-          @click="activeMobilePanel = 'details'"
-        >
-          Details
-        </button>
-      </div>
-    </div>
     <div :class="$style.factoripediaContainer">
       <!-- Left Panel: Item Browser -->
       <div
         :class="[
           $style.factoripediaLeftPanel,
-          { [$style.mobileHidden]: isMobileViewport && activeMobilePanel !== 'browse' }
+          isMobileViewport && mobilePane === 'entry' && selectedItem ? $style.mobileGridBlocked : null
         ]"
       >
         <div :class="$style.browseHeaderStack">
@@ -228,27 +190,52 @@
         </div>
       </div>
 
-      <!-- Right Panel: Details -->
+      <!-- Right Panel: Details (desktop column; mobile full-viewport slide-over) -->
       <div
+        ref="mobileEntryPanelRef"
         :class="[
           $style.factoripediaRightPanel,
-          { [$style.mobileHidden]: isMobileViewport && activeMobilePanel !== 'details' }
+          { [$style.mobileEntryInactive]: isMobileViewport && !mobileEntryOverlayOpen }
         ]"
+        :style="mobileOverlayPanelStyle"
+        :aria-hidden="isMobileViewport && !mobileEntryOverlayOpen ? true : undefined"
+        @touchstart.passive="onMobileOverlayTouchStart"
+        @touchmove="onMobileOverlayTouchMove"
+        @touchend.passive="onMobileOverlayTouchEnd"
+        @touchcancel.passive="onMobileOverlayTouchCancel"
       >
-        <DetailsPane
-          :name="selectedItem?.name"
-          :type="selectedItem ? getPrimaryType(selectedItem) : null"
-          :science-pack-visibility="sciencePackVisibility"
-          :is-animation-paused="isAnimationPaused"
-          :can-go-back="canGoBack"
-          :can-go-forward="canGoForward"
-          :history-items="visibleMRUItems"
-          @toggle-animation-pause="toggleAnimationPause"
-          @navigate-back="navigateBack"
-          @navigate-forward="navigateForward"
-          @select-from-history="selectFromMRU"
-          @open-tech-tree="openResearchMap"
-        />
+        <div :class="$style.mobileEntrySheetInner">
+          <button
+            v-if="isMobileViewport && mobileEntryOverlayOpen"
+            type="button"
+            :class="$style.mobileEntryEdgeRail"
+            aria-label="Dismiss entry panel"
+            @click="dismissMobileEntry"
+          >
+            <span :class="$style.mobileEntryHandleGrip" aria-hidden="true">
+              <span />
+              <span />
+              <span />
+            </span>
+          </button>
+          <div :class="$style.entryPaneBody">
+            <DetailsPane
+              ref="detailsPaneRef"
+              :name="selectedItem?.name"
+              :type="selectedItem ? getPrimaryType(selectedItem) : null"
+              :science-pack-visibility="sciencePackVisibility"
+              :is-animation-paused="isAnimationPaused"
+              :can-go-back="canGoBack"
+              :can-go-forward="canGoForward"
+              :history-items="visibleMRUItems"
+              @toggle-animation-pause="toggleAnimationPause"
+              @navigate-back="navigateBack"
+              @navigate-forward="navigateForward"
+              @select-from-history="selectFromMRU"
+              @open-tech-tree="openResearchMap"
+            />
+          </div>
+        </div>
       </div>
     </div>
 
@@ -265,8 +252,12 @@
         <ul :class="$style.kbdList">
           <li><kbd>←</kbd> <kbd>→</kbd> Previous / next item in the grid</li>
           <li><kbd>↑</kbd> <kbd>↓</kbd> Move up / down a row (keeps column, clamps to row end)</li>
-          <li><kbd>Esc</kbd> Close details</li>
+          <li><kbd>Esc</kbd> Clear selection</li>
           <li><kbd>?</kbd> Toggle this help</li>
+          <li v-if="isMobileViewport">
+            Tap an icon to open the entry; drag the panel right to move it with your finger, then release to snap
+            back or dismiss; the handle on the left edge of the panel also closes it
+          </li>
         </ul>
         <p :class="$style.modalHint">
           URL query parameters <code>category</code>, <code>science</code>, <code>q</code>, and
@@ -405,7 +396,101 @@ const categoryStructure = ref({})
 const primaryCategories = ref([])
 const secondaryCategories = ref([])
 const isMobileViewport = ref(false)
-const activeMobilePanel = ref('browse')
+/** Mobile: show icon grid (`grid`) or full-screen entry for the selection (`entry`). */
+const mobilePane = ref('grid')
+
+const detailsPaneRef = ref(null)
+const mobileEntryPanelRef = ref(null)
+const mobileEntryScrollTop = ref(0)
+
+const mobileEntryOverlayOpen = computed(
+  () => isMobileViewport.value && mobilePane.value === 'entry' && !!selectedItem.value
+)
+
+/** Pixels panel is shifted right from fully-open (0 = flush left). */
+const mobileOverlayDragPx = ref(0)
+const mobileOverlayDragging = ref(false)
+
+const MOBILE_ENTRY_TRANSITION = 'transform 0.28s cubic-bezier(0.32, 0.72, 0, 1)'
+const MOBILE_ENTRY_DISMISS_RATIO = 0.22
+
+/** @type {{ startX: number, startY: number, originPx: number, locked: boolean } | null} */
+let mobileOverlayPan = null
+
+/** @type {string | null} */
+let documentOverflowSnapshot = null
+/** @type {string | null} */
+let bodyOverflowSnapshot = null
+
+function setDocumentScrollLock(locked) {
+  if (typeof document === 'undefined') return
+  if (locked) {
+    if (documentOverflowSnapshot === null) {
+      documentOverflowSnapshot = document.documentElement.style.overflow
+      bodyOverflowSnapshot = document.body.style.overflow
+    }
+    document.documentElement.style.overflow = 'hidden'
+    document.body.style.overflow = 'hidden'
+  } else if (documentOverflowSnapshot !== null) {
+    document.documentElement.style.overflow = documentOverflowSnapshot
+    document.body.style.overflow = bodyOverflowSnapshot
+    documentOverflowSnapshot = null
+    bodyOverflowSnapshot = null
+  }
+}
+
+function getMobileEntryPanelWidth() {
+  if (typeof window === 'undefined') return 400
+  return mobileEntryPanelRef.value?.offsetWidth || window.innerWidth
+}
+
+const mobileOverlayPanelStyle = computed(() => {
+  if (!isMobileViewport.value) return {}
+  const open = mobileEntryOverlayOpen.value
+  const w = getMobileEntryPanelWidth()
+  const x = Math.min(Math.max(0, mobileOverlayDragPx.value), w)
+  const transition = mobileOverlayDragging.value ? 'none' : MOBILE_ENTRY_TRANSITION
+
+  if (!open) {
+    return {
+      transform: 'translateX(100%)',
+      transition: MOBILE_ENTRY_TRANSITION
+    }
+  }
+
+  return {
+    transform: `translateX(${x}px)`,
+    transition
+  }
+})
+
+watch(
+  mobileEntryOverlayOpen,
+  open => {
+    setDocumentScrollLock(open)
+    if (typeof window === 'undefined' || !isMobileViewport.value) {
+      if (!open) {
+        mobileOverlayDragPx.value = 0
+        mobileOverlayDragging.value = false
+      }
+      return
+    }
+    if (open) {
+      const width = getMobileEntryPanelWidth()
+      mobileOverlayDragPx.value = width
+      mobileOverlayDragging.value = false
+      nextTick(() => {
+        requestAnimationFrame(() => {
+          mobileOverlayDragPx.value = 0
+        })
+      })
+    } else {
+      mobileOverlayDragPx.value = 0
+      mobileOverlayDragging.value = false
+    }
+  },
+  { flush: 'post' }
+)
 
 const selectedSciencePackSet = computed(() => new Set(selectedSciencePacks.value))
 const sciencePackVisibility = computed(() => createSciencePackVisibility(selectedSciencePacks.value))
@@ -867,11 +952,49 @@ function navigateItemVertical(deltaRow) {
   }
 }
 
+function getEntryScrollEl() {
+  return detailsPaneRef.value?.$el ?? null
+}
+
+function captureMobileEntryScroll() {
+  if (!isMobileViewport.value) return
+  const el = getEntryScrollEl()
+  if (el) mobileEntryScrollTop.value = el.scrollTop
+}
+
+function restoreMobileEntryScroll(useSaved) {
+  nextTick(() => {
+    nextTick(() => {
+      const el = getEntryScrollEl()
+      if (!el) return
+      el.scrollTop = useSaved ? mobileEntryScrollTop.value : 0
+    })
+  })
+}
+
+function dismissMobileEntry() {
+  if (!isMobileViewport.value) return
+  captureMobileEntryScroll()
+  mobileOverlayPan = null
+  mobileOverlayDragging.value = false
+  mobilePane.value = 'grid'
+}
+
+function animateMobileEntryOffThenDismiss() {
+  if (!isMobileViewport.value || !mobileEntryOverlayOpen.value) return
+  const w = getMobileEntryPanelWidth()
+  mobileOverlayDragging.value = false
+  mobileOverlayDragPx.value = w
+  window.setTimeout(() => {
+    dismissMobileEntry()
+  }, 280)
+}
+
 function closeDetails() {
-  selectedItem.value = null
   if (isMobileViewport.value) {
-    activeMobilePanel.value = 'browse'
+    mobilePane.value = 'grid'
   }
+  selectedItem.value = null
   updateURL()
 }
 
@@ -1108,11 +1231,18 @@ function selectItem(type, name, data = null, options = {}) {
   const unifiedObject = createUnifiedSelectionObject(type, name, data)
 
   if (unifiedObject && isSelectionAllowed(type, name, unifiedObject)) {
+    const prevKey = selectedItem.value
+      ? `${getPrimaryType(selectedItem.value)}-${selectedItem.value.name}`
+      : ''
+    const nextKey = `${type}-${name}`
+    const identityChanged = prevKey !== nextKey
+
     selectedItem.value = unifiedObject
     addToNavigationStack(unifiedObject)
     addToMRU(unifiedObject)
     if (isMobileViewport.value) {
-      activeMobilePanel.value = 'details'
+      mobilePane.value = 'entry'
+      restoreMobileEntryScroll(!identityChanged)
     }
   }
 }
@@ -1126,7 +1256,7 @@ watch(
     if (!isVisible) {
       selectedItem.value = null
       if (isMobileViewport.value) {
-        activeMobilePanel.value = 'browse'
+        mobilePane.value = 'grid'
       }
       updateURL()
     }
@@ -1159,12 +1289,92 @@ function updateMobileViewport() {
   isMobileViewport.value = isMobile
 
   if (!isMobile) {
-    activeMobilePanel.value = 'browse'
+    setDocumentScrollLock(false)
+    mobilePane.value = 'grid'
+    mobileOverlayPan = null
     return
   }
 
   if (!selectedItem.value) {
-    activeMobilePanel.value = 'browse'
+    mobilePane.value = 'grid'
+  }
+}
+
+function mobileOverlayTouchTargetIsEditable(target) {
+  if (!target || typeof Element === 'undefined') return false
+  const el = target instanceof Element ? target : null
+  if (!el) return false
+  return Boolean(el.closest('input, textarea, select, [contenteditable="true"]'))
+}
+
+function onMobileOverlayTouchStart(e) {
+  if (!mobileEntryOverlayOpen.value) return
+  if (showKeyboardHelp.value || sciencePackPanelOpen.value) return
+  if (e.touches.length !== 1) return
+  if (mobileOverlayTouchTargetIsEditable(e.target)) return
+  const t = e.touches[0]
+  mobileOverlayPan = {
+    startX: t.clientX,
+    startY: t.clientY,
+    originPx: mobileOverlayDragPx.value,
+    locked: false
+  }
+}
+
+function onMobileOverlayTouchMove(e) {
+  if (!mobileOverlayPan || !mobileEntryOverlayOpen.value) return
+  if (e.touches.length !== 1) return
+  if (showKeyboardHelp.value || sciencePackPanelOpen.value) return
+
+  const t = e.touches[0]
+  const cx = t.clientX
+  const cy = t.clientY
+  const dx = cx - mobileOverlayPan.startX
+  const dy = cy - mobileOverlayPan.startY
+
+  if (!mobileOverlayPan.locked) {
+    if (Math.abs(dy) > Math.abs(dx) && Math.abs(dy) > 14) {
+      mobileOverlayPan = null
+      return
+    }
+    if (Math.abs(dx) >= 12 && Math.abs(dx) > Math.abs(dy) * 1.05) {
+      mobileOverlayPan.locked = true
+      mobileOverlayDragging.value = true
+    } else {
+      return
+    }
+  }
+
+  const w = getMobileEntryPanelWidth()
+  const x = Math.min(Math.max(0, mobileOverlayPan.originPx + (cx - mobileOverlayPan.startX)), w)
+  mobileOverlayDragPx.value = x
+  e.preventDefault()
+}
+
+function onMobileOverlayTouchEnd() {
+  if (!mobileOverlayPan?.locked) {
+    mobileOverlayPan = null
+    return
+  }
+  mobileOverlayPan = null
+  if (!mobileEntryOverlayOpen.value) return
+
+  mobileOverlayDragging.value = false
+  const w = getMobileEntryPanelWidth()
+  const x = mobileOverlayDragPx.value
+
+  if (x > w * MOBILE_ENTRY_DISMISS_RATIO) {
+    animateMobileEntryOffThenDismiss()
+  } else {
+    mobileOverlayDragPx.value = 0
+  }
+}
+
+function onMobileOverlayTouchCancel() {
+  mobileOverlayPan = null
+  if (mobileEntryOverlayOpen.value) {
+    mobileOverlayDragging.value = false
+    mobileOverlayDragPx.value = 0
   }
 }
 
@@ -1211,6 +1421,8 @@ function handleKeydown(event) {
 }
 
 onUnmounted(() => {
+  setDocumentScrollLock(false)
+  mobileOverlayPan = null
   if (sciencePackPositionListenersCleanup) {
     sciencePackPositionListenersCleanup()
     sciencePackPositionListenersCleanup = null
@@ -1261,46 +1473,6 @@ const filterGrid = useFactorioGrid({
   flex: 1;
   min-height: 0;
   height: 100%;
-}
-
-.mobilePanelControls {
-  display: none;
-}
-
-.mobilePanelToggleLabel {
-  display: none;
-}
-
-.mobilePanelToggle {
-  display: none;
-}
-
-.mobilePanelIndicator {
-  display: none;
-}
-
-.mobilePanelButton {
-  position: relative;
-  z-index: 1;
-  border: none;
-  background: transparent;
-  color: #bcbcbc;
-  font-size: 13px;
-  font-weight: 700;
-  line-height: 1;
-  min-height: 34px;
-  cursor: pointer;
-  border-radius: 14px;
-  transition: color 0.18s ease;
-}
-
-.mobilePanelButton.active {
-  color: #ffffff;
-}
-
-.mobilePanelButton:disabled {
-  color: #777777;
-  cursor: not-allowed;
 }
 
 /* Left Panel */
@@ -1776,6 +1948,14 @@ const filterGrid = useFactorioGrid({
     inset 0 1px 0 rgba(255, 255, 255, 0.03);
 }
 
+.mobileEntrySheetInner {
+  display: contents;
+}
+
+.entryPaneBody {
+  display: contents;
+}
+
 .itemDetails,
 .recipeDetails {
   padding: 16px;
@@ -2024,98 +2204,122 @@ const filterGrid = useFactorioGrid({
 /* Mobile Responsive Layout */
 @media (max-width: 768px) {
   .factoripedia {
-    flex: none;
-    align-self: auto;
-    max-height: none;
-    height: auto;
+    flex: 1 1 0;
+    align-self: stretch;
     min-height: 0;
-    overflow: visible;
-  }
-
-  .mobilePanelControls {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 8px;
-    border-bottom: 1px solid #3b3b3b;
-    background: linear-gradient(to bottom, #2f2f2f, #252525);
-  }
-
-  .mobilePanelToggleLabel {
-    display: inline-block;
-    color: #b0b0b0;
-    font-size: 12px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-  }
-
-  .mobilePanelToggle {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    position: relative;
-    flex: 1;
-    background: linear-gradient(to bottom, #222222, #1a1a1a);
-    border: 1px solid #4f4f4f;
-    border-radius: 16px;
-    padding: 3px;
-    box-shadow:
-      inset 0 1px 2px rgba(0, 0, 0, 0.45),
-      0 1px 0 rgba(255, 255, 255, 0.06);
-  }
-
-  .mobilePanelIndicator {
-    display: block;
-    position: absolute;
-    top: 3px;
-    bottom: 3px;
-    left: 3px;
-    width: calc(50% - 3px);
-    border-radius: 13px;
-    background: linear-gradient(to bottom, #3d3121, #2f2518);
-    border: 1px solid #b78c45;
-    box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.2),
-      0 1px 2px rgba(0, 0, 0, 0.4);
-    transition: transform 0.18s ease;
-    pointer-events: none;
-  }
-
-  .mobilePanelIndicator.details {
-    transform: translateX(100%);
-  }
-
-  .mobilePanelButton {
-    width: 100%;
+    max-height: 100%;
+    height: 100%;
+    overflow: hidden;
+    overscroll-behavior: contain;
   }
 
   .factoripediaContainer {
+    position: relative;
     flex-direction: column;
-    flex: none;
-    height: auto;
+    flex: 1 1 0;
     min-height: 0;
+    height: auto;
+    overflow: hidden;
   }
 
-  .mobileHidden {
-    display: none !important;
+  .mobileGridBlocked {
+    pointer-events: none;
+    user-select: none;
   }
 
-  /* Left Panel - Mobile */
+  /* Left Panel - Mobile: full viewport under slide-over */
   .factoripediaLeftPanel {
     width: 100%;
     border-right: none;
-    border-bottom: 2px solid #4a4a4a;
+    border-bottom: none;
+    flex: 1 1 0;
     min-height: 0;
-    flex: none;
-    overflow-y: visible;
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
-  /* Right Panel - Mobile */
+  /* Right Panel - Mobile: stacked entry (slides in from the right; transform via inline style) */
   .factoripediaRightPanel {
+    position: absolute;
+    inset: 0;
+    z-index: 30;
     width: 100%;
-    min-height: 0;
     flex: none;
-    overflow-y: visible;
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    background: #4a4a4a;
+    box-shadow: -10px 0 28px rgba(0, 0, 0, 0.5);
+    overscroll-behavior: contain;
+  }
+
+  .mobileEntryInactive {
+    pointer-events: none;
+  }
+
+  .mobileEntrySheetInner {
+    display: flex;
+    flex-direction: row;
+    flex: 1 1 0;
+    align-self: stretch;
+    min-height: 0;
+    width: 100%;
+    overflow: hidden;
+  }
+
+  /* Left edge of slide-over (grid-facing): grab strip + vertical bars */
+  .mobileEntryEdgeRail {
+    flex-shrink: 0;
+    width: 32px;
+    align-self: stretch;
+    margin: 0;
+    padding: 0 2px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    border-right: 1px solid #3a3a3a;
+    border-radius: 0;
+    background: linear-gradient(to right, #2e2e2e, #353535);
+    cursor: pointer;
+    font: inherit;
+    color: inherit;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .mobileEntryEdgeRail:active {
+    background: linear-gradient(to right, #383838, #3d3d3d);
+  }
+
+  .mobileEntryHandleGrip {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    pointer-events: none;
+  }
+
+  .mobileEntryHandleGrip span {
+    display: block;
+    width: 3px;
+    height: 26px;
+    border-radius: 2px;
+    background: #8a8a8a;
+    box-shadow: 1px 0 0 rgba(0, 0, 0, 0.35);
+  }
+
+  .entryPaneBody {
+    flex: 1 1 0;
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
   }
 
   /* Smaller filter buttons on mobile - maintain size relative to grid */
@@ -2165,11 +2369,6 @@ const filterGrid = useFactorioGrid({
 
   .searchContainer {
     padding: 6px;
-  }
-
-  .mobilePanelControls {
-    padding: 6px;
-    gap: 8px;
   }
 }
 

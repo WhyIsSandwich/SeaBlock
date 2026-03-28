@@ -62,10 +62,7 @@
               <button
                 ref="historyTriggerRef"
                 type="button"
-                :class="[
-                  $style.historyButton,
-                  { [$style.historyButtonOpen]: historyPopoverOpen }
-                ]"
+                :class="[$style.historyButton, { [$style.historyButtonOpen]: historyPopoverOpen }]"
                 class="fpio-button-chrome"
                 title="Recently viewed items"
                 :popovertarget="historyPopoverId"
@@ -472,9 +469,11 @@ const formattedDisplayName = computed(() => {
   flex: 1;
   display: flex;
   flex-direction: column;
+  min-height: 0;
   background: #4a4a4a;
   border-left: 1px solid #1a1a1a;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .itemDetails {
@@ -1424,6 +1423,8 @@ const formattedDisplayName = computed(() => {
   .detailsPane {
     border-left: none;
     border-top: 1px solid var(--vp-c-border);
+    flex: 1 1 0;
+    min-height: 0;
   }
 
   .itemDetails {
