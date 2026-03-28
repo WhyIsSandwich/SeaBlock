@@ -46,70 +46,99 @@
           { [$style.mobileHidden]: isMobileViewport && activeMobilePanel !== 'browse' }
         ]"
       >
-        <div :class="$style.factoripediaHeader">
-          <h2>Factoriopedia</h2>
-          <div :class="$style.factoripediaHeaderActions">
-            <label :class="$style.localeLabel">
-              <span :class="$style.visuallyHidden">Language</span>
-              <select
-                :class="$style.localeSelect"
-                :value="currentLanguage"
-                aria-label="Factoriopedia data language"
-                @change="onLocaleChange($event.target.value)"
+        <div :class="$style.browseHeaderStack">
+          <div :class="$style.factoripediaHeader">
+            <h2>Factoriopedia</h2>
+            <div :class="$style.factoripediaHeaderActions">
+              <button
+                v-if="sciencePackTriggerIconPack"
+                ref="sciencePackTriggerRef"
+                type="button"
+                :class="[
+                  $style.sciencePackHeaderTrigger,
+                  {
+                    [$style.sciencePackHeaderTriggerOpen]: sciencePackPanelOpen,
+                    [$style.sciencePackHeaderTriggerActive]: hasActiveScienceFilter
+                  }
+                ]"
+                aria-haspopup="dialog"
+                :aria-expanded="sciencePackPanelOpen"
+                aria-controls="factoriopedia-science-pack-panel"
+                title="Science pack filters"
+                @click="toggleSciencePackPanel"
               >
-                <option value="en">English</option>
-              </select>
-            </label>
-            <span
-              v-if="datasetVersionLabel"
-              :class="$style.datasetVersionBadge"
-              :title="'Dataset build metadata from data.json'"
-            >
-              {{ datasetVersionLabel }}
-            </span>
-            <button
-              type="button"
-              :class="[$style.headerActionButton, 'fpio-button-chrome']"
-              title="Keyboard shortcuts"
-              aria-label="Keyboard shortcuts"
-              @click="showKeyboardHelp = true"
-            >
-              ?
-            </button>
-            <button
-              type="button"
-              :class="[
-                $style.headerActionButton,
-                'fpio-button-chrome',
-                { [$style.headerActionButtonFlash]: linkCopyStatus === 'copied' }
-              ]"
-              title="Copy link to this view"
-              :aria-label="
-                linkCopyStatus === 'copied'
-                  ? 'Link copied'
-                  : linkCopyStatus === 'failed'
-                    ? 'Copy failed'
-                    : 'Copy link to this view'
-              "
-              @click="copyShareLink"
-            >
-              {{
-                linkCopyStatus === 'copied'
-                  ? 'Copied!'
-                  : linkCopyStatus === 'failed'
-                    ? 'Copy failed'
-                    : 'Link'
-              }}
-            </button>
-            <span aria-live="polite" :class="$style.visuallyHidden">
-              {{
-                linkCopyStatus === 'copied'
-                  ? 'Link copied to clipboard.'
-                  : linkCopyStatus === 'failed'
-                    ? 'Could not copy link.'
-                    : ''
-              }}
-            </span>
+                <SpriteIcon
+                  :sprite-key="`item-${sciencePackTriggerIconPack.name}`"
+                  :size="22"
+                  :fill-ratio="CATEGORY_ICON_FILL_RATIO"
+                  :title="sciencePackTriggerIconPack.displayName"
+                />
+                <span :class="$style.sciencePackHeaderCount">
+                  {{ selectedSciencePacks.length }}/{{ sciencePackOptions.length }}
+                </span>
+              </button>
+              <label :class="$style.localeLabel">
+                <span :class="$style.visuallyHidden">Language</span>
+                <select
+                  :class="$style.localeSelect"
+                  :value="currentLanguage"
+                  aria-label="Factoriopedia data language"
+                  @change="onLocaleChange($event.target.value)"
+                >
+                  <option value="en">English</option>
+                </select>
+              </label>
+              <span
+                v-if="datasetVersionLabel"
+                :class="$style.datasetVersionBadge"
+                :title="'Dataset build metadata from data.json'"
+              >
+                {{ datasetVersionLabel }}
+              </span>
+              <button
+                type="button"
+                :class="[$style.headerActionButton, 'fpio-button-chrome']"
+                title="Keyboard shortcuts"
+                aria-label="Keyboard shortcuts"
+                @click="showKeyboardHelp = true; closeSciencePackPanel()"
+              >
+                ?
+              </button>
+              <button
+                type="button"
+                :class="[
+                  $style.headerActionButton,
+                  'fpio-button-chrome',
+                  { [$style.headerActionButtonFlash]: linkCopyStatus === 'copied' }
+                ]"
+                title="Copy link to this view"
+                :aria-label="
+                  linkCopyStatus === 'copied'
+                    ? 'Link copied'
+                    : linkCopyStatus === 'failed'
+                      ? 'Copy failed'
+                      : 'Copy link to this view'
+                "
+                @click="copyShareLink"
+              >
+                {{
+                  linkCopyStatus === 'copied'
+                    ? 'Copied!'
+                    : linkCopyStatus === 'failed'
+                      ? 'Copy failed'
+                      : 'Link'
+                }}
+              </button>
+              <span aria-live="polite" :class="$style.visuallyHidden">
+                {{
+                  linkCopyStatus === 'copied'
+                    ? 'Link copied to clipboard.'
+                    : linkCopyStatus === 'failed'
+                      ? 'Could not copy link.'
+                      : ''
+                }}
+              </span>
+            </div>
           </div>
         </div>
 
@@ -150,40 +179,6 @@
 
         <!-- Search -->
         <div :class="$style.searchContainer">
-          <div :class="$style.sciencePackFilterRow">
-            <span :class="$style.sciencePackLabel">Science packs</span>
-            <div :class="$style.sciencePackActions">
-              <span :class="$style.selectedCountBadge">
-                {{ selectedSciencePacks.length }}/{{ sciencePackOptions.length }}
-              </span>
-              <button
-                :class="$style.clearScienceFiltersButton"
-                :disabled="selectedSciencePacks.length === 0"
-                @click="clearSciencePackFilters"
-              >
-                Clear
-              </button>
-            </div>
-            <button
-              v-for="pack in sciencePackOptions"
-              :key="pack.name"
-              :class="[
-                $style.sciencePackButton,
-                {
-                  [$style.active]: selectedSciencePackSet.has(pack.name)
-                }
-              ]"
-              :title="pack.displayName"
-              @click="toggleSciencePack(pack.name)"
-            >
-              <SpriteIcon
-                :sprite-key="`item-${pack.name}`"
-                :size="28"
-                :fill-ratio="CATEGORY_ICON_FILL_RATIO"
-                :title="pack.displayName"
-              />
-            </button>
-          </div>
           <div :class="$style.searchRow">
             <input
               v-model="searchQuery"
@@ -194,31 +189,13 @@
               autocomplete="off"
             >
           </div>
-          <div :class="$style.browseTypeToggles">
-            <span :class="$style.browseTypeLabel">Show</span>
-            <button
-              v-for="opt in browseTypeOptions"
-              :key="opt.type"
-              type="button"
-              :class="[
-                $style.browseTypeButton,
-                'fpio-button-chrome',
-                { [$style.active]: browseTypes[opt.type] }
-              ]"
-              :title="opt.title"
-              :aria-pressed="browseTypes[opt.type]"
-              @click="toggleBrowseType(opt.type)"
-            >
-              {{ opt.label }}
-            </button>
-          </div>
         </div>
 
         <!-- Recipe Grid -->
         <div
           ref="gridContainer"
           :class="$style.itemGrid"
-          :style="{ ...itemGrid.containerStyles, overflowY: 'scroll' }"
+          :style="itemGrid.containerStyles"
         >
           <template
             v-for="subgroup in groupedRecipes"
@@ -303,6 +280,62 @@
       </div>
     </div>
 
+    <Teleport to="body">
+      <div
+        v-if="sciencePackPanelOpen"
+        :class="$style.sciencePackPortal"
+      >
+        <div
+          :class="$style.sciencePackBackdrop"
+          aria-hidden="true"
+          @click="closeSciencePackPanel"
+        />
+        <div
+          id="factoriopedia-science-pack-panel"
+          role="dialog"
+          aria-label="Science pack filters"
+          :class="$style.sciencePackPopover"
+          :style="sciencePackPopoverStyle"
+          @click.stop
+        >
+          <div :class="$style.sciencePackPopoverToolbar">
+            <span :class="$style.sciencePackPopoverTitle">Science packs</span>
+            <button
+              type="button"
+              :class="$style.clearScienceFiltersButton"
+              :disabled="selectedSciencePacks.length === 0"
+              @click="clearSciencePackFilters"
+            >
+              Clear
+            </button>
+          </div>
+          <div :class="$style.sciencePackPopoverGrid">
+            <button
+              v-for="pack in sciencePackOptions"
+              :key="pack.name"
+              type="button"
+              :class="[
+                $style.sciencePackIconButton,
+                {
+                  [$style.sciencePackIconButtonActive]: selectedSciencePackSet.has(pack.name)
+                }
+              ]"
+              :title="pack.displayName"
+              :aria-label="pack.displayName"
+              @click="toggleSciencePack(pack.name)"
+            >
+              <SpriteIcon
+                :sprite-key="`item-${pack.name}`"
+                :size="28"
+                :fill-ratio="CATEGORY_ICON_FILL_RATIO"
+                :title="pack.displayName"
+              />
+            </button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+
   </div>
 </template>
 
@@ -345,35 +378,16 @@ const isAnimationPaused = ref(false)
 const selectedSciencePacks = ref([])
 
 const showKeyboardHelp = ref(false)
+const sciencePackPanelOpen = ref(false)
+const sciencePackTriggerRef = ref(null)
+/** @type {import('vue').Ref<Record<string, string>>} */
+const sciencePackPopoverStyle = ref({})
+let sciencePackPositionListenersCleanup = null
 const verticalNavigationColumn = ref(null)
 /** @type {import('vue').Ref<'idle' | 'copied' | 'failed'>} */
 const linkCopyStatus = ref('idle')
 let linkCopyStatusTimer = null
 const isApplyingUrl = ref(false)
-const browseTypes = ref({
-  recipe: true,
-  technology: true,
-  fluid: true,
-  tile: true,
-  item: true,
-  entity: true
-})
-
-const browseTypeOptions = [
-  { type: 'recipe', label: 'Recipes', title: 'Show recipe entries' },
-  { type: 'technology', label: 'Tech', title: 'Show technologies' },
-  { type: 'fluid', label: 'Fluids', title: 'Show fluids' },
-  { type: 'tile', label: 'Tiles', title: 'Show tiles' },
-  { type: 'item', label: 'Items', title: 'Show items' },
-  { type: 'entity', label: 'Entities', title: 'Show entities' }
-]
-
-function toggleBrowseType(type) {
-  browseTypes.value = {
-    ...browseTypes.value,
-    [type]: !browseTypes.value[type]
-  }
-}
 
 // Navigation stack for forward/back functionality
 const navigationStack = ref([])
@@ -435,13 +449,6 @@ function getRecipeSearchText(recipe) {
   return [display, internal].filter(Boolean).join(' ')
 }
 
-function matchesBrowseTypeFilter(recipe) {
-  const types = recipe.types || []
-  if (types.length === 0) return true
-  // Union: show if any prototype role is still enabled; unknown types default to visible
-  return types.some(t => browseTypes.value[t] !== false)
-}
-
 function recipeMatchesSearch(recipe, queryRaw) {
   if (!queryRaw || !queryRaw.trim()) return true
   const query = queryRaw.trim().toLowerCase()
@@ -487,6 +494,9 @@ const sciencePackOptions = computed(() => {
     })
 })
 
+/** Icon on the compact header control — first pack in list. */
+const sciencePackTriggerIconPack = computed(() => sciencePackOptions.value[0] ?? null)
+
 const sciencePackDependencyMap = computed(() => getSciencePackDependencyMap())
 
 const sciencePackOrderLookup = computed(() => {
@@ -499,6 +509,54 @@ const sciencePackOrderLookup = computed(() => {
 
 function clearSciencePackFilters() {
   selectedSciencePacks.value = []
+}
+
+function toggleSciencePackPanel() {
+  sciencePackPanelOpen.value = !sciencePackPanelOpen.value
+}
+
+function closeSciencePackPanel() {
+  sciencePackPanelOpen.value = false
+}
+
+function updateSciencePackPopoverPosition() {
+  if (typeof window === 'undefined' || !sciencePackTriggerRef.value) return
+  const trigger = sciencePackTriggerRef.value
+  const r = trigger.getBoundingClientRect()
+  const vw = window.innerWidth
+  const vh = window.innerHeight
+  const gap = 6
+  const popoverWidth = Math.min(260, vw - 16)
+  const totalH = Math.min(vh * 0.42, 248) + 28
+
+  let left = r.left + r.width / 2 - popoverWidth / 2
+  left = Math.max(8, Math.min(left, vw - popoverWidth - 8))
+
+  let top = r.bottom + gap
+  if (top + totalH > vh - 10) {
+    top = r.top - gap - totalH
+  }
+  top = Math.max(10, Math.min(top, vh - totalH - 10))
+
+  sciencePackPopoverStyle.value = {
+    position: 'fixed',
+    top: `${Math.round(top)}px`,
+    left: `${Math.round(left)}px`,
+    width: `${Math.round(popoverWidth)}px`
+  }
+}
+
+function bindSciencePackPositionListeners() {
+  if (typeof window === 'undefined') return () => {}
+  const sync = () => {
+    if (sciencePackPanelOpen.value) updateSciencePackPopoverPosition()
+  }
+  window.addEventListener('resize', sync)
+  window.addEventListener('scroll', sync, true)
+  return () => {
+    window.removeEventListener('resize', sync)
+    window.removeEventListener('scroll', sync, true)
+  }
 }
 
 function collectSciencePackDependencies(packName, dependencyMap, collected = new Set()) {
@@ -598,7 +656,6 @@ const filteredSubgroupsByCategory = computed(() => {
       .map(subgroup => {
         const recipes = subgroup.recipes.filter(recipe => {
           if (!visibleSet.isUnifiedObjectVisible(recipe)) return false
-          if (!matchesBrowseTypeFilter(recipe)) return false
           return recipeMatchesSearch(recipe, searchQuery.value)
         })
         return recipes.length > 0 ? { ...subgroup, recipes } : null
@@ -1036,6 +1093,21 @@ watch([selectedCategory, selectedSciencePacks, selectedItem], () => {
   updateURL()
 }, { deep: true })
 
+watch(
+  sciencePackPanelOpen,
+  async open => {
+    await nextTick()
+    if (open) {
+      updateSciencePackPopoverPosition()
+      if (sciencePackPositionListenersCleanup) sciencePackPositionListenersCleanup()
+      sciencePackPositionListenersCleanup = bindSciencePackPositionListeners()
+    } else if (sciencePackPositionListenersCleanup) {
+      sciencePackPositionListenersCleanup()
+      sciencePackPositionListenersCleanup = null
+    }
+  }
+)
+
 // Unified selection functions
 function selectItem(type, name, data = null, options = {}) {
   if (!options.preserveVerticalColumn) {
@@ -1117,6 +1189,10 @@ function handleKeydown(event) {
       showKeyboardHelp.value = false
       return
     }
+    if (sciencePackPanelOpen.value) {
+      closeSciencePackPanel()
+      return
+    }
     closeDetails()
     showMRUDropdown.value = false
     return
@@ -1124,6 +1200,7 @@ function handleKeydown(event) {
   if (inField) return
   if (event.key === '?' && !event.ctrlKey && !event.metaKey && !event.altKey) {
     event.preventDefault()
+    closeSciencePackPanel()
     showKeyboardHelp.value = !showKeyboardHelp.value
     return
   }
@@ -1143,6 +1220,10 @@ function handleKeydown(event) {
 }
 
 onUnmounted(() => {
+  if (sciencePackPositionListenersCleanup) {
+    sciencePackPositionListenersCleanup()
+    sciencePackPositionListenersCleanup = null
+  }
   if (linkCopyStatusTimer) clearTimeout(linkCopyStatusTimer)
   window.removeEventListener('keydown', handleKeydown)
   window.removeEventListener('resize', updateMobileViewport)
@@ -1227,11 +1308,13 @@ const filterGrid = useFactorioGrid({
 /* Left Panel */
 .factoripediaLeftPanel {
   width: 50%;
+  min-height: 0;
   background: #262626;
   border-right: 2px solid #1a1a1a;
   display: flex;
   flex-direction: column;
   position: relative;
+  overflow-y: auto;
   box-shadow: inset -1px 0 0 rgba(255, 255, 255, 0.04);
 }
 
@@ -1261,9 +1344,152 @@ const filterGrid = useFactorioGrid({
 
 .factoripediaHeaderActions {
   display: inline-flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 6px;
   flex-shrink: 0;
+  justify-content: flex-end;
+}
+
+.browseHeaderStack {
+  flex-shrink: 0;
+}
+
+.sciencePackHeaderTrigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 7px 2px 5px;
+  border: 1px solid #4f4f4f;
+  border-radius: 2px;
+  background: linear-gradient(to bottom, #434343, #343434);
+  color: #e6e6e6;
+  cursor: pointer;
+  font: inherit;
+  line-height: 1;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease;
+}
+
+.sciencePackHeaderTrigger:hover {
+  border-color: #6f6f6f;
+  background: linear-gradient(to bottom, #525252, #3f3f3f);
+}
+
+.sciencePackHeaderTriggerOpen {
+  position: relative;
+  z-index: 10024;
+  border-color: #b78c45;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 200, 100, 0.15),
+    0 1px 2px rgba(0, 0, 0, 0.45);
+}
+
+.sciencePackHeaderTriggerActive {
+  border-color: #d89b2a;
+  background: linear-gradient(to bottom, #4a3820, #3a2a18);
+}
+
+.sciencePackHeaderCount {
+  font-size: 10px;
+  font-weight: 700;
+  color: #e6e6e6;
+  letter-spacing: 0.02em;
+}
+
+/* Teleported overlay: does not consume browse column height */
+.sciencePackPortal {
+  position: fixed;
+  inset: 0;
+  z-index: 10022;
+  pointer-events: none;
+}
+
+.sciencePackBackdrop {
+  position: absolute;
+  inset: 0;
+  pointer-events: auto;
+  background: rgba(0, 0, 0, 0.42);
+}
+
+.sciencePackPopover {
+  pointer-events: auto;
+  z-index: 10023;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 10px 10px;
+  max-height: min(42vh, 248px);
+  background: linear-gradient(to bottom, #2e2e2e, #222);
+  border: 1px solid #4a4a4a;
+  border-radius: 3px;
+  box-shadow:
+    0 8px 28px rgba(0, 0, 0, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.sciencePackPopoverToolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.sciencePackPopoverTitle {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #b8b8b8;
+}
+
+.sciencePackPopoverGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 34px);
+  gap: 4px;
+  justify-content: center;
+  overflow-x: hidden;
+  overflow-y: auto;
+  min-height: 0;
+  flex: 1;
+  padding: 2px 0 1px;
+}
+
+.sciencePackIconButton {
+  width: 34px;
+  height: 34px;
+  min-width: 34px;
+  min-height: 34px;
+  max-width: 34px;
+  max-height: 34px;
+  border: 1px solid #4f4f4f;
+  border-radius: 2px;
+  background: linear-gradient(to bottom, #434343, #343434);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+
+.sciencePackIconButton:hover {
+  border-color: #6f6f6f;
+  background: linear-gradient(to bottom, #525252, #3f3f3f);
+}
+
+.sciencePackIconButtonActive {
+  border-color: #d89b2a;
+  background: linear-gradient(to bottom, #efb046, #c5861d);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 224, 160, 0.25),
+    0 1px 2px rgba(0, 0, 0, 0.45);
 }
 
 .localeLabel {
@@ -1391,34 +1617,6 @@ const filterGrid = useFactorioGrid({
   margin-bottom: 6px;
 }
 
-.browseTypeToggles {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px;
-  margin-top: 4px;
-}
-
-.browseTypeLabel {
-  font-size: 11px;
-  color: #aaa;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-.browseTypeButton {
-  color: #ccc;
-  font-size: 10px;
-  font-weight: 700;
-  padding: 3px 8px;
-}
-
-.browseTypeButton.active {
-  border-color: #c7891f;
-  color: #fff;
-  background: #3f3a30;
-}
-
 .filterButton {
   display: flex;
   align-items: center;
@@ -1477,75 +1675,6 @@ const filterGrid = useFactorioGrid({
     0 1px 3px rgba(0, 0, 0, 0.35);
 }
 
-.sciencePackFilterRow {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 3px 5px;
-  margin-bottom: 6px;
-  max-height: 116px;
-  overflow-y: auto;
-  padding-right: 2px;
-  color: #cfcfcf;
-}
-
-.sciencePackLabel {
-  flex-shrink: 0;
-  font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-  line-height: 34px;
-}
-
-.sciencePackActions {
-  display: inline-flex;
-  flex-shrink: 0;
-  align-items: center;
-  gap: 4px;
-}
-
-.selectedCountBadge {
-  font-size: 10px;
-  font-weight: 700;
-  color: #e6e6e6;
-  background: #1f1f1f;
-  border: 1px solid #4a4a4a;
-  border-radius: 8px;
-  padding: 0 4px;
-}
-
-.sciencePackButton {
-  width: 34px;
-  height: 34px;
-  min-width: 34px;
-  min-height: 34px;
-  max-width: 34px;
-  max-height: 34px;
-  border: 1px solid #4f4f4f;
-  border-radius: 2px;
-  background: linear-gradient(to bottom, #434343, #343434);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
-}
-
-.sciencePackButton:hover {
-  border-color: #6f6f6f;
-  background: linear-gradient(to bottom, #525252, #3f3f3f);
-}
-
-.sciencePackButton.active {
-  background: linear-gradient(to bottom, #efb046, #c5861d);
-  border-color: #d89b2a;
-  box-shadow:
-    inset 0 0 0 1px rgba(255, 224, 160, 0.25),
-    0 1px 2px rgba(0, 0, 0, 0.45);
-}
-
 .clearScienceFiltersButton {
   background: linear-gradient(to bottom, #3a3a3a, #2a2a2a);
   border: 1px solid #575757;
@@ -1589,7 +1718,7 @@ const filterGrid = useFactorioGrid({
 .itemGrid {
   /* Grid properties handled by composable inline styles */
   padding: 6px;
-  overflow-y: scroll;
+  flex-shrink: 0;
   background: #1f1f1f;
   border: 1px solid #3b3b3b;
   border-radius: 2px;
@@ -1984,11 +2113,6 @@ const filterGrid = useFactorioGrid({
     flex: 1;
   }
 
-  .itemGrid {
-    flex: 1;
-    min-height: 0;
-  }
-
   /* Smaller filter buttons on mobile - maintain size relative to grid */
   .filterButton {
     width: 48px;
@@ -2008,27 +2132,8 @@ const filterGrid = useFactorioGrid({
     font-size: 16px;
   }
 
-  .sciencePackFilterRow {
-    margin-bottom: 5px;
-    gap: 2px 4px;
-    max-height: 108px;
-  }
-
-  .sciencePackLabel {
-    line-height: 30px;
-  }
-
-  .sciencePackButton {
-    width: 30px;
-    height: 30px;
-    min-width: 30px;
-    min-height: 30px;
-    max-width: 30px;
-    max-height: 30px;
-  }
-
-  .selectedCountBadge {
-    font-size: 9px;
+  .sciencePackPopover {
+    max-height: min(48vh, 260px);
   }
 }
 
@@ -2078,19 +2183,6 @@ const filterGrid = useFactorioGrid({
     padding: 6px;
   }
 
-  .sciencePackButton {
-    width: 28px;
-    height: 28px;
-    min-width: 28px;
-    min-height: 28px;
-    max-width: 28px;
-    max-height: 28px;
-  }
-
-  .sciencePackLabel {
-    line-height: 28px;
-  }
-
   .mobilePanelControls {
     padding: 6px;
     gap: 8px;
@@ -2114,24 +2206,28 @@ const filterGrid = useFactorioGrid({
 }
 
 /* Scrollbar styling */
-.itemGrid::-webkit-scrollbar,
-.factoripediaRightPanel::-webkit-scrollbar {
+.factoripediaLeftPanel::-webkit-scrollbar,
+.factoripediaRightPanel::-webkit-scrollbar,
+.sciencePackPopoverGrid::-webkit-scrollbar {
   width: 8px;
 }
 
-.itemGrid::-webkit-scrollbar-track,
-.factoripediaRightPanel::-webkit-scrollbar-track {
+.factoripediaLeftPanel::-webkit-scrollbar-track,
+.factoripediaRightPanel::-webkit-scrollbar-track,
+.sciencePackPopoverGrid::-webkit-scrollbar-track {
   background: #3a3a3a;
 }
 
-.itemGrid::-webkit-scrollbar-thumb,
-.factoripediaRightPanel::-webkit-scrollbar-thumb {
+.factoripediaLeftPanel::-webkit-scrollbar-thumb,
+.factoripediaRightPanel::-webkit-scrollbar-thumb,
+.sciencePackPopoverGrid::-webkit-scrollbar-thumb {
   background: #5a5a5a;
   border-radius: 4px;
 }
 
-.itemGrid::-webkit-scrollbar-thumb:hover,
-.factoripediaRightPanel::-webkit-scrollbar-thumb:hover {
+.factoripediaLeftPanel::-webkit-scrollbar-thumb:hover,
+.factoripediaRightPanel::-webkit-scrollbar-thumb:hover,
+.sciencePackPopoverGrid::-webkit-scrollbar-thumb:hover {
   background: #6a6a6a;
 }
 </style>
