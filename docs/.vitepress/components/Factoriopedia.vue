@@ -242,12 +242,10 @@
           :is-animation-paused="isAnimationPaused"
           :can-go-back="canGoBack"
           :can-go-forward="canGoForward"
-          :show-history-dropdown="showMRUDropdown"
           :history-items="visibleMRUItems"
           @toggle-animation-pause="toggleAnimationPause"
           @navigate-back="navigateBack"
           @navigate-forward="navigateForward"
-          @toggle-history="toggleMRUDropdown"
           @select-from-history="selectFromMRU"
           @open-tech-tree="openResearchMap"
         />
@@ -396,7 +394,6 @@ const currentStackIndex = ref(-1)
 // MRU (Most Recently Used) storage
 const mruItems = ref([])
 const maxMRUItems = 20
-const showMRUDropdown = ref(false)
 
 // Grid container width tracking
 const gridContainerWidth = ref(0)
@@ -815,11 +812,6 @@ function addToMRU(item) {
 
 function selectFromMRU(item) {
   selectItem(item.type, item.name, item.data)
-  showMRUDropdown.value = false
-}
-
-function toggleMRUDropdown() {
-  showMRUDropdown.value = !showMRUDropdown.value
 }
 
 // Function to set up category structure using composable
@@ -1194,7 +1186,6 @@ function handleKeydown(event) {
       return
     }
     closeDetails()
-    showMRUDropdown.value = false
     return
   }
   if (inField) return

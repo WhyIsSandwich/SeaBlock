@@ -58,24 +58,38 @@
             >
               →
             </button>
-            <div :class="$style.historyContainer">
+            <div v-if="showHistory" :class="$style.historyContainer">
               <button
-                :class="$style.historyButton"
+                ref="historyTriggerRef"
+                type="button"
+                :class="[
+                  $style.historyButton,
+                  { [$style.historyButtonOpen]: historyPopoverOpen }
+                ]"
                 class="fpio-button-chrome"
                 title="Recently viewed items"
-                @click="$emit('toggle-history')"
+                :popovertarget="historyPopoverId"
               >
                 History
               </button>
-              <div v-if="showHistoryDropdown" :class="$style.historyDropdown">
+              <div
+                :id="historyPopoverId"
+                ref="historyPopoverRef"
+                popover
+                :class="$style.historyPopover"
+                role="listbox"
+                aria-label="Recently viewed items"
+                @toggle="onHistoryPopoverToggle"
+              >
                 <div v-if="historyItems.length === 0" :class="$style.historyEmpty">
                   No recent items
                 </div>
                 <div
                   v-for="item in historyItems"
                   :key="`${item.type}-${item.name}`"
+                  role="option"
                   :class="$style.historyItem"
-                  @click="$emit('select-from-history', item)"
+                  @click="onSelectHistoryItem(item)"
                 >
                   <SpriteIcon
                     v-if="
@@ -214,7 +228,7 @@
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, getCurrentInstance, nextTick, onUnmounted, ref } from 'vue'
 
 import { useFactorioData } from '../../../src/index.js'
 import { useDetailsData } from '../../../src/composables/useDetailsData.js'
@@ -295,9 +309,9 @@ const props = defineProps({
     type: Boolean,
     default: false
   },
-  showHistoryDropdown: {
+  showHistory: {
     type: Boolean,
-    default: false
+    default: true
   },
   historyItems: {
     type: Array,
@@ -326,10 +340,73 @@ const emit = defineEmits([
   'toggle-animation-pause',
   'navigate-back',
   'navigate-forward',
-  'toggle-history',
   'select-from-history',
   'open-tech-tree'
 ])
+
+const historyPopoverId = `fpio-history-popover-${getCurrentInstance()?.uid ?? 0}`
+const historyTriggerRef = ref(null)
+const historyPopoverRef = ref(null)
+const historyPopoverOpen = ref(false)
+let historyPositionListenersCleanup = null
+
+function positionHistoryPopover() {
+  const trigger = historyTriggerRef.value
+  const el = historyPopoverRef.value
+  if (!trigger || !el || typeof window === 'undefined') return
+  const r = trigger.getBoundingClientRect()
+  const gap = 6
+  const width = Math.min(300, window.innerWidth - 16)
+  let left = r.right - width
+  left = Math.max(8, Math.min(left, window.innerWidth - width - 8))
+  let top = r.bottom + gap
+  const maxH = Math.min(400, window.innerHeight * 0.45)
+  el.style.width = `${Math.round(width)}px`
+  el.style.maxHeight = `${Math.round(maxH)}px`
+  el.style.left = `${Math.round(left)}px`
+  el.style.top = `${Math.round(top)}px`
+  const rect = el.getBoundingClientRect()
+  if (rect.bottom > window.innerHeight - 8) {
+    top = Math.max(8, r.top - gap - rect.height)
+    el.style.top = `${Math.round(top)}px`
+  }
+}
+
+function bindHistoryPositionListeners() {
+  if (typeof window === 'undefined') return () => {}
+  const sync = () => {
+    if (historyPopoverOpen.value) positionHistoryPopover()
+  }
+  window.addEventListener('resize', sync)
+  window.addEventListener('scroll', sync, true)
+  return () => {
+    window.removeEventListener('resize', sync)
+    window.removeEventListener('scroll', sync, true)
+  }
+}
+
+function onHistoryPopoverToggle(event) {
+  const open = event.newState === 'open'
+  historyPopoverOpen.value = open
+  historyPositionListenersCleanup?.()
+  historyPositionListenersCleanup = null
+  if (open) {
+    nextTick(() => {
+      positionHistoryPopover()
+      historyPositionListenersCleanup = bindHistoryPositionListeners()
+    })
+  }
+}
+
+function onSelectHistoryItem(item) {
+  historyPopoverRef.value?.hidePopover?.()
+  emit('select-from-history', item)
+}
+
+onUnmounted(() => {
+  historyPositionListenersCleanup?.()
+  historyPositionListenersCleanup = null
+})
 
 // Computed property to create selectedItem from name and type
 const selectedItem = computed(() => {
@@ -473,19 +550,27 @@ const formattedDisplayName = computed(() => {
   position: relative;
 }
 
-.historyDropdown {
-  position: absolute;
-  top: 100%;
-  right: 0;
-  width: 300px;
-  max-height: 400px;
+/* Popover API: top layer + platform light-dismiss; position set in JS from trigger rect */
+.historyPopover {
+  position: fixed;
+  margin: 0;
+  padding: 0;
+  width: min(300px, calc(100vw - 16px));
+  max-height: min(400px, 45vh);
   background: #2d2d2d;
   border: 1px solid #4a4a4a;
   border-radius: 2px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
-  z-index: 1000;
   overflow-y: auto;
-  margin-top: 4px;
+}
+
+.historyButtonOpen {
+  position: relative;
+  z-index: 1;
+  border-color: #b78c45;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 200, 100, 0.15),
+    0 1px 2px rgba(0, 0, 0, 0.45);
 }
 
 .historyEmpty {

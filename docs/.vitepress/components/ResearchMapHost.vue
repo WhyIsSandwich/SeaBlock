@@ -70,8 +70,8 @@
           Click a technology card to select it. Use Open in Factoriopedia for full details.
         </template>
         <template v-else>
-          Click any technology card to select it and redraw the map for that technology. Links in the
-          details pane open Factoriopedia.
+          Click any technology card to select it and redraw the map for that technology. Links in
+          the details pane open Factoriopedia.
         </template>
       </p>
       <div v-if="!graph || !layoutView" :class="$style.empty">No visible technologies found.</div>
@@ -129,10 +129,7 @@
                       />
                     </div>
                   </div>
-                  <div
-                    :class="$style.techTitle"
-                    :title="displayName(name)"
-                  >
+                  <div :class="$style.techTitle" :title="displayName(name)">
                     {{ displayName(name) }}
                   </div>
                   <div
@@ -148,7 +145,10 @@
                       :key="ing[0]"
                       :class="[$style.spriteIconSlot, $style.spriteIconSlotScience]"
                     >
-                      <SpriteIcon :sprite-key="`item-${ing[0]}`" :size="spriteLayoutSizes.science" />
+                      <SpriteIcon
+                        :sprite-key="`item-${ing[0]}`"
+                        :size="spriteLayoutSizes.science"
+                      />
                     </div>
                   </div>
                 </button>
@@ -204,7 +204,7 @@
         :is-animation-paused="false"
         :can-go-back="false"
         :can-go-forward="false"
-        :show-history-dropdown="false"
+        :show-history="false"
         :history-items="[]"
         :show-technology-action="renderedInsideFactoriopedia"
         technology-action-label="Open in Factoriopedia"
@@ -282,9 +282,7 @@ function syncNarrowViewport() {
   }
 }
 
-const showDetailsAside = computed(
-  () => !isNarrowViewport.value && !detailsCollapsed.value
-)
+const showDetailsAside = computed(() => !isNarrowViewport.value && !detailsCollapsed.value)
 
 const showOpenInFactoriopediaButton = computed(
   () => props.showFactoriopediaLink || isNarrowViewport.value
@@ -498,11 +496,7 @@ function onHashChange() {
 const graph = computed(() => {
   const technologies = organizedData.value?.technology
   if (!technologies || !selectedTechnologyName.value) return null
-  return computeResearchMapLayout(
-    technologies,
-    selectedTechnologyName.value,
-    LAYOUT_OPTIONS.value
-  )
+  return computeResearchMapLayout(technologies, selectedTechnologyName.value, LAYOUT_OPTIONS.value)
 })
 
 const allLayoutNodeNames = computed(() => {
