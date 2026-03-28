@@ -9,8 +9,9 @@
           :initial-content="currentPageMarkdown"
         />
 
-        <!-- Floating Editor Button -->
+        <!-- Floating Editor Button (hidden on Factoriopedia — overlaps dense UI) -->
         <button
+          v-if="showEditorFloatingButton"
           class="editor-toggle-btn"
           title="Open WYSIWYG Editor (Ctrl+E)"
           @click="openEditor"
@@ -30,7 +31,11 @@ import DefaultLayout from 'vitepress/dist/client/theme-default/Layout.vue'
 import EditorWidget from './components/EditorWidget.vue'
 
 const editorWidget = ref(null)
-const { frontmatter } = useData()
+const { frontmatter, page } = useData()
+
+const showEditorFloatingButton = computed(
+  () => page.value?.relativePath !== 'reference/factoriopedia.md'
+)
 
 // Get the current page markdown content from the injected data
 const currentPageMarkdown = computed(() => {

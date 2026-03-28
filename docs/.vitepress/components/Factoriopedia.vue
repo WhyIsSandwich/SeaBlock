@@ -1249,8 +1249,13 @@ const filterGrid = useFactorioGrid({
 
 .factoripedia {
   width: 100%;
-  height: 80vh;
-  min-height: 600px;
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 0;
+  min-height: 0;
+  max-height: 100%;
+  height: 100%;
+  align-self: stretch;
   background: #212121;
   border: 2px solid #3e3e3e;
   border-radius: 2px;
@@ -1262,6 +1267,8 @@ const filterGrid = useFactorioGrid({
 
 .factoripediaContainer {
   display: flex;
+  flex: 1;
+  min-height: 0;
   height: 100%;
 }
 
@@ -2026,8 +2033,12 @@ const filterGrid = useFactorioGrid({
 /* Mobile Responsive Layout */
 @media (max-width: 768px) {
   .factoripedia {
-    height: 100vh;
-    min-height: 100vh;
+    flex: none;
+    align-self: auto;
+    max-height: none;
+    height: auto;
+    min-height: 0;
+    overflow: visible;
   }
 
   .mobilePanelControls {
@@ -2089,7 +2100,8 @@ const filterGrid = useFactorioGrid({
 
   .factoripediaContainer {
     flex-direction: column;
-    height: calc(100% - 49px);
+    flex: none;
+    height: auto;
     min-height: 0;
   }
 
@@ -2103,14 +2115,16 @@ const filterGrid = useFactorioGrid({
     border-right: none;
     border-bottom: 2px solid #4a4a4a;
     min-height: 0;
-    flex: 1;
+    flex: none;
+    overflow-y: visible;
   }
 
   /* Right Panel - Mobile */
   .factoripediaRightPanel {
     width: 100%;
     min-height: 0;
-    flex: 1;
+    flex: none;
+    overflow-y: visible;
   }
 
   /* Smaller filter buttons on mobile - maintain size relative to grid */
@@ -2139,27 +2153,6 @@ const filterGrid = useFactorioGrid({
 
 /* iPhone 12 Pro and similar devices */
 @media (max-width: 428px) {
-  .factoripedia {
-    height: 100vh;
-    min-height: 100vh;
-  }
-
-  .factoripediaContainer {
-    height: calc(100% - 47px);
-  }
-
-  .factoripediaLeftPanel {
-    width: 100%;
-    border-right: none;
-    border-bottom: 2px solid #4a4a4a;
-    min-height: 0;
-  }
-
-  .factoripediaRightPanel {
-    width: 100%;
-    min-height: 0;
-  }
-
   /* Smaller filter buttons - maintain minimum size */
   .filterButton {
     width: 40px;
