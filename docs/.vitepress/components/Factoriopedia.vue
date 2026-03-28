@@ -5,7 +5,9 @@
       <div
         :class="[
           $style.factoripediaLeftPanel,
-          isMobileViewport && mobilePane === 'entry' && selectedItem ? $style.mobileGridBlocked : null
+          isMobileViewport && mobilePane === 'entry' && selectedItem
+            ? $style.mobileGridBlocked
+            : null
         ]"
         @touchstart.passive="onMobileGridTouchStart"
         @touchmove="onMobileGridTouchMove"
@@ -43,10 +45,7 @@
                   {{ selectedSciencePacks.length }}/{{ sciencePackOptions.length }}
                 </span>
               </button>
-              <label
-                v-if="!isMobileViewport"
-                :class="$style.localeLabel"
-              >
+              <label v-if="!isMobileViewport" :class="$style.localeLabel">
                 <span :class="$style.visuallyHidden">Language</span>
                 <select
                   :class="$style.localeSelect"
@@ -67,7 +66,11 @@
               <div :class="$style.headerHelpLinkGroup">
                 <button
                   type="button"
-                  :class="[$style.headerActionButton, $style.headerIconAction, 'fpio-button-chrome']"
+                  :class="[
+                    $style.headerActionButton,
+                    $style.headerIconAction,
+                    'fpio-button-chrome'
+                  ]"
                   title="Keyboard shortcuts"
                   aria-label="Keyboard shortcuts"
                   @click="showKeyboardHelp = true; closeSciencePackPanel()"
@@ -127,11 +130,7 @@
                       <path d="M15 9l-6 6M9 9l6 6" />
                     </svg>
                   </span>
-                  <span
-                    v-else
-                    :class="$style.headerLinkGlyph"
-                    aria-hidden="true"
-                  >
+                  <span v-else :class="$style.headerLinkGlyph" aria-hidden="true">
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
                       viewBox="0 0 24 24"
@@ -205,37 +204,27 @@
               :class="$style.searchInput"
               aria-label="Search recipes"
               autocomplete="off"
-            >
+            />
           </div>
         </div>
 
         <!-- Recipe Grid -->
-        <div
-          ref="gridContainer"
-          :class="$style.itemGrid"
-          :style="itemGrid.containerStyles"
-        >
-          <template
-            v-for="subgroup in groupedRecipes"
-            :key="subgroup.subgroup"
-          >
+        <div ref="gridContainer" :class="$style.itemGrid" :style="itemGrid.containerStyles">
+          <template v-for="subgroup in groupedRecipes" :key="subgroup.subgroup">
             <!-- Subgroup wrapper -->
             <div
               v-if="subgroup.recipes.length > 0"
               :class="$style.subgroupGrid"
               :style="itemGrid.subgroupStyles"
             >
-              <template
-                v-for="item in subgroup.recipes"
-                :key="item.name"
-              >
+              <template v-for="item in subgroup.recipes" :key="item.name">
                 <IconButton
                   :type="getPrimaryType(item)"
                   :name="item.name"
                   :size="itemGrid.buttonSize"
                   :is-selected="
                     selectedItem?.name === item.name &&
-                      getPrimaryType(selectedItem) === getPrimaryType(item)
+                    getPrimaryType(selectedItem) === getPrimaryType(item)
                   "
                   :style="itemGrid.itemStyles"
                   @click="selectItem(getPrimaryType(item), item.name, item)"
@@ -267,7 +256,9 @@
         ]"
         :style="mobileOverlayPanelStyle"
         :aria-hidden="
-          isMobileViewport && !mobileEntryOverlayOpen && !mobileGridOpenSheetVisible ? true : undefined
+          isMobileViewport && !mobileEntryOverlayOpen && !mobileGridOpenSheetVisible
+            ? true
+            : undefined
         "
         @touchstart.passive="onMobileOverlayTouchStart"
         @touchmove="onMobileOverlayTouchMove"
@@ -314,10 +305,11 @@
           <li><kbd>Esc</kbd> Clear selection</li>
           <li><kbd>?</kbd> Toggle this help</li>
           <li v-if="isMobileViewport">
-            Tap an icon to open the entry; drag the panel right to move it with your finger, then release to snap
-            back or dismiss. A strip of the grid stays visible on the left while the entry is open. When you return
-            to the grid with an item still selected, drag left on the grid to open the entry again (same peek
-            as when dismissing). A hint also appears on the right edge of the browse view.
+            Tap an icon to open the entry; drag the panel right to move it with your finger, then
+            release to snap back or dismiss. A strip of the grid stays visible on the left while the
+            entry is open. When you return to the grid with an item still selected, drag left on the
+            grid to open the entry again (same peek as when dismissing). A hint also appears on the
+            right edge of the browse view.
           </li>
         </ul>
         <p :class="$style.modalHint">
@@ -331,10 +323,7 @@
     </div>
 
     <Teleport to="body">
-      <div
-        v-if="sciencePackPanelOpen"
-        :class="$style.sciencePackPortal"
-      >
+      <div v-if="sciencePackPanelOpen" :class="$style.sciencePackPortal">
         <div
           :class="$style.sciencePackBackdrop"
           aria-hidden="true"
@@ -385,7 +374,6 @@
         </div>
       </div>
     </Teleport>
-
   </div>
 </template>
 
@@ -568,8 +556,7 @@ const mobileOverlayPanelStyle = computed(() => {
   const motion = mobileEntryMotionTransition.value
   const gridSlideOpen = !open && mobileGridOpenSheetVisible.value
   const transitionNone =
-    mobileOverlayDragging.value ||
-    (mobileGridOpenDragging.value && !mobileGridOpenSnapCancel.value)
+    mobileOverlayDragging.value || (mobileGridOpenDragging.value && !mobileGridOpenSnapCancel.value)
   const transition = transitionNone ? 'none' : motion
 
   if (!open && !gridSlideOpen) {
@@ -620,7 +607,9 @@ watch(
 )
 
 const selectedSciencePackSet = computed(() => new Set(selectedSciencePacks.value))
-const sciencePackVisibility = computed(() => createSciencePackVisibility(selectedSciencePacks.value))
+const sciencePackVisibility = computed(() =>
+  createSciencePackVisibility(selectedSciencePacks.value)
+)
 const hasActiveScienceFilter = computed(() => selectedSciencePacks.value.length > 0)
 const itemGrid = computed(() =>
   useFactorioGrid({
@@ -785,7 +774,9 @@ function pruneInaccessibleSciencePacks(selectedSet, dependencyMap) {
     changed = false
     for (const packName of Array.from(selectedSet)) {
       const dependencies = dependencyMap?.[packName] || []
-      const hasMissingDependency = dependencies.some(dependencyName => !selectedSet.has(dependencyName))
+      const hasMissingDependency = dependencies.some(
+        dependencyName => !selectedSet.has(dependencyName)
+      )
       if (hasMissingDependency) {
         selectedSet.delete(packName)
         changed = true
@@ -826,7 +817,10 @@ function setSciencePacksFromUrlParam(param) {
     selectedSciencePacks.value = []
     return
   }
-  const names = param.split(',').map(s => s.trim()).filter(Boolean)
+  const names = param
+    .split(',')
+    .map(s => s.trim())
+    .filter(Boolean)
   const dependencyMap = sciencePackDependencyMap.value
   const selected = new Set()
   const validNames = new Set(sciencePackOptions.value.map(p => p.name))
@@ -930,10 +924,7 @@ const firstEnabledCategoryKey = computed(() => {
 
 // Computed property to determine which filters have no items when searching
 const disabledFilters = computed(() => {
-  if (
-    !categoryStructure.value ||
-    (!searchQuery.value.trim() && !hasActiveScienceFilter.value)
-  ) {
+  if (!categoryStructure.value || (!searchQuery.value.trim() && !hasActiveScienceFilter.value)) {
     return new Set()
   }
 
@@ -1341,25 +1332,26 @@ watch(searchQuery, () => {
   }, 350)
 })
 
-watch([selectedCategory, selectedSciencePacks, selectedItem], () => {
-  if (isApplyingUrl.value) return
-  updateURL()
-}, { deep: true })
-
 watch(
-  sciencePackPanelOpen,
-  async open => {
-    await nextTick()
-    if (open) {
-      updateSciencePackPopoverPosition()
-      if (sciencePackPositionListenersCleanup) sciencePackPositionListenersCleanup()
-      sciencePackPositionListenersCleanup = bindSciencePackPositionListeners()
-    } else if (sciencePackPositionListenersCleanup) {
-      sciencePackPositionListenersCleanup()
-      sciencePackPositionListenersCleanup = null
-    }
-  }
+  [selectedCategory, selectedSciencePacks, selectedItem],
+  () => {
+    if (isApplyingUrl.value) return
+    updateURL()
+  },
+  { deep: true }
 )
+
+watch(sciencePackPanelOpen, async open => {
+  await nextTick()
+  if (open) {
+    updateSciencePackPopoverPosition()
+    if (sciencePackPositionListenersCleanup) sciencePackPositionListenersCleanup()
+    sciencePackPositionListenersCleanup = bindSciencePackPositionListeners()
+  } else if (sciencePackPositionListenersCleanup) {
+    sciencePackPositionListenersCleanup()
+    sciencePackPositionListenersCleanup = null
+  }
+})
 
 // Unified selection functions
 function selectItem(type, name, data = null, options = {}) {
@@ -1398,28 +1390,25 @@ watch(
       }
       updateURL()
     }
-  },
-)
-
-watch(
-  [disabledFilters, categoryStructure, firstEnabledCategoryKey],
-  () => {
-    if (!selectedCategory.value || !categoryStructure.value?.[selectedCategory.value]) {
-      const firstCategory = firstEnabledCategoryKey.value
-      if (firstCategory) {
-        selectedCategory.value = firstCategory
-      }
-      return
-    }
-
-    if (disabledFilters.value.has(selectedCategory.value)) {
-      const firstEnabled = firstEnabledCategoryKey.value
-      if (firstEnabled) {
-        selectedCategory.value = firstEnabled
-      }
-    }
   }
 )
+
+watch([disabledFilters, categoryStructure, firstEnabledCategoryKey], () => {
+  if (!selectedCategory.value || !categoryStructure.value?.[selectedCategory.value]) {
+    const firstCategory = firstEnabledCategoryKey.value
+    if (firstCategory) {
+      selectedCategory.value = firstCategory
+    }
+    return
+  }
+
+  if (disabledFilters.value.has(selectedCategory.value)) {
+    const firstEnabled = firstEnabledCategoryKey.value
+    if (firstEnabled) {
+      selectedCategory.value = firstEnabled
+    }
+  }
+})
 
 function updateMobileViewport() {
   if (typeof window === 'undefined') return
