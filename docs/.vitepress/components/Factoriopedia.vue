@@ -285,7 +285,7 @@
               :can-go-back="canGoBack"
               :can-go-forward="canGoForward"
               :history-items="visibleMRUItems"
-              :show-back-to-browse="!isMobileViewport && !!selectedItem"
+              :show-back-to-browse="isMobileViewport && !!selectedItem"
               @toggle-animation-pause="toggleAnimationPause"
               @navigate-back="navigateBack"
               @navigate-forward="navigateForward"

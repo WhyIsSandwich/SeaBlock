@@ -12,26 +12,26 @@
           <h3>{{ formattedDisplayName }} ({{ itemTypeLabel }})</h3>
         </div>
         <div :class="$style.headerControls">
-          <button
-            v-if="showBackToBrowse"
-            type="button"
-            :class="[$style.backToBrowseButton, 'fpio-button-chrome']"
-            title="Back to browse"
-            aria-label="Back to browse"
-            @click="emit('close-details')"
-          >
-            ← Browse
-          </button>
           <div :class="$style.headerTabs">
             <button
-              :class="{ [$style.active]: activeTab === 'details' }"
+              v-if="showBackToBrowse"
+              type="button"
+              :class="[$style.headerToolbarBtn, 'fpio-button-chrome']"
+              title="Back to browse"
+              aria-label="Back to browse"
+              @click="emit('close-details')"
+            >
+              ← Browse
+            </button>
+            <button
+              :class="[$style.headerToolbarBtn, { [$style.active]: activeTab === 'details' }]"
               class="fpio-button-chrome"
               @click="activeTab = 'details'"
             >
               Details
             </button>
             <button
-              :class="{ [$style.active]: activeTab === 'raws' }"
+              :class="[$style.headerToolbarBtn, { [$style.active]: activeTab === 'raws' }]"
               class="fpio-button-chrome"
               @click="activeTab = 'raws'"
             >
@@ -40,7 +40,7 @@
             <button
               v-if="type === 'technology' && showTechnologyAction"
               type="button"
-              :class="$style.researchMapButton"
+              :class="[$style.headerToolbarBtn, $style.researchMapButton]"
               class="fpio-button-chrome"
               :title="technologyActionTitle"
               :aria-label="technologyActionTitle"
@@ -51,7 +51,11 @@
           </div>
           <div :class="$style.navigationControls">
             <button
-              :class="[$style.navButton, { [$style.disabled]: !canGoBack }]"
+              :class="[
+                $style.headerToolbarBtn,
+                $style.navButton,
+                { [$style.disabled]: !canGoBack }
+              ]"
               class="fpio-button-chrome"
               :disabled="!canGoBack"
               title="Go back"
@@ -60,7 +64,11 @@
               ←
             </button>
             <button
-              :class="[$style.navButton, { [$style.disabled]: !canGoForward }]"
+              :class="[
+                $style.headerToolbarBtn,
+                $style.navButton,
+                { [$style.disabled]: !canGoForward }
+              ]"
               class="fpio-button-chrome"
               :disabled="!canGoForward"
               title="Go forward"
@@ -72,7 +80,11 @@
               <button
                 ref="historyTriggerRef"
                 type="button"
-                :class="[$style.historyButton, { [$style.historyButtonOpen]: historyPopoverOpen }]"
+                :class="[
+                  $style.headerToolbarBtn,
+                  $style.historyButton,
+                  { [$style.historyButtonOpen]: historyPopoverOpen }
+                ]"
                 class="fpio-button-chrome"
                 title="Recently viewed items"
                 :popovertarget="historyPopoverId"
@@ -499,8 +511,9 @@ const formattedDisplayName = computed(() => {
 
 .itemHeader {
   display: flex;
-  justify-content: space-between;
+  flex-wrap: wrap;
   align-items: center;
+  gap: 12px;
   margin-bottom: 12px;
   padding: 6px 10px;
   background: linear-gradient(to bottom, #2f2f2f, #232323);
@@ -509,35 +522,30 @@ const formattedDisplayName = computed(() => {
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.08),
     0 1px 0 rgba(0, 0, 0, 0.45);
-  gap: 16px;
 }
 
 .headerTitle {
   display: flex;
   align-items: center;
   gap: 12px;
-  flex: 1;
+  flex: 1 1 200px;
+  min-width: 0;
 }
 
 .headerControls {
   display: flex;
-  align-items: center;
-  gap: 12px;
+  flex: 0 1 auto;
   flex-wrap: wrap;
-}
-
-.backToBrowseButton {
-  flex-shrink: 0;
-  padding: 4px 8px;
-  font-size: 12px;
-  font-weight: 700;
-  color: #e8e8e8;
-  white-space: nowrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
 }
 
 .headerTabs {
   display: flex;
-  gap: 2px;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
 }
 
 .navigationControls {
@@ -546,15 +554,41 @@ const formattedDisplayName = computed(() => {
   gap: 4px;
 }
 
-.navButton {
-  width: 32px;
-  height: 32px;
-  color: #ffffff;
-  font-size: 16px;
-  font-weight: bold;
-  display: flex;
+/* Shared row: raised chrome, equal height, centered label (matches fpio-button-chrome look). */
+.headerToolbarBtn:global(.fpio-button-chrome) {
+  display: inline-flex;
   align-items: center;
   justify-content: center;
+  box-sizing: border-box;
+  min-height: 32px;
+  margin: 0;
+  padding: 6px 10px;
+  line-height: 1.15;
+  font-size: 11px;
+  font-weight: 600;
+  vertical-align: middle;
+  border: 1px solid #5a5a5a;
+  border-top: 1px solid #6e6e6e;
+  border-left: 1px solid #6e6e6e;
+  border-bottom: 1px solid #3d3d3d;
+  border-right: 1px solid #3d3d3d;
+  border-radius: 2px;
+  box-shadow:
+    1px 1px 0 rgba(0, 0, 0, 0.42),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+.headerToolbarBtn.navButton {
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  padding: 0;
+  font-size: 16px;
+  font-weight: bold;
+}
+
+.navButton {
+  color: #ffffff;
 }
 
 .navButton:hover:not(.disabled) {
@@ -632,7 +666,6 @@ const formattedDisplayName = computed(() => {
 }
 
 .historyButton {
-  padding: 4px 8px;
   color: #d3d3d3;
 }
 
@@ -640,35 +673,34 @@ const formattedDisplayName = computed(() => {
   color: #ffffff;
 }
 
-.headerTabs button {
-  padding: 4px 8px;
-}
-
-.headerTabs button:hover {
+.headerToolbarBtn:hover:global(.fpio-button-chrome):not(:disabled) {
   color: #ffffff;
 }
 
-.headerTabs button.active {
+.headerToolbarBtn.active {
   background: linear-gradient(to bottom, #3a3022, #2d2418);
   border-color: #ad8344;
   border-top: 1px solid #bc9250;
   border-left: 1px solid #bc9250;
+  border-bottom: 1px solid #5a3d18;
+  border-right: 1px solid #5a3d18;
   box-shadow:
-    1px 1px 0px rgba(0, 0, 0, 0.5),
+    1px 1px 0 rgba(0, 0, 0, 0.5),
     inset 0 1px 1px rgba(255, 255, 255, 0.2);
   color: #ffffff;
 }
 
 .researchMapButton {
   background: linear-gradient(to bottom, #2d3a2d, #1f2a1f);
-  border: 1px solid #4a6b4a;
+  border: 1px solid #3d5a3d;
   border-top: 1px solid #5a7f5a;
   border-left: 1px solid #5a7f5a;
-  padding: 4px 8px;
+  border-bottom: 1px solid #243624;
+  border-right: 1px solid #243624;
   color: #c8e6c8;
   box-shadow:
-    1px 1px 0px rgba(0, 0, 0, 0.3),
-    inset 0 1px 1px rgba(255, 255, 255, 0.08);
+    1px 1px 0 rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
   white-space: nowrap;
 }
 
@@ -677,6 +709,8 @@ const formattedDisplayName = computed(() => {
   border-color: #6a906a;
   border-top: 1px solid #7aa07a;
   border-left: 1px solid #7aa07a;
+  border-bottom: 1px solid #2a402a;
+  border-right: 1px solid #2a402a;
   color: #ffffff;
 }
 
@@ -1458,7 +1492,7 @@ const formattedDisplayName = computed(() => {
 
   .itemHeader {
     flex-direction: column;
-    align-items: flex-start;
+    align-items: stretch;
     gap: 8px;
     margin-bottom: 8px;
     padding: 8px;
@@ -1466,9 +1500,18 @@ const formattedDisplayName = computed(() => {
 
   .headerTitle {
     width: 100%;
+    flex: none;
     display: flex;
     align-items: center;
     gap: 8px;
+  }
+
+  .headerControls {
+    width: 100%;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    justify-content: flex-start;
   }
 
   .headerTitle h3 {
@@ -1479,15 +1522,24 @@ const formattedDisplayName = computed(() => {
   }
 
   .headerTabs {
-    width: 100%;
     display: flex;
+    flex-wrap: wrap;
+    align-items: center;
     gap: 4px;
+    flex: 1 1 auto;
+    min-width: 0;
   }
 
-  .headerTabs button {
-    flex: 1;
-    padding: 6px 8px;
+  .headerToolbarBtn:global(.fpio-button-chrome) {
+    flex: 0 1 auto;
     font-size: 12px;
+    padding: 6px 8px;
+    min-height: 34px;
+  }
+
+  .navigationControls {
+    flex: 0 0 auto;
+    margin-left: auto;
   }
 
   .itemImageContainer {
@@ -1574,9 +1626,10 @@ const formattedDisplayName = computed(() => {
     font-size: 14px;
   }
 
-  .headerTabs button {
-    padding: 4px 6px;
+  .headerToolbarBtn:global(.fpio-button-chrome) {
+    padding: 5px 6px;
     font-size: 11px;
+    min-height: 32px;
   }
 
   /* Even smaller grids for very small screens */
