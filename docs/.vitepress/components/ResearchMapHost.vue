@@ -74,8 +74,25 @@
           the details pane open Factoriopedia.
         </template>
       </p>
-      <div v-if="!graph || !layoutView" :class="$style.empty">No visible technologies found.</div>
+      <div
+        v-if="layoutLoading && !graph"
+        :class="$style.layoutLoadingPlaceholder"
+        role="status"
+        aria-live="polite"
+      >
+        Laying out research map…
+      </div>
+      <div v-else-if="!graph || !layoutView" :class="$style.empty">No visible technologies found.</div>
       <div v-else :class="$style.graphWrap">
+        <div
+          v-if="layoutLoading"
+          :class="$style.layoutLoadingOverlay"
+          role="status"
+          aria-live="polite"
+          aria-busy="true"
+        >
+          <span :class="$style.layoutLoadingLabel">Laying out research map…</span>
+        </div>
         <div ref="graphViewportRef" :class="$style.graphViewport">
           <div ref="graphZoomLayerRef" :class="$style.graphZoomLayer" :style="graphZoomLayerStyle">
             <svg
@@ -216,11 +233,15 @@
 </template>
 
 <script setup>
-import { computed, nextTick, onMounted, onUnmounted, provide, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, provide, ref, shallowRef, watch } from 'vue'
 import { useRouter, withBase } from 'vitepress'
+// Vite resolves `highs` package export `./runtime` → hashed asset in build output (no docs/public copy).
+// eslint-disable-next-line import/no-unresolved -- Vite `?url`; not in Node resolver
+import highsWasmUrl from 'highs/runtime?url'
 
 import { useFactorioData } from '../../../src/index.js'
 import { useD3GraphZoom } from '../../../src/composables/useD3GraphZoom.js'
+import { preloadResearchMapHighs } from '../../../src/utils/researchMapHighs.js'
 import {
   computeDagLinkSvgPaths,
   computeResearchMapLayout,
@@ -334,6 +355,7 @@ const MAP_EM_PX = 10
 const LAYOUT_OPTIONS = computed(() => {
   const z = layoutZoom.value
   return {
+    highsPreset: 'large',
     cardWidth: Math.max(32, Math.round(RESEARCH_MAP_CARD_WIDTH * z)),
     cardHeight: Math.max(40, Math.round(RESEARCH_MAP_CARD_HEIGHT * z)),
     rowGap: Math.max(8, Math.round(RESEARCH_MAP_ROW_GAP * z)),
@@ -493,11 +515,55 @@ function onHashChange() {
   selectedTechnologyName.value = getDefaultTechnology()
 }
 
-const graph = computed(() => {
+/** Layout is computed off the main stack so the UI can paint a loading state first (Sugiyama can take seconds). */
+const graph = shallowRef(null)
+const layoutLoading = ref(false)
+let layoutRunId = 0
+
+async function runResearchMapLayout() {
   const technologies = organizedData.value?.technology
-  if (!technologies || !selectedTechnologyName.value) return null
-  return computeResearchMapLayout(technologies, selectedTechnologyName.value, LAYOUT_OPTIONS.value)
-})
+  const sel = selectedTechnologyName.value
+  if (!technologies || !sel) {
+    graph.value = null
+    layoutLoading.value = false
+    return
+  }
+
+  const runId = ++layoutRunId
+  layoutLoading.value = true
+  await nextTick()
+  await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))
+
+  if (runId !== layoutRunId) return
+
+  const layoutOpts = LAYOUT_OPTIONS.value
+  await preloadResearchMapHighs({ wasmUrl: highsWasmUrl })
+  let result
+  try {
+    result = computeResearchMapLayout(technologies, sel, layoutOpts)
+  } catch (err) {
+    console.error('[ResearchMapHost] computeResearchMapLayout failed', err)
+    graph.value = null
+    layoutLoading.value = false
+    return
+  }
+  if (runId !== layoutRunId) return
+
+  graph.value = result
+  layoutLoading.value = false
+  nextTick(() => {
+    bindGraphZoom()
+    scheduleCenterSelection()
+  })
+}
+
+watch(
+  () => [organizedData.value?.technology, selectedTechnologyName.value, LAYOUT_OPTIONS.value],
+  () => {
+    runResearchMapLayout()
+  },
+  { immediate: true }
+)
 
 const allLayoutNodeNames = computed(() => {
   const g = graph.value
@@ -970,6 +1036,37 @@ onUnmounted(() => {
 .empty {
   padding: 12px;
   color: #d0d0d0;
+}
+
+.layoutLoadingPlaceholder {
+  flex: 1;
+  min-height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  color: #c8c8c8;
+  font-size: 14px;
+}
+
+.layoutLoadingOverlay {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(10, 10, 10, 0.45);
+  pointer-events: none;
+}
+
+.layoutLoadingLabel {
+  padding: 10px 16px;
+  border-radius: 6px;
+  background: rgba(22, 22, 22, 0.92);
+  border: 1px solid #4a4a4a;
+  color: #e0e0e0;
+  font-size: 13px;
 }
 
 .graphWrap {

@@ -1,6 +1,11 @@
-import { graphConnect, layeringLongestPath, shapeRect, sugiyama, tweakShape } from 'd3-dag'
+import { decrossTwoLayer, graphConnect, layeringLongestPath, shapeRect, sugiyama, tweakShape } from 'd3-dag'
 
 import { isHiddenFactorioPrototype } from './factorioPrototypeVisibility.js'
+import { coordSimplexWasm } from './researchMapCoordSimplexWasm.js'
+import {
+  researchMapHighsPresetFromEnv,
+  resolveResearchMapHighsSolveOptions
+} from './researchMapHighsOptions.js'
 import { buildObstacleRects, polylineIntersectsAnyObstacle } from './researchMapObstacles.js'
 import { verticesFromOrthogonalSvgPath } from './researchMapPathParse.js'
 
@@ -364,6 +369,8 @@ export function abstractToPixelCenterX(abstractX, unitWidth) {
 
 /** Default cap used only for non-direct descendants (depth >= 2). */
 export const RESEARCH_MAP_NON_DIRECT_DESCENDANT_BUDGET = 40
+/** d3-dag default {@link decrossTwoLayer} passes is 24; fewer passes reduce crossing-minimization cost. */
+export const RESEARCH_MAP_DECROSS_PASSES = 10
 
 function getVisibleTechnologies(technologies) {
   const out = {}
@@ -374,10 +381,15 @@ function getVisibleTechnologies(technologies) {
   return out
 }
 
-function buildEffectivePrereqIndex(technologies) {
+/**
+ * Build effective prerequisite lists only for `names` (shared transitive memo across calls).
+ * Used instead of full-technology indexing before Sugiyama.
+ */
+function buildEffectivePrereqIndexForNames(technologies, names) {
   const memo = new Map()
   const effectiveByName = new Map()
-  for (const name of Object.keys(technologies || {})) {
+  for (const name of names) {
+    if (!technologies?.[name]) continue
     effectiveByName.set(name, effectivePrerequisites(technologies, name, memo))
   }
   return effectiveByName
@@ -385,7 +397,7 @@ function buildEffectivePrereqIndex(technologies) {
 
 function buildDependentsFromEffective(technologies, effectiveByName) {
   const dependents = new Map()
-  for (const name of Object.keys(technologies || {})) {
+  for (const name of effectiveByName.keys()) {
     for (const p of effectiveByName.get(name) || []) {
       if (!technologies[p]) continue
       if (!dependents.has(p)) dependents.set(p, [])
@@ -398,12 +410,35 @@ function buildDependentsFromEffective(technologies, effectiveByName) {
   return dependents
 }
 
-function collectRawDirectDescendants(technologies, targetName) {
-  const out = new Set()
+/** prerequisite name → techs that list it as a direct raw prerequisite (one scan over technologies). */
+function buildPrereqToDependentsRaw(technologies) {
+  const m = new Map()
   for (const [name, tech] of Object.entries(technologies || {})) {
-    if (!tech || name === targetName) continue
-    if ((tech.prerequisites || []).includes(targetName)) {
-      out.add(name)
+    if (!tech) continue
+    for (const p of tech.prerequisites || []) {
+      if (!technologies[p]) continue
+      if (!m.has(p)) m.set(p, [])
+      m.get(p).push(name)
+    }
+  }
+  for (const list of m.values()) {
+    list.sort((a, b) => technologyLayoutOrder(a, b, technologies))
+  }
+  return m
+}
+
+/** Raw dependents of `targetName` reachable by following edges prerequisite → dependent (BFS). */
+function collectRawDescendantClosure(prereqToDependents, targetName) {
+  const out = new Set()
+  const queue = [targetName]
+  out.add(targetName)
+  while (queue.length > 0) {
+    const p = queue.shift()
+    for (const name of prereqToDependents.get(p) || []) {
+      if (!out.has(name)) {
+        out.add(name)
+        queue.push(name)
+      }
     }
   }
   return out
@@ -507,6 +542,19 @@ function computeAncestorDepths(technologies, targetName) {
 }
 
 /**
+ * @param {object} options
+ * @returns {ReturnType<typeof coordSimplexWasm>}
+ */
+function createResearchMapCoordOperator(options) {
+  const preset = options.highsPreset ?? researchMapHighsPresetFromEnv() ?? 'default'
+  const highsSolveOptions = resolveResearchMapHighsSolveOptions({
+    preset,
+    userOptions: options.highsSolveOptions ?? {}
+  })
+  return coordSimplexWasm({ highsSolveOptions })
+}
+
+/**
  * @param {Record<string, object>} technologies
  * @param {string} targetName
  * @param {object} [options]
@@ -516,6 +564,8 @@ function computeAncestorDepths(technologies, targetName) {
  * @param {number} [options.minCenterGap] — px gap between adjacent card edges (horizontal gap for d3-dag sugiyama)
  * @param {number} [options.pad] — content padding around graph bbox (px); defaults to {@link RESEARCH_MAP_PAD}
  * @param {number} [options.rankCompactExtra] — unused by {@link computeResearchMapLayout} (kept for API compatibility); abstract compaction still uses it in tests/helpers
+ * @param {'default'|'fastSmall'|'large'} [options.highsPreset] — HiGHS option preset (merged before `highsSolveOptions`). Overrides `RESEARCH_MAP_HIGHS_PRESET` in Node.
+ * @param {Record<string, string|number|boolean>} [options.highsSolveOptions] — extra HiGHS `solve` options (do not set `log_to_console` / `output_flag` false).
  */
 export function computeResearchMapLayout(technologies, targetName, options = {}) {
   const cardWidth = options.cardWidth ?? RESEARCH_MAP_CARD_WIDTH
@@ -531,10 +581,13 @@ export function computeResearchMapLayout(technologies, targetName, options = {})
   }
 
   const target = targetName
-  const effectiveByNameAll = buildEffectivePrereqIndex(visibleTechnologies)
-  const dependentsAll = buildDependentsFromEffective(visibleTechnologies, effectiveByNameAll)
-  const rawDirectDescendants = collectRawDirectDescendants(visibleTechnologies, target)
+  const prereqToDependentsRaw = buildPrereqToDependentsRaw(visibleTechnologies)
   const ancestorNodes = collectAncestorClosure(visibleTechnologies, target)
+  const descendantRaw = collectRawDescendantClosure(prereqToDependentsRaw, target)
+  const neededForLayout = new Set([...ancestorNodes, ...descendantRaw, target])
+  const effectiveByNameAll = buildEffectivePrereqIndexForNames(visibleTechnologies, neededForLayout)
+  const dependentsAll = buildDependentsFromEffective(visibleTechnologies, effectiveByNameAll)
+  const rawDirectDescendants = new Set(prereqToDependentsRaw.get(target) || [])
   const ancestorDepthOf = computeAncestorDepths(visibleTechnologies, target)
   const { depthOf, byDepth } = computeDescendantDepths(target, dependentsAll)
   const descendantBudget = Math.max(0, nonDirectDescendantBudget)
@@ -637,6 +690,8 @@ export function computeResearchMapLayout(technologies, targetName, options = {})
     const nodeSizeTuple = /** @type {const} */ ([cardWidth, cardHeight])
     const layoutOp = sugiyama()
       .layering(layeringLongestPath().topDown(false))
+      .decross(decrossTwoLayer().passes(RESEARCH_MAP_DECROSS_PASSES))
+      .coord(createResearchMapCoordOperator(options))
       .nodeSize(nodeSizeTuple)
       .gap([minCenterGap, rowGap])
       /** Truncate links at rectangle bounds — populates {@link GraphLink#points} for rendering. */
@@ -748,6 +803,107 @@ export function computeResearchMapLayout(technologies, targetName, options = {})
       pad,
       minXShift: -minXBBox + pad
     }
+  }
+}
+
+/**
+ * After {@link sugiyama}, nodes in the same **Sugiyama** layer share the same center `y`.
+ * Dummy breakpoint nodes (long edges) appear as non-string {@link GraphNode#data}.
+ *
+ * @param {object} dag — `layout.dag` from {@link computeResearchMapLayout}
+ * @param {{ mergeEpsilon?: number }} [options] — merge bucket keys when `|y1-y2| < mergeEpsilon` (px)
+ * @returns {null | {
+ *   layerCount: number,
+ *   maxWidth: number,
+ *   widestLayerY: number | null,
+ *   totalDagNodes: number,
+ *   totalDummyNodes: number,
+ *   layers: { y: number, total: number, technologies: number, dummies: number }[]
+ * }}
+ */
+export function collectSugiyamaLayerShape(dag, options = {}) {
+  const eps = options.mergeEpsilon ?? 1e-3
+  if (!dag || typeof dag.nodes !== 'function') return null
+
+  /** @type {{ y: number, nodes: object[] }[]} */
+  const buckets = []
+  for (const n of dag.nodes()) {
+    const i = buckets.findIndex(L => Math.abs(L.y - n.y) < eps)
+    if (i < 0) {
+      buckets.push({ y: n.y, nodes: [n] })
+    } else {
+      buckets[i].nodes.push(n)
+    }
+  }
+  buckets.sort((a, b) => a.y - b.y)
+
+  let totalDummy = 0
+  let maxW = 0
+  let widestY = null
+  const layers = []
+  for (const L of buckets) {
+    let technologies = 0
+    let dummies = 0
+    for (const n of L.nodes) {
+      if (typeof n.data === 'string') technologies += 1
+      else dummies += 1
+    }
+    totalDummy += dummies
+    const total = L.nodes.length
+    if (total > maxW) {
+      maxW = total
+      widestY = L.y
+    }
+    layers.push({
+      y: Math.round(L.y * 100) / 100,
+      total,
+      technologies,
+      dummies
+    })
+  }
+
+  return {
+    layerCount: buckets.length,
+    maxWidth: maxW,
+    widestLayerY: widestY,
+    totalDagNodes: buckets.reduce((s, b) => s + b.nodes.length, 0),
+    totalDummyNodes: totalDummy,
+    layers
+  }
+}
+
+/**
+ * Compare **semantic** ranks ({@link computeResearchMapLayout} `byRank`) with **Sugiyama** physical layers (`dag`).
+ * Use for profiling wide tiers vs dummy load (e.g. `ftl-theory-D`).
+ *
+ * @param {ReturnType<typeof computeResearchMapLayout>} layout
+ */
+export function collectResearchMapLayerInstrumentation(layout) {
+  if (!layout) return null
+
+  const semanticRanks = []
+  for (let r = 0; r <= layout.maxRank; r++) {
+    const row = layout.byRank.get(r)
+    semanticRanks.push({ rank: r, count: row?.length ?? 0 })
+  }
+  const semanticMaxWidth = semanticRanks.reduce((m, s) => Math.max(m, s.count), 0)
+
+  const sugi = layout.dag ? collectSugiyamaLayerShape(layout.dag) : null
+
+  return {
+    target: layout.target,
+    visibleTechnologyCount: layout.nodes.size,
+    edgeCount: layout.edges.length,
+    semanticRanks,
+    semanticMaxWidth,
+    sugiLayerCount: sugi?.layerCount ?? 0,
+    sugiMaxWidth: sugi?.maxWidth ?? 0,
+    sugiTotalDagNodes: sugi?.totalDagNodes ?? 0,
+    sugiTotalDummyNodes: sugi?.totalDummyNodes ?? 0,
+    sugiLayers: sugi?.layers ?? [],
+    widestSugiyamaLayerY: sugi?.widestLayerY ?? null,
+    contentWidth: layout.contentWidth,
+    contentHeight: layout.contentHeight
   }
 }
 

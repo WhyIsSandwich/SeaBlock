@@ -15,6 +15,7 @@ import {
   compactLayerCenters,
   computeGutterLaneSpacingPx,
   computeDagLinkSvgPaths,
+  collectResearchMapLayerInstrumentation,
   computeResearchMapLayout,
   computeRoutedOrthogonalPaths,
   computeSinkRanks,
@@ -754,10 +755,11 @@ describe('computeResearchMapLayout integration', () => {
     const L = computeResearchMapLayout(technologies, 'goal')
     expect(L).not.toBeNull()
     const rank1Row = L.rowsTopToBottom.find(r => r.layerIndex === 1)
-    expect(new Set(rank1Row.names)).toEqual(new Set(['c', 'd', 'e']))
-    const xs = rank1Row.names.map(n => L.nodeLayouts.get(n).centerX)
-    const sortedXs = [...xs].sort((a, b) => a - b)
-    expect(xs).toEqual(sortedXs)
+    const effective = effectivePrerequisites(technologies, 'goal')
+    const rank1Effective = rank1Row.names.filter(n => effective.includes(n))
+    expect(new Set(rank1Effective)).toEqual(new Set(['c', 'd', 'e']))
+    const xs = rank1Effective.map(n => L.nodeLayouts.get(n).centerX)
+    expect(xs).toEqual([...xs].sort((a, b) => a - b))
   })
 
   it('angels-ore-floatation-style graph: effective rank-1 set and Sugiyama left-to-right order', () => {
@@ -790,15 +792,37 @@ describe('computeResearchMapLayout integration', () => {
     })
     expect(L).not.toBeNull()
     const rank1 = L.rowsTopToBottom.find(row => row.layerIndex === 1)
-    expect(new Set(rank1.names)).toEqual(
+    const effective = effectivePrerequisites(technologies, 'angels-ore-floatation')
+    const rank1Effective = rank1.names.filter(n => effective.includes(n))
+    expect(new Set(rank1Effective)).toEqual(
       new Set([
         'angels-basic-chemistry-2',
         'angels-ore-advanced-crushing',
         'bob-alloy-processing'
       ])
     )
-    const xs = rank1.names.map(n => L.nodeLayouts.get(n).centerX)
+    const xs = rank1Effective.map(n => L.nodeLayouts.get(n).centerX)
     expect(xs).toEqual([...xs].sort((a, b) => a - b))
+  })
+})
+
+describe('collectResearchMapLayerInstrumentation', () => {
+  it('reports semantic rank counts and Sugiyama physical layer widths', () => {
+    const technologies = {
+      goal: tech('goal', ['a', 'b']),
+      a: tech('a', []),
+      b: tech('b', [])
+    }
+    const L = computeResearchMapLayout(technologies, 'goal')
+    expect(L).not.toBeNull()
+    const inst = collectResearchMapLayerInstrumentation(L)
+    expect(inst).not.toBeNull()
+    expect(inst.semanticRanks.length).toBe(L.maxRank + 1)
+    expect(inst.semanticMaxWidth).toBeGreaterThan(0)
+    expect(inst.sugiLayerCount).toBeGreaterThan(0)
+    expect(inst.sugiLayers.length).toBe(inst.sugiLayerCount)
+    expect(inst.sugiTotalDagNodes).toBeGreaterThanOrEqual(L.nodes.size)
+    expect(inst.sugiTotalDummyNodes + inst.visibleTechnologyCount).toBe(inst.sugiTotalDagNodes)
   })
 })
 

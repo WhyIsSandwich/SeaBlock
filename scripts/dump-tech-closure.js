@@ -17,8 +17,9 @@ import {
   computeResearchMapLayout,
   effectivePrerequisites
 } from '../src/utils/researchMapLayout.js'
+import { preloadResearchMapHighs } from '../src/utils/researchMapHighs.js'
 
-function main() {
+async function main() {
   const dataPath = process.argv[2]
   const techName = process.argv[3]
   if (!dataPath || !techName) {
@@ -44,6 +45,7 @@ function main() {
 
   const closure = collectVisiblePrerequisiteClosure(technologies, techName)
   const eff = effectivePrerequisites(technologies, techName)
+  await preloadResearchMapHighs()
   const layout = computeResearchMapLayout(technologies, techName)
 
   const out = {
@@ -69,4 +71,7 @@ function main() {
   console.log(JSON.stringify(out, null, 2))
 }
 
-main()
+main().catch((err) => {
+  console.error(err)
+  process.exit(1)
+})
