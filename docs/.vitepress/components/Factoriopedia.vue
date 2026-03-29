@@ -477,7 +477,10 @@ const mobileEntryMotionTransition = computed(() =>
 
 const mobileEntryDismissMs = computed(() => (prefersReducedMotion.value ? 165 : 265))
 
+/** Fraction of panel width past which a horizontal release dismisses the entry sheet (from fully open). */
 const MOBILE_ENTRY_DISMISS_RATIO = 0.22
+/** Complement: reopen from grid when the sheet has been pulled in by at least this fraction (same gesture effort as dismiss). */
+const MOBILE_ENTRY_OPEN_COMMIT_RATIO = 1 - MOBILE_ENTRY_DISMISS_RATIO
 
 let mobileReducedMotionMqlCleanup = null
 
@@ -1574,7 +1577,7 @@ function onMobileGridTouchEnd(e) {
   const w = getMobileEntryPanelWidth()
   const x = Math.min(Math.max(0, w + (endX - pan.lockX)), w)
 
-  if (x < w * MOBILE_ENTRY_DISMISS_RATIO) {
+  if (x < w * MOBILE_ENTRY_OPEN_COMMIT_RATIO) {
     skipMobileEntryOpenAnimation.value = true
     mobileGridOpenDragging.value = false
     mobilePane.value = 'entry'
