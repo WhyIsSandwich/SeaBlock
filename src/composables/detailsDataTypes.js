@@ -86,6 +86,7 @@ export const labels = new Proxy(
     can_filter_items: 'Can filter items.',
     storage_volume: 'Storage Volume',
     max_length: 'Max Length',
+    footprint: 'Footprint',
     belt_speed: 'Belt Speed',
     storage_size: 'Storage Size',
     wire_reach: 'Wire Reach',

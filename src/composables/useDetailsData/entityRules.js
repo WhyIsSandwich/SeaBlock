@@ -2,6 +2,32 @@ import { labels, sectionTypes } from '../detailsDataTypes.js'
 import { parseEnergyString, formatEnergyValue } from '../energyUtils.js'
 import { parseAttackParameters } from '../useAttackParametersParser.js'
 
+/** @param {{ tile_width?: number, tile_height?: number, collision_box?: unknown }} | null | undefined entity */
+function getEntityFootprintLabel(entity) {
+  if (!entity) return null
+  const { tile_width: tw, tile_height: th } = entity
+  if (typeof tw === 'number' && typeof th === 'number' && tw > 0 && th > 0) {
+    return `${Math.round(tw)}x${Math.round(th)}`
+  }
+  const box = entity.collision_box
+  if (!Array.isArray(box) || box.length < 2) return null
+  const cornerCoord = (corner, axis) => {
+    if (Array.isArray(corner)) return corner[axis]
+    if (corner && typeof corner === 'object') return axis === 0 ? corner.x : corner.y
+    return undefined
+  }
+  const [lt, rb] = box
+  const x1 = cornerCoord(lt, 0)
+  const y1 = cornerCoord(lt, 1)
+  const x2 = cornerCoord(rb, 0)
+  const y2 = cornerCoord(rb, 1)
+  if (![x1, y1, x2, y2].every(n => typeof n === 'number' && Number.isFinite(n))) return null
+  const w = Math.ceil(Math.abs(x2 - x1))
+  const h = Math.ceil(Math.abs(y2 - y1))
+  if (w < 1 || h < 1) return null
+  return `${w}x${h}`
+}
+
 /**
  * Entity rules - unified format for both statistics and sections
  */
@@ -61,6 +87,15 @@ export const entityRules = [
     shownInTooltip: true,
     getValue: data => data.entity?.max_distance?.toFixed(0),
     condition: data => data.entity?.max_distance !== undefined
+  },
+  {
+    name: labels.footprint,
+    order: 5.5,
+    type: 'statistics',
+    forType: 'entity',
+    shownInTooltip: true,
+    getValue: data => getEntityFootprintLabel(data.entity),
+    condition: data => getEntityFootprintLabel(data.entity) !== null
   },
   {
     name: labels.belt_speed,
