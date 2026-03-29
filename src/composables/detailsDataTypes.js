@@ -55,7 +55,8 @@ export const sectionTypes = new Proxy(
     container_spawned_by: 'Container spawned by',
     gathered_from: 'Gathered from',
     consumed_in: 'Consumed in',
-    minable_results: 'Mining results'
+    minable_results: 'Mining results',
+    compatible_modules: 'Compatible modules'
   },
   {
     get(target, prop) {
@@ -102,6 +103,7 @@ export const labels = new Proxy(
     pollution: 'Pollution',
     research_speed: 'Research Speed',
     module_slots: 'Module Slots',
+    allows_productivity: 'Allows Productivity',
     cargo_capacity: 'Cargo Capacity',
     speed: 'Speed',
     range: 'Range',

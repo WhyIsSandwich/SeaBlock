@@ -24,10 +24,15 @@ function formatAmountPrefix(entry) {
  * Recipe rules - unified format for both statistics and sections
  */
 export const recipeRules = [
-  // Statistics rules - recipes typically don't have direct statistics
-  // (empty array for now, can be extended if needed)
-
-  // Section rules
+  {
+    name: labels.allows_productivity,
+    order: 0.5,
+    type: 'statistics',
+    forType: 'recipe',
+    shownInTooltip: true,
+    getValue: () => '',
+    condition: data => data.recipe?.allow_productivity === true
+  },
   {
     name: sectionTypes.ingredients,
     order: 1,

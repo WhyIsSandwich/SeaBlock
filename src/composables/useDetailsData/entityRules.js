@@ -1,6 +1,7 @@
 import { labels, sectionTypes } from '../detailsDataTypes.js'
 import { parseEnergyString, formatEnergyValue } from '../energyUtils.js'
 import { parseAttackParameters } from '../useAttackParametersParser.js'
+import { getCompatibleModuleItemsForEntity } from './compatibleModulesForEntity.js'
 
 /** @param {{ tile_width?: number, tile_height?: number, collision_box?: unknown }} | null | undefined entity */
 function getEntityFootprintLabel(entity) {
@@ -232,6 +233,27 @@ export const entityRules = [
     shownInTooltip: true,
     getValue: data => data.entity?.module_slots,
     condition: data => data.entity?.module_slots !== undefined
+  },
+  {
+    name: sectionTypes.compatible_modules,
+    order: 18.5,
+    type: 'section',
+    forType: 'entity',
+    shownInTooltip: true,
+    getValue: (data, context) => {
+      const items = getCompatibleModuleItemsForEntity(data.entity, context.factorioData)
+      return { items, itemsType: 'grid' }
+    },
+    condition: (data, context) => {
+      const e = data.entity
+      if (!e) return false
+      const hasSlots = Number(e.module_slots) > 0
+      const hasCategoryList =
+        Array.isArray(e.allowed_module_categories) && e.allowed_module_categories.length > 0
+      if (!hasSlots && !hasCategoryList) return false
+      return getCompatibleModuleItemsForEntity(e, context.factorioData).length > 0
+    },
+    postCondition: data => Array.isArray(data?.items) && data.items.length > 0
   },
   {
     name: labels.cargo_capacity,
