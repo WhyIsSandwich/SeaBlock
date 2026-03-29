@@ -9,10 +9,10 @@ The Factoriopedia is an in-game encyclopedia that provides detailed information 
 
 ## Features
 
-- **Item Browser**: Browse entries in a grid layout with category filters
-- **Science pack filter**: Narrow visible recipes by required science (dependencies apply automatically)
-- **Search**: Filter the grid by display name, internal id, and light fuzzy matching for typos
-- **Show toggles**: Quickly hide or show entries by primary type (recipes, technologies, fluids, tiles, items, entities)
+- **Item Browser**: Browse entries in a grid layout with category filters (same high-level structure as the in-game encyclopedia).
+- **Science pack filter**: Narrow visible recipes by required science (dependencies apply automatically).
+- **Filter**: The field with the funnel icon narrows the **icon grid for whichever group is selected** (display name, internal id, light fuzzy matching). The same `q` text is kept in the URL when you switch groups, so it reapplies to each group’s grid in turn—only the **visible** grid is filtered, not every group at once.
+- **Jump to entry**: Opens in a **modal** (header control, or **Ctrl+K** / **Cmd+K**) with its own field and result list—separate from the grid filter.
 - **Detailed Information**: View details for each selection including statistics and rule-driven sections
 - **Recipe Information**: Recipe breakdowns with ingredients, crafting time, and compatible machines where data exists
 - **Research map**: When a technology is selected, open **Research map** in the details pane to see the full prerequisite graph (sink-based ranks, hidden technologies omitted)
@@ -39,7 +39,7 @@ The page uses **two layers**:
 | ----------- | ------- |
 | `category`  | Active primary category key (e.g. logistics) |
 | `science`   | Comma-separated science pack item names (same dependency rules as the UI) |
-| `q`         | Search text for the recipe grid |
+| `q`         | Filter text for the **selected group’s** grid (stored in the URL across group changes) |
 | `locale`    | Locale code for `locale-<code>.json` when additional locale files are published (currently only English may be available) |
 
 Example (structure only):
@@ -55,6 +55,7 @@ Example (structure only):
 | `#technology=<name>` | Technology |
 | `#fluid=<name>` | Fluid |
 | `#tile=<name>` | Tile |
+| `#entity=<name>` | Entity (building / world object) |
 
 Note: `#category=...` is **not** used; use the `category` **query** parameter instead.
 
@@ -64,8 +65,10 @@ Note: `#category=...` is **not** used; use the `category` **query** parameter in
 | --- | ------ |
 | ← / → | Previous / next entry in the current filtered grid |
 | ↑ / ↓ | Move up / down one row in the grid, keep column intent, and clamp to row end when needed |
-| Esc | Close details; if the **research map** modal is open, closes the map first |
+| Esc | Close **Jump to entry** if open; otherwise close shortcuts help, science panel, or details (research map modal follows the host page) |
 | ? | Toggle shortcuts help |
+| / | Focus **grid filter** (funnel field), when not typing in an input |
+| Ctrl+K / Cmd+K | Open or close **Jump to entry** (works even when another field is focused) |
 
 ## Wiki deep links
 

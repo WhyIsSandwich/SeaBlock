@@ -3,6 +3,9 @@
  * This handles all the data loading logic that was previously in Factoriopedia.vue
  * Uses singleton pattern to ensure data is shared across all components
  * Now works with simplified data structure: data.json + locale files
+ *
+ * Load coordination uses module scope (`loadAllDataGeneration`); do not attach mutable
+ * exports to `window`.
  */
 
 import { ref } from 'vue'
@@ -17,6 +20,9 @@ import { useFactorioPrototypeMapping } from './useFactorioPrototypeMapping.js'
 
 // Singleton instance - shared across all components
 let factorioDataInstance = null
+
+/** Monotonic id so only the latest `loadAllData` run commits fetched data (avoids stale overwrites). */
+let loadAllDataGeneration = 0
 
 function createFactorioDataInstance() {
   const { createUnifiedObjectByKey, getPrimaryType } = useUnifiedObjects()
@@ -43,13 +49,29 @@ function createFactorioDataInstance() {
   const currentLanguage = ref('en')
 
   /**
-   * Load raw data from data.json
+   * Fetch raw data from data.json (does not mutate refs — caller commits after generation check).
+   */
+  async function fetchRawDataJson() {
+    const response = await fetch(resolveDataUrl('data.json', withBase))
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
+    return response.json()
+  }
+
+  /**
+   * Fetch locale JSON for the specified language (does not mutate refs).
+   */
+  async function fetchLocaleDataJson(language = 'en') {
+    const response = await fetch(resolveDataUrl(`locale-${language}.json`, withBase))
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
+    return response.json()
+  }
+
+  /**
+   * Load raw data only (assigns `rawData`). Prefer `loadAllData` for coordinated loads.
    */
   async function loadRawData() {
     try {
-      const response = await fetch(resolveDataUrl('data.json', withBase))
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
-      rawData.value = await response.json()
+      rawData.value = await fetchRawDataJson()
       console.log('✓ Loaded raw data')
     } catch (error) {
       console.error('Failed to load raw data:', error)
@@ -58,13 +80,11 @@ function createFactorioDataInstance() {
   }
 
   /**
-   * Load locale data for the specified language
+   * Load locale data only (assigns `localeData`). Prefer `loadAllData` for coordinated loads.
    */
   async function loadLocaleData(language = 'en') {
     try {
-      const response = await fetch(resolveDataUrl(`locale-${language}.json`, withBase))
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
-      localeData.value = await response.json()
+      localeData.value = await fetchLocaleDataJson(language)
       currentLanguage.value = language
       console.log(`✓ Loaded locale data for language: ${language}`)
     } catch (error) {
@@ -119,28 +139,44 @@ function createFactorioDataInstance() {
   }
 
   /**
-   * Load all data files and process them
+   * Load all data files and process them.
+   * Concurrent or overlapping calls only let the newest run commit to refs (stale responses are dropped).
    */
   async function loadAllData(language = 'en') {
+    const generation = ++loadAllDataGeneration
     isLoading.value = true
     loadingError.value = null
 
     try {
-      // Load raw data and locale data in parallel
-      await Promise.all([loadRawData(), loadLocaleData(language)])
+      const [rawJson, localeJson] = await Promise.all([
+        fetchRawDataJson(),
+        fetchLocaleDataJson(language)
+      ])
 
-      // Process the data by type
+      if (generation !== loadAllDataGeneration) {
+        return
+      }
+
+      rawData.value = rawJson
+      localeData.value = localeJson
+      currentLanguage.value = language
+      console.log('✓ Loaded raw data')
+      console.log(`✓ Loaded locale data for language: ${language}`)
+
       processDataByType()
-      // Build normalized availability indexes eagerly for fast render-time membership checks.
       ensureAvailabilityIndexes()
 
       console.log('✓ All Factorio data loaded and processed successfully')
     } catch (error) {
-      loadingError.value = error
-      console.error('Failed to load Factorio data:', error)
+      if (generation === loadAllDataGeneration) {
+        loadingError.value = error
+        console.error('Failed to load Factorio data:', error)
+      }
       throw error
     } finally {
-      isLoading.value = false
+      if (generation === loadAllDataGeneration) {
+        isLoading.value = false
+      }
     }
   }
 

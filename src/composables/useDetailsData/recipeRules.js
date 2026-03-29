@@ -135,9 +135,8 @@ export const recipeRules = [
             )?.length > 0
         )
         .map(technology => {
-          // todo deal with unit not being defined
-          const ingredients =
-            technology.unit?.ingredients.length > 0 ? technology.unit.ingredients : []
+          const unitIngredients = technology.unit?.ingredients
+          const ingredients = Array.isArray(unitIngredients) ? unitIngredients : []
           const items = ingredients.map(ingredient => ({
             name: ingredient[0],
             type: 'item',
@@ -146,12 +145,14 @@ export const recipeRules = [
           return {
             name: technology.name,
             type: 'technology',
-            items: (technology.name, items)
+            items
           }
         })
+        .filter(entry => entry.items.length > 0)
       return { items: unlockTechnologies, type: 'unlock_technologies' }
     },
-    condition: data => data.recipe?.name !== undefined
+    condition: data => data.recipe?.name !== undefined,
+    postCondition: data => Array.isArray(data?.items) && data.items.length > 0
   }
 ]
 

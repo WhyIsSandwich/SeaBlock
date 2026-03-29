@@ -71,9 +71,27 @@
                     $style.headerIconAction,
                     'fpio-button-chrome'
                   ]"
+                  title="Jump to any entry (Ctrl+K or Cmd+K)"
+                  aria-label="Jump to entry"
+                  @click="openJumpModal()"
+                >
+                  <span :class="$style.headerJumpGlyph" aria-hidden="true">
+                    <!-- Filled triangle: “go” / next screen; no strokes (stable in responsive / DPR changes) -->
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true">
+                      <polygon fill="currentColor" points="8 5 8 19 19 12" />
+                    </svg>
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  :class="[
+                    $style.headerActionButton,
+                    $style.headerIconAction,
+                    'fpio-button-chrome'
+                  ]"
                   title="Keyboard shortcuts"
                   aria-label="Keyboard shortcuts"
-                  @click="showKeyboardHelp = true; closeSciencePackPanel()"
+                  @click="showKeyboardHelp = true; closeSciencePackPanel(); closeJumpModal()"
                 >
                   ?
                 </button>
@@ -194,17 +212,41 @@
           </div>
         </div>
 
-        <!-- Search -->
+        <!-- Category-scoped grid filter (Jump to any entry is in the header / Ctrl+K modal) -->
         <div :class="$style.searchContainer">
           <div :class="$style.searchRow">
-            <input
-              v-model="searchQuery"
-              type="search"
-              placeholder="Search recipes..."
-              :class="$style.searchInput"
-              aria-label="Search recipes"
-              autocomplete="off"
-            />
+            <div
+              :class="$style.searchFilterBar"
+              role="search"
+              aria-label="Filter the icon grid for the selected group"
+            >
+              <span
+                :class="$style.searchFilterIcon"
+                aria-hidden="true"
+                title="Narrows the icons below (same filter text when you switch groups)"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z" />
+                </svg>
+              </span>
+              <input
+                ref="searchInputRef"
+                v-model="searchQuery"
+                type="search"
+                placeholder="Filter the grid…"
+                :class="$style.searchInputJoined"
+                aria-label="Filter icons in the grid for the selected group"
+                autocomplete="off"
+              />
+            </div>
           </div>
         </div>
 
@@ -304,6 +346,8 @@
           <li><kbd>↑</kbd> <kbd>↓</kbd> Move up / down a row (keeps column, clamps to row end)</li>
           <li><kbd>Esc</kbd> Clear selection</li>
           <li><kbd>?</kbd> Toggle this help</li>
+          <li><kbd>/</kbd> Focus grid filter (funnel field)</li>
+          <li><kbd>Ctrl+K</kbd> / <kbd>Cmd+K</kbd> Open Jump to entry</li>
           <li v-if="isMobileViewport">
             Tap an icon to open the entry; drag the panel right to move it with your finger, then
             release to snap back or dismiss. A strip of the grid stays visible on the left while the
@@ -316,9 +360,84 @@
           URL query parameters <code>category</code>, <code>science</code>, <code>q</code>, and
           <code>locale</code> persist browse state; the hash selects the open item.
         </p>
+        <p :class="$style.modalHint">
+          <kbd>/</kbd> focuses the funnel field. <kbd>Ctrl+K</kbd> / <kbd>Cmd+K</kbd> or the Jump
+          button opens <strong>Jump to entry</strong>. That is separate from the funnel field, which
+          only narrows the icon grid for the <strong>selected</strong> group (the same <code>q</code>
+          is kept when you switch groups).
+        </p>
         <button type="button" :class="$style.modalClose" @click="showKeyboardHelp = false">
           Close
         </button>
+      </div>
+    </div>
+
+    <div
+      v-if="showJumpModal"
+      :class="[$style.modalBackdrop, $style.jumpModalBackdrop]"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="factoriopedia-jump-title"
+      @click.self="closeJumpModal"
+    >
+      <div
+        :class="[$style.modalPanel, $style.jumpModalPanel]"
+        @keydown.esc.stop="closeJumpModal"
+      >
+        <div :class="$style.jumpModalTop">
+          <h3 id="factoriopedia-jump-title">Jump to entry</h3>
+          <p :class="$style.jumpModalHint">
+            Search the full list. The funnel field above the grid only affects the selected group’s
+            icons; <code>q</code> stays in the URL when you change groups.
+          </p>
+          <input
+            ref="jumpInputRef"
+            v-model="jumpQuery"
+            type="search"
+            :class="$style.searchInput"
+            placeholder="Type a display name or internal id…"
+            aria-label="Jump to entry"
+            autocomplete="off"
+            @keydown="onJumpKeydown"
+          />
+        </div>
+        <div
+          v-if="jumpQuery.trim().length >= 1"
+          id="factoriopedia-jump-listbox"
+          :class="$style.jumpModalResults"
+          role="listbox"
+          aria-label="Matching entries"
+        >
+          <div v-if="jumpModalEmpty" :class="$style.jumpLookaheadHint">
+            No matches. Try another spelling or id.
+          </div>
+          <button
+            v-for="(entry, idx) in lookaheadMatches"
+            :id="`fpio-jump-opt-${idx}`"
+            :key="`${getPrimaryType(entry)}-${entry.name}`"
+            type="button"
+            role="option"
+            :class="[
+              $style.jumpLookaheadOption,
+              { [$style.jumpLookaheadOptionActive]: idx === lookaheadActiveIndex }
+            ]"
+            :aria-selected="idx === lookaheadActiveIndex"
+            @mousedown.prevent="selectLookaheadItem(entry)"
+          >
+            <IconButton
+              :type="getPrimaryType(entry)"
+              :name="entry.name"
+              :size="28"
+              :clickable="false"
+              :show-tooltip="false"
+            />
+            <span :class="$style.jumpLookaheadLabel">{{ entry.displayName || entry.name }}</span>
+            <span :class="$style.jumpLookaheadId">{{ entry.name }}</span>
+          </button>
+        </div>
+        <div :class="$style.jumpModalFooter">
+          <button type="button" :class="$style.modalClose" @click="closeJumpModal">Close</button>
+        </div>
       </div>
     </div>
 
@@ -412,6 +531,15 @@ const router = useRouter()
 const selectedItem = ref(null)
 const selectedCategory = ref('logistics')
 const searchQuery = ref('')
+const searchInputRef = ref(null)
+
+const showJumpModal = ref(false)
+const jumpQuery = ref('')
+const jumpInputRef = ref(null)
+const lookaheadActiveIndex = ref(-1)
+
+const MRU_STORAGE_KEY = 'factoriopedia-mru-v1'
+
 const isAnimationPaused = ref(false)
 const selectedSciencePacks = ref([])
 
@@ -879,6 +1007,139 @@ const groupedRecipes = computed(() => {
   return filteredSubgroupsByCategory.value[selectedCategory.value] || []
 })
 
+/** Flat list of all unified browse entries (for Jump to entry lookahead; not filtered by category). */
+const allBrowseableUnifiedObjects = computed(() => {
+  const struct = categoryStructure.value
+  if (!struct || typeof struct !== 'object') return []
+  const out = []
+  for (const cat of Object.values(struct)) {
+    for (const subgroup of cat?.subgroups || []) {
+      for (const recipe of subgroup?.recipes || []) {
+        if (recipe) out.push(recipe)
+      }
+    }
+  }
+  return out
+})
+
+function lookaheadRank(queryRaw, recipe) {
+  const q = queryRaw.trim().toLowerCase()
+  if (!q) return 99
+  const id = (recipe.name || '').toLowerCase()
+  const dn = (recipe.displayName || '').toLowerCase()
+  if (id === q) return 0
+  if (id.startsWith(q)) return 1
+  if (dn.startsWith(q)) return 2
+  return 3
+}
+
+const lookaheadMatches = computed(() => {
+  const q = jumpQuery.value.trim()
+  if (q.length < 1) return []
+  const all = allBrowseableUnifiedObjects.value
+  const filtered = all.filter(recipe => recipeMatchesSearch(recipe, q))
+  filtered.sort((a, b) => {
+    const ra = lookaheadRank(q, a)
+    const rb = lookaheadRank(q, b)
+    if (ra !== rb) return ra - rb
+    return (a.displayName || a.name || '').localeCompare(b.displayName || b.name || '')
+  })
+  return filtered.slice(0, 16)
+})
+
+const jumpModalEmpty = computed(
+  () =>
+    jumpQuery.value.trim().length >= 1 &&
+    lookaheadMatches.value.length === 0 &&
+    allBrowseableUnifiedObjects.value.length > 0
+)
+
+function findCategoryKeyForUnifiedObject(entry) {
+  const subgroupName = entry?.subgroup
+  if (!subgroupName || !categoryStructure.value) return null
+  for (const [catKey, cat] of Object.entries(categoryStructure.value)) {
+    if (cat?.subgroups?.some(s => s.name === subgroupName)) {
+      return catKey
+    }
+  }
+  return null
+}
+
+function selectLookaheadItem(entry) {
+  if (!entry) return
+  const cat = findCategoryKeyForUnifiedObject(entry)
+  if (cat) {
+    selectedCategory.value = cat
+  }
+  const type = getPrimaryType(entry)
+  selectItem(type, entry.name, entry)
+  closeJumpModal()
+}
+
+function closeJumpModal() {
+  showJumpModal.value = false
+  jumpQuery.value = ''
+  lookaheadActiveIndex.value = -1
+}
+
+function openJumpModal() {
+  closeSciencePackPanel()
+  showKeyboardHelp.value = false
+  showJumpModal.value = true
+  nextTick(() => {
+    const el = jumpInputRef.value
+    if (el && typeof el.focus === 'function') {
+      el.focus()
+      if (typeof el.select === 'function') el.select()
+    }
+  })
+}
+
+function onJumpKeydown(event) {
+  const list = lookaheadMatches.value
+  if (event.key === 'ArrowDown' && list.length > 0) {
+    event.preventDefault()
+    lookaheadActiveIndex.value = Math.min(lookaheadActiveIndex.value + 1, list.length - 1)
+    return
+  }
+  if (event.key === 'ArrowUp' && list.length > 0) {
+    event.preventDefault()
+    lookaheadActiveIndex.value = Math.max(lookaheadActiveIndex.value - 1, -1)
+    return
+  }
+  if (event.key === 'Enter' && lookaheadActiveIndex.value >= 0 && list.length > 0) {
+    const item = list[lookaheadActiveIndex.value]
+    if (item) {
+      event.preventDefault()
+      selectLookaheadItem(item)
+    }
+    return
+  }
+  if (event.key === 'Escape') {
+    event.stopPropagation()
+    closeJumpModal()
+  }
+}
+
+function focusSearchInput() {
+  nextTick(() => {
+    const el = searchInputRef.value
+    if (el && typeof el.focus === 'function') {
+      el.focus()
+      if (typeof el.select === 'function') el.select()
+    }
+  })
+}
+
+function decodeHashSegment(raw) {
+  if (raw == null || raw === '') return ''
+  try {
+    return decodeURIComponent(raw)
+  } catch {
+    return raw
+  }
+}
+
 const enabledCategoryKeys = computed(() => {
   const enabled = new Set()
   Object.entries(filteredSubgroupsByCategory.value).forEach(([categoryKey, subgroups]) => {
@@ -1197,20 +1458,17 @@ function applyBrowseStateFromUrl() {
 function parseHashForSelection() {
   const { hash } = window.location
   if (hash.startsWith('#item=')) {
-    const itemName = hash.substring(6)
-    selectItem('item', itemName)
+    selectItem('item', decodeHashSegment(hash.substring(6)))
   } else if (hash.startsWith('#recipe=')) {
-    const recipeName = hash.substring(8)
-    selectItem('recipe', recipeName)
+    selectItem('recipe', decodeHashSegment(hash.substring(8)))
   } else if (hash.startsWith('#technology=')) {
-    const technologyName = hash.substring(12)
-    selectItem('technology', technologyName)
+    selectItem('technology', decodeHashSegment(hash.substring(12)))
   } else if (hash.startsWith('#fluid=')) {
-    const fluidName = hash.substring(7)
-    selectItem('fluid', fluidName)
+    selectItem('fluid', decodeHashSegment(hash.substring(7)))
   } else if (hash.startsWith('#tile=')) {
-    const tileName = hash.substring(6)
-    selectItem('tile', tileName)
+    selectItem('tile', decodeHashSegment(hash.substring(6)))
+  } else if (hash.startsWith('#entity=')) {
+    selectItem('entity', decodeHashSegment(hash.substring(8)))
   }
 }
 
@@ -1267,6 +1525,7 @@ onMounted(async () => {
     applyBrowseStateFromUrl()
     await nextTick()
     parseHashForSelection()
+    loadMruFromStorage()
   } finally {
     isApplyingUrl.value = false
   }
@@ -1334,6 +1593,53 @@ watch(searchQuery, () => {
     if (!isApplyingUrl.value) updateURL()
   }, 350)
 })
+
+watch(jumpQuery, () => {
+  lookaheadActiveIndex.value = -1
+})
+
+watch(
+  mruItems,
+  () => {
+    if (typeof localStorage === 'undefined') return
+    try {
+      const slim = mruItems.value.slice(0, maxMRUItems).map(i => ({
+        type: i.type,
+        name: i.name
+      }))
+      localStorage.setItem(MRU_STORAGE_KEY, JSON.stringify(slim))
+    } catch {
+      /* ignore quota / private mode */
+    }
+  },
+  { deep: true }
+)
+
+function loadMruFromStorage() {
+  if (typeof localStorage === 'undefined') return
+  try {
+    const raw = localStorage.getItem(MRU_STORAGE_KEY)
+    if (!raw) return
+    const parsed = JSON.parse(raw)
+    if (!Array.isArray(parsed)) return
+    const restored = []
+    for (const entry of parsed.slice(0, maxMRUItems)) {
+      if (!entry?.type || !entry?.name) continue
+      const obj = createUnifiedSelectionObject(entry.type, entry.name)
+      if (obj && isSelectionAllowed(entry.type, entry.name, obj)) {
+        restored.push({
+          type: entry.type,
+          name: entry.name,
+          displayName: obj.displayName,
+          data: obj
+        })
+      }
+    }
+    mruItems.value = restored
+  } catch {
+    /* ignore corrupt storage */
+  }
+}
 
 watch(
   [selectedCategory, selectedSciencePacks, selectedItem],
@@ -1618,6 +1924,10 @@ function handleKeydown(event) {
   const tag = event.target?.tagName
   const inField = tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT'
   if (event.key === 'Escape') {
+    if (showJumpModal.value) {
+      closeJumpModal()
+      return
+    }
     if (showKeyboardHelp.value) {
       showKeyboardHelp.value = false
       return
@@ -1628,6 +1938,22 @@ function handleKeydown(event) {
     }
     closeDetails()
     return
+  }
+  if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
+    event.preventDefault()
+    if (showJumpModal.value) {
+      closeJumpModal()
+    } else {
+      openJumpModal()
+    }
+    return
+  }
+  if (!inField) {
+    if (event.key === '/' && !event.ctrlKey && !event.metaKey && !event.altKey) {
+      event.preventDefault()
+      focusSearchInput()
+      return
+    }
   }
   if (inField) return
   if (event.key === '?' && !event.ctrlKey && !event.metaKey && !event.altKey) {
@@ -1674,7 +2000,7 @@ onUnmounted(() => {
     gridResizeObserver = null
   }
 })
-const filterGrid = useFactorioGrid({
+const _filterGrid = useFactorioGrid({
   containerWidth: gridContainerWidth,
   minButtonSize: 44,
   maxColumns: 6,
@@ -1997,6 +2323,16 @@ const filterGrid = useFactorioGrid({
   padding: 16px;
 }
 
+.jumpModalBackdrop {
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: max(40px, calc(env(safe-area-inset-top, 0px) + 28px));
+  padding-bottom: max(16px, env(safe-area-inset-bottom, 0px));
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  box-sizing: border-box;
+}
+
 .modalPanel {
   background: #2e2e2e;
   border: 1px solid #555;
@@ -2048,6 +2384,78 @@ const filterGrid = useFactorioGrid({
   border-radius: 2px;
   cursor: pointer;
   font-size: 13px;
+}
+
+.jumpModalPanel {
+  width: min(96vw, 720px);
+  max-width: min(96vw, 720px);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  /* Cap overall card; list area uses its own max-height so overflow-y can scroll */
+  max-height: calc(
+    100vh - max(40px, calc(env(safe-area-inset-top, 0px) + 28px)) - max(16px, env(safe-area-inset-bottom, 0px)) - 8px
+  );
+  overflow: hidden;
+}
+
+.jumpModalTop {
+  flex-shrink: 0;
+}
+
+.jumpModalPanel .searchInput {
+  margin-top: 4px;
+}
+
+.jumpModalHint {
+  font-size: 12px;
+  color: #b0b0b0;
+  margin: 0 0 10px;
+  line-height: 1.4;
+}
+
+.jumpModalResults {
+  flex: 0 1 auto;
+  align-self: stretch;
+  min-height: 0;
+  margin-top: 8px;
+  /* Explicit cap: flex-only max-height on the panel does not give this a bounded height, so overflow never activated */
+  max-height: min(70vh, calc(100vh - 260px));
+  max-height: min(70dvh, calc(100dvh - 260px));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  border: 1px solid #4a4a4a;
+  border-radius: 2px;
+  background: #212121;
+}
+
+.jumpModalFooter {
+  flex-shrink: 0;
+  margin-top: 10px;
+}
+
+.headerJumpGlyph {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  contain: layout;
+}
+
+.headerJumpGlyph svg {
+  width: 18px;
+  height: 18px;
+  display: block;
+  flex-shrink: 0;
+  transition: none;
+}
+
+/* fpio-button-chrome uses transition: all; SVG currentColor can shimmer on hover in narrow layouts */
+.headerIconAction:global(.fpio-button-chrome) svg {
+  transition: none;
 }
 
 .searchRow {
@@ -2150,6 +2558,114 @@ const filterGrid = useFactorioGrid({
   box-shadow:
     inset 0 1px 3px rgba(0, 0, 0, 0.3),
     0 0 0 2px rgba(255, 165, 0, 0.3);
+}
+
+.searchFilterBar {
+  display: flex;
+  align-items: stretch;
+  width: 100%;
+  border: 1px solid #555555;
+  border-radius: 2px;
+  background: linear-gradient(to bottom, #3f3f3f, #333333);
+  box-shadow:
+    inset 0 1px 3px rgba(0, 0, 0, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.searchFilterBar:focus-within {
+  border-color: #7a7a7a;
+  box-shadow:
+    inset 0 1px 3px rgba(0, 0, 0, 0.3),
+    0 0 0 2px rgba(255, 165, 0, 0.3);
+}
+
+.searchFilterIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  padding: 0 8px 0 10px;
+  border-right: 1px solid #4a4a4a;
+  color: #b8b8b8;
+  background: linear-gradient(to bottom, #383838, #2e2e2e);
+}
+
+.searchFilterIcon svg {
+  width: 15px;
+  height: 15px;
+  opacity: 0.95;
+}
+
+.searchInputJoined {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 6px 8px;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  color: #e6e6e6;
+  font-size: 14px;
+  box-shadow: none;
+}
+
+.searchInputJoined:focus {
+  outline: none;
+}
+
+.searchInputJoined::placeholder {
+  color: #888888;
+}
+
+.jumpLookaheadHint {
+  padding: 8px 10px;
+  font-size: 12px;
+  color: #b0b0b0;
+  line-height: 1.35;
+}
+
+.jumpLookaheadOption {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  margin: 0;
+  padding: 6px 8px;
+  border: none;
+  border-bottom: 1px solid #3a3a3a;
+  background: transparent;
+  color: #e8e8e8;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.jumpLookaheadOption:last-child {
+  border-bottom: none;
+}
+
+.jumpLookaheadOption:hover,
+.jumpLookaheadOption:focus-visible {
+  background: rgba(255, 176, 74, 0.12);
+  outline: none;
+}
+
+.jumpLookaheadOptionActive {
+  background: rgba(255, 176, 74, 0.2);
+}
+
+.jumpLookaheadLabel {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.jumpLookaheadId {
+  flex: 0 0 auto;
+  font-size: 11px;
+  color: #909090;
+  font-family: ui-monospace, monospace;
 }
 
 .itemGrid {
