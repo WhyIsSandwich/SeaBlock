@@ -91,7 +91,7 @@
                   ]"
                   title="Keyboard shortcuts"
                   aria-label="Keyboard shortcuts"
-                  @click="showKeyboardHelp = true; closeSciencePackPanel(); closeJumpModal()"
+                  @click="((showKeyboardHelp = true), closeSciencePackPanel(), closeJumpModal())"
                 >
                   ?
                 </button>
@@ -363,7 +363,8 @@
         <p :class="$style.modalHint">
           <kbd>/</kbd> focuses the funnel field. <kbd>Ctrl+K</kbd> / <kbd>Cmd+K</kbd> or the Jump
           button opens <strong>Jump to entry</strong>. That is separate from the funnel field, which
-          only narrows the icon grid for the <strong>selected</strong> group (the same <code>q</code>
+          only narrows the icon grid for the <strong>selected</strong> group (the same
+          <code>q</code>
           is kept when you switch groups).
         </p>
         <button type="button" :class="$style.modalClose" @click="showKeyboardHelp = false">
@@ -380,10 +381,7 @@
       aria-labelledby="factoriopedia-jump-title"
       @click.self="closeJumpModal"
     >
-      <div
-        :class="[$style.modalPanel, $style.jumpModalPanel]"
-        @keydown.esc.stop="closeJumpModal"
-      >
+      <div :class="[$style.modalPanel, $style.jumpModalPanel]" @keydown.esc.stop="closeJumpModal">
         <div :class="$style.jumpModalTop">
           <h3 id="factoriopedia-jump-title">Jump to entry</h3>
           <p :class="$style.jumpModalHint">
@@ -2394,7 +2392,8 @@ const _filterGrid = useFactorioGrid({
   min-height: 0;
   /* Cap overall card; list area uses its own max-height so overflow-y can scroll */
   max-height: calc(
-    100vh - max(40px, calc(env(safe-area-inset-top, 0px) + 28px)) - max(16px, env(safe-area-inset-bottom, 0px)) - 8px
+    100vh - max(40px, calc(env(safe-area-inset-top, 0px) + 28px)) -
+      max(16px, env(safe-area-inset-bottom, 0px)) - 8px
   );
   overflow: hidden;
 }
@@ -2987,6 +2986,8 @@ const _filterGrid = useFactorioGrid({
 /* Mobile Responsive Layout */
 @media (max-width: 768px) {
   .factoripedia {
+    --fpio-mobile-sheet-inset: 8px;
+    --fpio-mobile-sheet-peek-extra: 10px;
     flex: 0 1 auto;
     align-self: stretch;
     min-height: 0;
@@ -3076,32 +3077,33 @@ const _filterGrid = useFactorioGrid({
   /* Right Panel - Mobile: viewport-fixed entry sheet (slides in from the right; transform via inline style) */
   .factoripediaRightPanel {
     position: fixed;
-    top: var(--vp-nav-height, 64px);
-    left: 0;
-    right: 0;
-    bottom: auto;
+    top: calc(var(--vp-nav-height, 64px) + var(--fpio-mobile-sheet-inset, 8px));
+    left: max(var(--fpio-mobile-sheet-inset, 8px), env(safe-area-inset-left, 0px));
+    right: max(var(--fpio-mobile-sheet-inset, 8px), env(safe-area-inset-right, 0px));
+    bottom: max(var(--fpio-mobile-sheet-inset, 8px), env(safe-area-inset-bottom, 0px));
     z-index: 30;
-    width: 100%;
+    width: auto;
     flex: none;
-    height: calc(100dvh - var(--vp-nav-height, 64px));
+    height: auto;
     min-height: 0;
     overflow: hidden;
     display: flex;
     flex-direction: column;
     background: #4a4a4a;
+    border-radius: 5px;
     box-shadow:
-      -14px 0 32px rgba(0, 0, 0, 0.55),
-      inset 8px 0 14px -6px rgba(0, 0, 0, 0.35);
+      0 12px 40px rgba(0, 0, 0, 0.45),
+      0 0 0 1px rgba(0, 0, 0, 0.35),
+      -8px 0 24px rgba(0, 0, 0, 0.35);
     overscroll-behavior: contain;
   }
 
   /* Peek: keep a strip of the browse column visible (affordance for swipe-dismiss). */
   .mobileEntryPeek {
-    left: 10px;
-    right: 0;
+    left: calc(var(--fpio-mobile-sheet-inset, 8px) + var(--fpio-mobile-sheet-peek-extra, 10px));
+    right: max(var(--fpio-mobile-sheet-inset, 8px), env(safe-area-inset-right, 0px));
     width: auto;
-    border-top-left-radius: 3px;
-    border-bottom-left-radius: 3px;
+    border-radius: 5px;
   }
 
   .mobileEntryInactive {
