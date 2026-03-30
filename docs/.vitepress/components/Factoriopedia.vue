@@ -2987,22 +2987,22 @@ const _filterGrid = useFactorioGrid({
 /* Mobile Responsive Layout */
 @media (max-width: 768px) {
   .factoripedia {
-    flex: 1 1 0;
+    flex: 0 1 auto;
     align-self: stretch;
     min-height: 0;
-    max-height: 100%;
-    height: 100%;
-    overflow: hidden;
-    overscroll-behavior: contain;
+    max-height: none;
+    height: auto;
+    overflow: visible;
+    overscroll-behavior: auto;
   }
 
   .factoripediaContainer {
     position: relative;
     flex-direction: column;
-    flex: 1 1 0;
+    flex: 0 1 auto;
     min-height: 0;
     height: auto;
-    overflow: hidden;
+    overflow: visible;
   }
 
   /* Off-screen entry cue (below sheet z-index; pointer-events none). */
@@ -3062,26 +3062,28 @@ const _filterGrid = useFactorioGrid({
     user-select: none;
   }
 
-  /* Left Panel - Mobile: full viewport under slide-over */
+  /* Left Panel - Mobile: browse content in document flow (page scrolls); sheet is fixed */
   .factoripediaLeftPanel {
     width: 100%;
     border-right: none;
     border-bottom: none;
-    flex: 1 1 0;
+    flex: 0 1 auto;
     min-height: 0;
     overflow-x: hidden;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
+    overflow-y: visible;
   }
 
-  /* Right Panel - Mobile: stacked entry (slides in from the right; transform via inline style) */
+  /* Right Panel - Mobile: viewport-fixed entry sheet (slides in from the right; transform via inline style) */
   .factoripediaRightPanel {
-    position: absolute;
-    inset: 0;
+    position: fixed;
+    top: var(--vp-nav-height, 64px);
+    left: 0;
+    right: 0;
+    bottom: auto;
     z-index: 30;
     width: 100%;
     flex: none;
-    height: 100%;
+    height: calc(100dvh - var(--vp-nav-height, 64px));
     min-height: 0;
     overflow: hidden;
     display: flex;
@@ -3097,8 +3099,6 @@ const _filterGrid = useFactorioGrid({
   .mobileEntryPeek {
     left: 10px;
     right: 0;
-    top: 0;
-    bottom: 0;
     width: auto;
     border-top-left-radius: 3px;
     border-bottom-left-radius: 3px;
