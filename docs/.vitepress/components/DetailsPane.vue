@@ -500,6 +500,7 @@ const formattedDisplayName = computed(() => {
   background: #4a4a4a;
   border-left: 1px solid #1a1a1a;
   overflow-y: auto;
+  overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
 }
 
@@ -510,6 +511,10 @@ const formattedDisplayName = computed(() => {
 }
 
 .itemHeader {
+  position: sticky;
+  top: 0;
+  /* Above FactorioSprite pause overlay (inner z-index); isolate image block with z-index:0 */
+  z-index: 20;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -521,7 +526,8 @@ const formattedDisplayName = computed(() => {
   border: 1px solid #3f3f3f;
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.08),
-    0 1px 0 rgba(0, 0, 0, 0.45);
+    0 1px 0 rgba(0, 0, 0, 0.45),
+    0 4px 8px rgba(0, 0, 0, 0.35);
 }
 
 .headerTitle {
@@ -724,6 +730,8 @@ const formattedDisplayName = computed(() => {
 }
 
 .itemImageContainer {
+  position: relative;
+  z-index: 0;
   width: 100%;
   background: #1e1e1e;
   border-radius: 2px;

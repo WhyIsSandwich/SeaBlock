@@ -520,7 +520,8 @@ export default {
   position: absolute;
   top: 8px;
   right: 8px;
-  z-index: 10;
+  /* Stay above canvas only; avoid competing with sticky headers (e.g. DetailsPane) */
+  z-index: 1;
 }
 
 .pause-play-button {

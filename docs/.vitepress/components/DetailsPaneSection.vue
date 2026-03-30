@@ -491,6 +491,7 @@ export default {
   /* Grid properties are handled by composable inline styles */
   max-height: 200px;
   overflow-y: auto;
+  overscroll-behavior: contain;
   background: #1f1f1f;
   border: 1px solid #3d3d3d;
   border-radius: 2px;
