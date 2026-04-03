@@ -20,16 +20,18 @@ export function zoomTransformToLayerStyle(t) {
  *
  * @param {import('vue').Ref<HTMLElement | null>} viewportRef
  * @param {import('vue').Ref<HTMLElement | null>} zoomLayerRef
- * @param {{ scaleExtent?: [number, number], onZoomEnd?: (t: { x: number, y: number, k: number }) => void, onTransformChange?: (t: { x: number, y: number, k: number }) => void }} [options]
+ * @param {{ scaleExtent?: [number, number], onZoomEnd?: (t: { x: number, y: number, k: number }) => void, onTransformChange?: (t: { x: number, y: number, k: number }) => void, zoomFilter?: (event: Event) => boolean }} [options] Optional `zoomFilter`: return true to let d3-zoom handle the event (after base wheel/button rules).
  */
 export function useD3GraphZoom(viewportRef, zoomLayerRef, options = {}) {
-  const { scaleExtent = [0.35, 3], onZoomEnd, onTransformChange } = options
+  const { scaleExtent = [0.35, 3], onZoomEnd, onTransformChange, zoomFilter } = options
 
   let zoomBehavior = null
   let rootSelection = null
   let currentTransform = { x: 0, y: 0, k: 1 }
   let pendingTransform = null
   let rafId = null
+  /** @type {number | null} */
+  let transformAnimRaf = null
 
   function applyLayerTransform(t) {
     currentTransform = t
@@ -71,10 +73,15 @@ export function useD3GraphZoom(viewportRef, zoomLayerRef, options = {}) {
   }
 
   function filterWheelForPanelScroll(event) {
+    let base
     if (event.type === 'wheel') {
-      return (event.ctrlKey || event.metaKey) && !event.button
+      base = (event.ctrlKey || event.metaKey) && !event.button
+    } else {
+      base = (!event.ctrlKey || event.type === 'wheel') && !event.button
     }
-    return (!event.ctrlKey || event.type === 'wheel') && !event.button
+    if (!base) return false
+    if (typeof zoomFilter === 'function' && !zoomFilter(event)) return false
+    return true
   }
 
   function bind() {
@@ -98,7 +105,15 @@ export function useD3GraphZoom(viewportRef, zoomLayerRef, options = {}) {
     applyLayerTransform(currentTransform)
   }
 
+  function cancelTransformAnimation() {
+    if (typeof window !== 'undefined' && transformAnimRaf !== null) {
+      window.cancelAnimationFrame(transformAnimRaf)
+      transformAnimRaf = null
+    }
+  }
+
   function teardown() {
+    cancelTransformAnimation()
     if (typeof window !== 'undefined' && rafId !== null) {
       window.cancelAnimationFrame(rafId)
       rafId = null
@@ -125,8 +140,80 @@ export function useD3GraphZoom(viewportRef, zoomLayerRef, options = {}) {
     }
   }
 
+  /**
+   * Smoothly interpolate translate (and optional scale) to a target. Cancels any in-flight animation.
+   * @param {number} targetX
+   * @param {number} targetY
+   * @param {number} [targetK]
+   * @param {number} [durationMs]
+   */
+  function animateTransformTo(targetX, targetY, targetK, durationMs = 220) {
+    if (typeof window === 'undefined') {
+      setTransform(targetX, targetY, targetK ?? currentTransform.k)
+      return
+    }
+    cancelTransformAnimation()
+    const kEnd = targetK != null && Number.isFinite(targetK) ? targetK : currentTransform.k
+    const x0 = currentTransform.x
+    const y0 = currentTransform.y
+    const k0 = currentTransform.k
+    const t0 = performance.now()
+    /** @param {number} t 0..1 */
+    function easeOutCubic(t) {
+      return 1 - (1 - t) ** 3
+    }
+    function frame(now) {
+      const u = Math.min(1, (now - t0) / durationMs)
+      const e = easeOutCubic(u)
+      const x = x0 + (targetX - x0) * e
+      const y = y0 + (targetY - y0) * e
+      const k = k0 + (kEnd - k0) * e
+      setTransform(x, y, k)
+      if (u < 1) {
+        transformAnimRaf = window.requestAnimationFrame(frame)
+      } else {
+        transformAnimRaf = null
+      }
+    }
+    transformAnimRaf = window.requestAnimationFrame(frame)
+  }
+
   function getTransform() {
     return { ...currentTransform }
+  }
+
+  /**
+   * Layer content coordinates: children use left/top in the zoom layer’s pre-transform box; layer has translate(tx,ty) scale(k) origin 0,0.
+   * @param {number} clientX
+   * @param {number} clientY
+   * @returns {{ lx: number, ly: number } | null}
+   */
+  function clientToLayerContent(clientX, clientY) {
+    const vp = viewportRef.value?.getBoundingClientRect?.()
+    if (!vp) return null
+    const { x: tx, y: ty, k } = currentTransform
+    if (!Number.isFinite(k) || k === 0) return null
+    return {
+      lx: (clientX - vp.left - tx) / k,
+      ly: (clientY - vp.top - ty) / k
+    }
+  }
+
+  /**
+   * Adjust translate so the given layer-content point appears at (clientX, clientY) in viewport client space.
+   * @param {number} layerX
+   * @param {number} layerY
+   * @param {number} clientX
+   * @param {number} clientY
+   */
+  function alignLayerPointToClient(layerX, layerY, clientX, clientY) {
+    const vp = viewportRef.value?.getBoundingClientRect?.()
+    if (!vp) return
+    const { k } = currentTransform
+    if (!Number.isFinite(k) || k === 0) return
+    const ntx = clientX - vp.left - k * layerX
+    const nty = clientY - vp.top - k * layerY
+    setTransform(ntx, nty, k)
   }
 
   function viewportCenter() {
@@ -160,5 +247,16 @@ export function useD3GraphZoom(viewportRef, zoomLayerRef, options = {}) {
 
   onUnmounted(() => teardown())
 
-  return { bind, reset, setTransform, getTransform, zoomBy, zoomTo, teardown }
+  return {
+    bind,
+    reset,
+    setTransform,
+    animateTransformTo,
+    getTransform,
+    clientToLayerContent,
+    alignLayerPointToClient,
+    zoomBy,
+    zoomTo,
+    teardown
+  }
 }

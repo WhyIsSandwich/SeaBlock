@@ -3,19 +3,19 @@
     <span
       ref="triggerRef"
       class="tooltip-trigger"
-      :tabindex="focusableTrigger ? 0 : -1"
-      :role="focusableTrigger ? 'button' : null"
-      :aria-describedby="tooltipId"
+      :tabindex="enableTooltip && focusableTrigger ? 0 : -1"
+      :role="enableTooltip && focusableTrigger ? 'button' : null"
+      :aria-describedby="enableTooltip ? tooltipId : undefined"
       :style="style"
-      @mouseenter="showTooltip"
-      @mouseleave="hideTooltip"
-      @focusin="showTooltip"
-      @focusout="hideTooltip"
+      @mouseenter="onTriggerMouseEnter"
+      @mouseleave="onTriggerMouseLeave"
+      @focusin="onTriggerFocusIn"
+      @focusout="onTriggerFocusOut"
     >
       <slot />
       <Teleport to="body">
         <div
-          v-if="isVisible && shouldShowTooltips"
+          v-if="enableTooltip && isVisible && shouldShowTooltips"
           ref="tooltipRef"
           :id="tooltipId"
           :class="tooltipClasses"
@@ -96,6 +96,7 @@
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 
 import { useTooltipData } from '../../../src/composables/useTooltipData.js'
+import { isTouchDevice } from '../../../src/utils/isTouchDevice.js'
 import { computeTooltipPosition } from './tooltipPosition.js'
 
 import DetailsPaneSection from './DetailsPaneSection.vue'
@@ -121,6 +122,11 @@ const props = defineProps({
     default: null
   },
   focusableTrigger: {
+    type: Boolean,
+    default: true
+  },
+  /** When false, the slot still renders but hover/focus does not open the tooltip (e.g. production map siblings). */
+  enableTooltip: {
     type: Boolean,
     default: true
   }
@@ -210,8 +216,7 @@ function positionTooltip() {
       tooltipStyle.value = {
         position: 'fixed',
         top: `${top}px`,
-        left: `${left}px`,
-        zIndex: 9999
+        left: `${left}px`
       }
 
       // Show tooltip after positioning is complete
@@ -236,8 +241,7 @@ function updateTooltipPosition() {
   tooltipStyle.value = {
     position: 'fixed',
     top: `${top}px`,
-    left: `${left}px`,
-    zIndex: 9999
+    left: `${left}px`
   }
 }
 
@@ -306,8 +310,31 @@ function closeTooltip() {
   }
 }
 
+function onTriggerMouseEnter() {
+  if (!props.enableTooltip) return
+  showTooltip()
+}
+
+function onTriggerMouseLeave() {
+  if (!props.enableTooltip) return
+  hideTooltip()
+}
+
+function onTriggerFocusIn() {
+  if (!props.enableTooltip) return
+  showTooltip()
+}
+
+function onTriggerFocusOut() {
+  if (!props.enableTooltip) return
+  hideTooltip()
+}
+
 // Show tooltip
 function showTooltip() {
+  if (!props.enableTooltip) {
+    return
+  }
   // Don't show tooltips on mobile devices
   if (!shouldShowTooltips.value) {
     return
@@ -475,11 +502,6 @@ function handleMouseMove(event) {
   }
 }
 
-// Detect touch device
-function isTouchDevice() {
-  return 'ontouchstart' in window || navigator.maxTouchPoints > 0
-}
-
 // Handle escape key globally
 function handleKeydown(event) {
   if (event.key === 'Escape' && isVisible.value) {
@@ -536,7 +558,7 @@ onUnmounted(() => {
   width: max-content;
   max-width: min(560px, calc(100vw - 16px));
   min-width: 0;
-  z-index: 9999;
+  z-index: var(--sb-z-tooltip);
   opacity: 0;
   transform: translateY(-4px);
   transition:

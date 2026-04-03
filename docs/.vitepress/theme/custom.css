@@ -1,6 +1,20 @@
 /* Custom theme styles for SeaBlock Wiki */
 
 :root {
+  /*
+   * Global overlay stack (fixed / teleported UI). Higher = nearer the user.
+   * Add new layers here only; components use var(--sb-z-*) instead of literals.
+   * (VitePress nav/search use lower tiers, e.g. --vp-z-index-* ~25–200.)
+   */
+  --sb-z-science-pack-portal: 10022;
+  --sb-z-science-pack-popover: 10023;
+  --sb-z-science-pack-trigger-open: 10024;
+  --sb-z-factoriopedia-modal: 10030;
+  /* Full-bleed modals opened from details / Factoriopedia (tech tree, production map). */
+  --sb-z-fullscreen-modal: 10040;
+  /* Teleported Factorio-style item tooltips; must stay above --sb-z-fullscreen-modal. */
+  --sb-z-tooltip: 10060;
+
   /* SeaBlock brand colors */
   --vp-c-brand-1: #00d4aa;
   --vp-c-brand-2: #00b894;

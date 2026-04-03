@@ -78,7 +78,7 @@ watch(
 .backdrop {
   position: fixed;
   inset: 0;
-  z-index: 10040;
+  z-index: var(--sb-z-fullscreen-modal);
   background: rgba(0, 0, 0, 0.55);
   display: flex;
   flex-direction: column;

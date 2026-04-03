@@ -325,6 +325,7 @@
               @select-from-history="selectFromMRU"
               @open-tech-tree="openResearchMap"
               @close-details="closeDetails"
+              @production-map-select="onProductionMapSelect"
             />
           </div>
         </div>
@@ -1684,6 +1685,11 @@ function selectItem(type, name, data = null, options = {}) {
   }
 }
 
+function onProductionMapSelect(entry) {
+  if (!entry?.type || !entry?.name) return
+  selectItem(entry.type, entry.name)
+}
+
 watch(
   () => selectedSciencePacks.value,
   () => {
@@ -2111,7 +2117,7 @@ const _filterGrid = useFactorioGrid({
 
 .sciencePackHeaderTriggerOpen {
   position: relative;
-  z-index: 10024;
+  z-index: var(--sb-z-science-pack-trigger-open);
   border-color: #b78c45;
   box-shadow:
     inset 0 0 0 1px rgba(255, 200, 100, 0.15),
@@ -2134,7 +2140,7 @@ const _filterGrid = useFactorioGrid({
 .sciencePackPortal {
   position: fixed;
   inset: 0;
-  z-index: 10022;
+  z-index: var(--sb-z-science-pack-portal);
   pointer-events: none;
 }
 
@@ -2147,7 +2153,7 @@ const _filterGrid = useFactorioGrid({
 
 .sciencePackPopover {
   pointer-events: auto;
-  z-index: 10023;
+  z-index: var(--sb-z-science-pack-popover);
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -2313,7 +2319,7 @@ const _filterGrid = useFactorioGrid({
 .modalBackdrop {
   position: fixed;
   inset: 0;
-  z-index: 10030;
+  z-index: var(--sb-z-factoriopedia-modal);
   background: rgba(0, 0, 0, 0.5);
   display: flex;
   align-items: center;

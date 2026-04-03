@@ -159,6 +159,7 @@ export const labels = new Proxy(
     // Technology labels
     technology_time: 'Technology Time',
     technology_cost: 'Technology Cost',
+    cumulative_science_cost: 'Cumulative Science Cost',
     energy_consumption: 'Energy Consumption',
     energy_capacity: 'Energy Capacity',
     nuclear_fuel_consumption: 'Constant Consumption',

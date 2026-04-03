@@ -159,6 +159,60 @@
           />
         </div>
 
+        <div v-if="showProductionMap" :class="$style.productionMapEntry">
+          <button
+            type="button"
+            :class="[$style.openProductionMapBtn, 'fpio-button-chrome']"
+            @click="productionMapModalOpen = true"
+          >
+            Open production map
+          </button>
+          <p :class="$style.productionMapEntryHint">
+            Interactive graph: tap nodes to expand, double-click or long-press to open an entry.
+          </p>
+        </div>
+
+        <Teleport to="body">
+          <div
+            v-if="productionMapModalOpen && showProductionMap"
+            :class="$style.productionMapModalBackdrop"
+            role="presentation"
+            @click.self="closeProductionMapModal"
+          >
+            <div
+              ref="productionMapModalPanelRef"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="fpio-production-map-title"
+              tabindex="-1"
+              :class="$style.productionMapModalPanel"
+              @keydown.esc.stop.prevent="closeProductionMapModal"
+            >
+              <div :class="$style.productionMapModalHeader">
+                <h3 id="fpio-production-map-title">Production map</h3>
+                <button
+                  type="button"
+                  :class="[$style.productionMapModalClose, 'fpio-button-chrome']"
+                  @click="closeProductionMapModal"
+                >
+                  Close
+                </button>
+              </div>
+              <div :class="$style.productionMapModalBody">
+                <ProductionMapHost
+                  fill-parent
+                  :show-title="false"
+                  :factorio-data="organizedData"
+                  :focus-type="props.type"
+                  :focus-name="props.name"
+                  :science-pack-visibility="props.sciencePackVisibility"
+                  @select-entry="onProductionMapSelectFromModal"
+                />
+              </div>
+            </div>
+          </div>
+        </Teleport>
+
         <template
           v-for="(section, sectionIndex) in detailsData.sections"
           :key="`${section.type || section.label || 'section'}-${sectionIndex}`"
@@ -247,10 +301,11 @@
 </template>
 
 <script setup>
-import { computed, getCurrentInstance, nextTick, onUnmounted, ref } from 'vue'
+import { computed, getCurrentInstance, nextTick, onUnmounted, ref, watch } from 'vue'
 
 import { useFactorioData } from '../../../src/index.js'
 import { useDetailsData } from '../../../src/composables/useDetailsData.js'
+import { formatFactoriopediaDetailTitle } from '../../../src/utils/factoriopediaDetailTitle.js'
 
 import SpriteIcon from './SpriteIcon.vue'
 import FactorioSprite from './FactorioSprite.vue'
@@ -258,6 +313,7 @@ import Statistics from './Statistics.vue'
 import DetailsPaneSection from './DetailsPaneSection.vue'
 import FactorioRichText from './FactorioRichText.vue'
 import RawSection from './RawSection.vue'
+import ProductionMapHost from './ProductionMapHost.vue'
 // Use the data composable
 const { organizedData, createUnifiedSelectionObject } = useFactorioData()
 const { getDetailsData } = useDetailsData()
@@ -365,7 +421,8 @@ const emit = defineEmits([
   'navigate-forward',
   'select-from-history',
   'open-tech-tree',
-  'close-details'
+  'close-details',
+  'production-map-select'
 ])
 
 const historyPopoverId = `fpio-history-popover-${getCurrentInstance()?.uid ?? 0}`
@@ -460,33 +517,49 @@ const detailsData = computed(() => {
   return data
 })
 
-// Format display name with product amount if recipe has show_amount_in_title
 const formattedDisplayName = computed(() => {
   if (!selectedItem.value?.displayName) return ''
-
   const { displayName, recipe, types } = selectedItem.value
-  const isRecipe = types?.includes('recipe')
-
-  if (!isRecipe || recipe?.show_amount_in_title === false || !recipe.results?.length) {
-    return displayName
-  }
-
-  // Don't show amount if recipe has multiple products
-  if (recipe.results.length > 1) {
-    return displayName
-  }
-
-  // Get the amount from the first (and only) result in the recipe
-  const firstResult = recipe.results[0]
-  const amount = firstResult?.amount || 1
-
-  // Only show amount if it's not 1
-  if (amount === 1) {
-    return displayName
-  }
-
-  return `${amount}x ${displayName}`
+  return formatFactoriopediaDetailTitle({
+    displayName,
+    isRecipe: Boolean(types?.includes('recipe')),
+    recipe
+  })
 })
+
+const showProductionMap = computed(
+  () => props.type === 'item' || props.type === 'fluid' || props.type === 'recipe'
+)
+
+const productionMapModalOpen = ref(false)
+const productionMapModalPanelRef = ref(null)
+
+function closeProductionMapModal() {
+  productionMapModalOpen.value = false
+}
+
+watch(productionMapModalOpen, async open => {
+  if (open) {
+    await nextTick()
+    productionMapModalPanelRef.value?.focus?.()
+  }
+})
+
+watch(
+  () => [props.type, props.name],
+  () => {
+    productionMapModalOpen.value = false
+  }
+)
+
+function onProductionMapSelect(entry) {
+  emit('production-map-select', entry)
+}
+
+function onProductionMapSelectFromModal(entry) {
+  closeProductionMapModal()
+  onProductionMapSelect(entry)
+}
 </script>
 
 <style module>
@@ -508,6 +581,86 @@ const formattedDisplayName = computed(() => {
   padding: 10px;
   max-width: 100%;
   line-height: 1.35;
+}
+
+.productionMapEntry {
+  margin: 10px 0 12px;
+  padding: 8px 10px;
+  background: #3d3d3d;
+  border: 1px solid #2a2a2a;
+  border-radius: 4px;
+}
+
+.openProductionMapBtn {
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.productionMapEntryHint {
+  margin: 8px 0 0;
+  font-size: 11px;
+  line-height: 1.35;
+  color: #b0b0b0;
+}
+
+.productionMapModalBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: var(--sb-z-fullscreen-modal);
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: max(12px, env(safe-area-inset-top, 0px)) max(12px, env(safe-area-inset-right, 0px))
+    max(12px, env(safe-area-inset-bottom, 0px)) max(12px, env(safe-area-inset-left, 0px));
+  box-sizing: border-box;
+}
+
+.productionMapModalPanel {
+  display: flex;
+  flex-direction: column;
+  width: min(1280px, calc(100vw - 32px));
+  max-width: 100%;
+  max-height: min(88vh, 100%);
+  min-height: min(420px, 85vh);
+  background: #2e2e2e;
+  border: 1px solid #555;
+  border-radius: 6px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+  color: #e8e8e8;
+  overflow: hidden;
+  outline: none;
+}
+
+.productionMapModalHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border-bottom: 1px solid #444;
+  flex-shrink: 0;
+}
+
+.productionMapModalHeader h3 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.productionMapModalClose {
+  padding: 5px 12px;
+  font-size: 12px;
+}
+
+.productionMapModalBody {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 0 8px 8px;
 }
 
 .itemHeader {

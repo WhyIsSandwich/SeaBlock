@@ -28,12 +28,112 @@ function formatTechnologyEffectValue(effect) {
   return ''
 }
 
+function normalizeTechnologyIngredients(ingredients) {
+  if (!ingredients) return []
+  const normalized = Array.isArray(ingredients) ? ingredients : [ingredients]
+  return normalized
+    .map(entry => {
+      if (!entry) return null
+      if (Array.isArray(entry)) {
+        const [name, amount] = entry
+        return name ? { name, amount } : null
+      }
+      if (entry.name) {
+        return { name: entry.name, amount: entry.amount ?? entry[1] }
+      }
+      if (entry[0]) {
+        return { name: entry[0], amount: entry[1] }
+      }
+      return null
+    })
+    .filter(Boolean)
+}
+
+function getTechnologyCount(technology) {
+  const count = technology?.unit?.count
+  return typeof count === 'number' && Number.isFinite(count) && count > 0 ? count : null
+}
+
+function getTechnologyClosure(technologyName, technologies, visited = new Set()) {
+  if (!technologyName || visited.has(technologyName)) return new Set()
+  const technology = technologies?.[technologyName]
+  if (!technology) return new Set()
+
+  visited.add(technologyName)
+  const closure = new Set([technologyName])
+  const prerequisites = Array.isArray(technology.prerequisites) ? technology.prerequisites : []
+  prerequisites.forEach(prerequisiteName => {
+    const prerequisiteClosure = getTechnologyClosure(prerequisiteName, technologies, visited)
+    prerequisiteClosure.forEach(name => closure.add(name))
+  })
+  return closure
+}
+
+function getCumulativeScienceCostStatistic(technology, technologies, items = {}) {
+  const closure = getTechnologyClosure(technology?.name, technologies)
+  if (closure.size === 0) return null
+
+  const totalsByPack = new Map()
+  let totalSciencePacks = 0
+
+  closure.forEach(technologyName => {
+    const closureTechnology = technologies?.[technologyName]
+    const researchCount = getTechnologyCount(closureTechnology)
+    if (!researchCount) return
+
+    normalizeTechnologyIngredients(closureTechnology?.unit?.ingredients).forEach(ingredient => {
+      if (!ingredient?.name) return
+      const amount = Number(ingredient.amount)
+      if (!Number.isFinite(amount) || amount <= 0) return
+      const totalAmount = amount * researchCount
+      totalsByPack.set(ingredient.name, (totalsByPack.get(ingredient.name) || 0) + totalAmount)
+      totalSciencePacks += totalAmount
+    })
+  })
+
+  if (totalsByPack.size === 0) return null
+
+  const children = Array.from(totalsByPack.entries())
+    .sort(([leftName], [rightName]) => {
+      const leftLabel = items?.[leftName]?.displayName || leftName
+      const rightLabel = items?.[rightName]?.displayName || rightName
+      return leftLabel.localeCompare(rightLabel)
+    })
+    .map(([packName, amount]) => ({
+      label: items?.[packName]?.displayName || packName,
+      value: formatNumber(amount)
+    }))
+
+  return {
+    label: labels.cumulative_science_cost,
+    value: formatNumber(totalSciencePacks),
+    children
+  }
+}
+
 /**
  * Technology rules - unified format for both statistics and sections
  */
 export const technologyRules = [
-  // Statistics rules - technologies typically don't have direct statistics
-  // (empty array for now, can be extended if needed)
+  {
+    name: labels.cumulative_science_cost,
+    order: 1,
+    type: 'statistics',
+    forType: 'technology',
+    shownInTooltip: false,
+    getValue: (data, context) =>
+      getCumulativeScienceCostStatistic(
+        data.technology,
+        context.factorioData.technology || {},
+        context.factorioData.item || {}
+      ),
+    condition: (data, context) =>
+      getCumulativeScienceCostStatistic(
+        data.technology,
+        context.factorioData.technology || {},
+        context.factorioData.item || {}
+      ) !== null
+  },
 
   // Section rules
   {
@@ -42,12 +142,14 @@ export const technologyRules = [
     type: 'section',
     forType: 'technology',
     shownInTooltip: true,
-    getValue: data => {
-      const sciencePacks = data.technology.unit?.ingredients?.map(unit => ({
-        name: unit[0],
-        type: 'item',
-        amount: unit[1]
-      }))
+    getValue: (data, context) => {
+      const sciencePacks = normalizeTechnologyIngredients(data.technology.unit?.ingredients).map(
+        unit => ({
+          name: unit.name,
+          type: 'item',
+          amount: unit.amount
+        })
+      )
       return {
         items: sciencePacks,
         type: 'technology_cost',
@@ -58,7 +160,7 @@ export const technologyRules = [
         ]
       }
     },
-    condition: data => data.technology.unit !== undefined && data.technology.unit?.length > 0
+    condition: data => normalizeTechnologyIngredients(data.technology.unit?.ingredients).length > 0
   },
   {
     name: sectionTypes.technology_effects,
